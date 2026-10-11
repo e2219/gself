@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=2"></head>
+<body>
+<main>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 02</span></header>
+<section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>把散落的光，<em>接回月亮。</em></h1><p>驾驶一叶月舟，在陨石之间，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
+<section class="game" aria-label="月面拾光游戏">
+<div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
+<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用左右方向键或A、D移动月舟；空格冲刺，P键暂停。也可用鼠标或触屏拖动。"></canvas>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">沿着星阵拾光，用冲刺穿过陨石。<br>90 秒，三段旅程，最后 30 秒得分翻倍。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">鼠标 / ← → / 拖动移动 · 空格冲刺 · P 暂停</small></div></div>
+<div class="phase-track" aria-label="旅程进度"><span id="phase0" class="active">01 平静夜空</span><span id="phase1">02 流星雨</span><span id="phase2">03 最后冲刺 ×2</span></div><div id="announcement" class="announcement" role="status"></div>
+<div id="combo" class="combo" aria-live="polite"></div><div class="coordinates">SECTOR 07 · SEA OF TRANQUILITY</div>
+</section>
+<div class="skillbar"><span id="skillTip">向移动方向冲刺 · 短暂无敌 · 冷却 5 秒</span><button id="dash" disabled><span id="dashLabel">月相冲刺 · 空格</span><span class="charge"><i id="charge"></i></span></button></div>
+<div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
+<section class="guide"><article><span class="symbol gold">✦</span><div><h3>沿星阵，接连击</h3><p>弧线与折线轮流出现。连收 5 / 10 颗升倍率。</p></div></article><article><span class="symbol coral">◆</span><div><h3>看预警，找空隙</h3><p>红色光带预告陨石。最后 30 秒星光得分翻倍。</p></div></article><article><span class="symbol mint">↔</span><div><h3>选时机，穿过去</h3><p>空格或按钮冲刺，短暂无敌。P 暂停。</p></div></article></section>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V2.0</span></footer>
+</main><script src="game.js?v=2"></script>
+</body></html>
