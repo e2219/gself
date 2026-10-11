@@ -6,7 +6,7 @@ function el(id){return els[id]??={style:{},textContent:'',innerHTML:'',hidden:fa
 const sandbox={document:{getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:noop},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
-const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false');
+const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length');
 const hit=rock=>run(`items=[{x:ship.x,y:shipY(),r:9,v:0,rock:${rock},a:0}];update(.01)`);
 run('start()');isolate();for(let i=0;i<10;i++)hit(false);assert.equal(run('score'),170);
 run('items=[{x:0,y:H+21,r:9,v:0,rock:false,a:0}];update(.01)');assert.equal(run('combo'),0);
@@ -23,7 +23,7 @@ run('boostTime=0;combo=0;score=0');hit(false);assert.equal(run('score'),20);
 isolate();run('warnWave()');assert.equal(run('warnings.length'),2);assert.equal(run('items.length'),0);for(let i=0;i<27;i++)run('update(.05)');assert.equal(run('warnings.length'),0);assert(run('items.filter(o=>o.rock).length')>0);
 run('start()');isolate();run('starWave()');assert.equal(run('pending.length'),6);assert(run('pending.every(p=>p.x>=.1&&p.x<=.9)'));
 // Terminal states and records reset cleanly.
-run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v4'],'234');
+run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v5'],'234');
 run('start()');assert.equal(run('phase'),0);assert.equal(run('boostCooldown'),0);assert.equal(run('warnings.length'),0);assert.equal(run('score'),0);
 run('elapsed=89.99;update(.02)');assert.equal(run('state'),'over');assert.equal(run('time'),0);
 width=340;height=330;run('resize();start();starWave();warnWave();draw(1)');assert(run('ship.x>=24&&ship.x<=W-24'));
@@ -131,3 +131,43 @@ run('start()');isolate();run('elapsed=72;updateBoss(.01,.01,ship.x,false);boss.w
 run('pause()');const frozenBoss=run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])');run('update(1)');assert.equal(run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])'),frozenBoss);
 run('pause();draw(1);start()');assert.equal(run('boss'),null);assert.equal(run('guard'),0);assert.equal(run('perfectCount'),0);assert.equal(run('powers.capacitor'),0);
 console.log('V4 PASS: underside magnet equilibrium at 30/60/120fps, radial shards, no pointer backlog, perfect window and one-shot reward, recharge/armor/insurance, boss warning/safe lane/3-hit reward/damage, pause/reset');
+
+// V5: offers pause the world, skipping is free, and the two schedule slots are consumed once.
+run('start()');isolate();run('wagerSlot=0;elapsed=18;maybeOfferWager()');assert.equal(run('state'),'wager');assert.equal(run('wagerOffers.length'),2);assert.notEqual(run('wagerOffers[0].id'),run('wagerOffers[1].id'));
+const offerFreeze=run('[elapsed,time,boostCooldown].join()');run('update(1)');assert.equal(run('[elapsed,time,boostCooldown].join()'),offerFreeze);
+run('score=123;skipWager()');assert.equal(run('state'),'playing');assert.equal(run('score'),123);assert.equal(run('wagerSlot'),1);run('maybeOfferWager()');assert.equal(run('state'),'playing');
+run('elapsed=46;maybeOfferWager()');assert.equal(run('state'),'wager');run('skipWager();maybeOfferWager()');assert.equal(run('state'),'playing');assert.equal(run('wagerSlot'),2);
+function accept(id){run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="'+id+'")];chooseWager(0)')}
+// Quiet wager: success queues one bonus; boost still works when it forfeits the wager.
+run('start()');isolate();accept('quiet');run('pause()');const contractFreeze=run('activeWager.remaining');run('update(5)');assert.equal(run('activeWager.remaining'),contractFreeze);run('pause();elapsed=10;tickWager()');assert.equal(run('wagersWon'),1);assert.equal(run('bonusCredits'),1);run('tickWager()');assert.equal(run('bonusCredits'),1);
+run('offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),0);assert.equal(run('bonusUpgradeCount'),1);assert.equal(run('bonusCredits'),0);
+run('start()');isolate();accept('quiet');run('score=55;boostCooldown=1;boost()');assert(run('activeWager'));run('boostCooldown=0;boost()');assert.equal(run('activeWager'),null);assert(run('boostTime')>0);assert.equal(run('score'),55);assert.equal(run('wagersFailed'),1);assert.equal(run('bonusCredits'),0);
+// Armor is allowed in safe wager; base shield damage fails without score penalties.
+run('start()');isolate();accept('safe');run('guard=1;score=77;damage()');assert(run('activeWager'));assert.equal(run('hp'),3);run('invincible=0;damage()');assert.equal(run('activeWager'),null);assert.equal(run('score'),77);
+// Gold star objective excludes shards, succeeds once, and expires if incomplete.
+run('start()');isolate();accept('stars');run('collectDust()');assert.equal(run('activeWager.progress'),0);
+for(let i=0;i<8;i++)run('collectStar({x:ship.x,y:shipY()})');assert.equal(run('wagersWon'),1);assert.equal(run('bonusCredits'),1);
+run('collectStar({x:ship.x,y:shipY()})');assert.equal(run('bonusCredits'),1);
+run('start()');isolate();accept('stars');run('elapsed=10;tickWager()');assert.equal(run('wagersFailed'),1);assert.equal(run('bonusCredits'),0);
+// A bonus and a dust upgrade ready together never stack dialogs or consume each other.
+run('start();dust=3;bonusCredits=1;offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0);pause();offerUpgrade()');assert.equal(run('upgradeSource'),'dust');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);assert.equal(run('bonusUpgradeCount'),1);
+// Gravity twin catches from below and above; expired echo targets fall back to the real ship.
+width=960;height=510;run('resize();start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,life:2}];items=[{x:200,y:shipY()+55,v:220,a:0,r:9,rock:false}];shards=[{x:230,y:shipY()-55,age:0,life:5,locked:false}]');
+for(let i=0;i<60;i++)run('update(1/60)');assert.equal(run('items.length'),0);assert.equal(run('shards.length'),0);assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('score'),35);
+run('start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=350;echoes=[{x:200,life:.02}];items=[{x:200,y:shipY()+75,v:220,a:0,r:9,rock:false}]');for(let i=0;i<90;i++)run('update(1/60)');assert.equal(run('items.length'),0);assert.equal(run('score'),10);
+// Without magnet, an echo does not attract remote objects.
+run('start()');isolate();run('powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,life:2}];items=[{x:200,y:shipY()-80,v:0,a:0,r:9,rock:false}];update(.05)');assert.equal(run('items[0].captured'),undefined);
+// Shield nova destroys nearby rocks once, retains combo, and cannot remove boss shells.
+run('start()');isolate();run('powers.aegis=1;powers.chain=1;guard=1;combo=9;boss={hp:3};items=[{x:ship.x+45,y:shipY(),rock:true},{x:ship.x-40,y:shipY(),rock:true},{x:ship.x+300,y:shipY(),rock:true}];damage()');assert.equal(run('hp'),3);assert.equal(run('combo'),9);assert.equal(run('shards.length'),2);assert.equal(run('boss.hp'),3);assert(!run('items[2].dead'));run('damage()');assert.equal(run('shards.length'),2);
+// Flow: exactly once per five gold stars, cooldown and grace stay bounded.
+run('start();powers.capacitor=1;powers.streak=1;boostCooldown=3;grace=0');for(let i=0;i<4;i++)run('collectStar({x:0,y:0})');assert.equal(run('boostCooldown'),3);run('collectStar({x:0,y:0})');assert.equal(run('boostCooldown'),2.5);assert.equal(run('grace'),1);
+run('boostCooldown=.1;grace=2');for(let i=0;i<5;i++)run('collectStar({x:0,y:0})');assert.equal(run('boostCooldown'),0);assert.equal(run('grace'),2);
+// Upgrade previews expose synergy; unlock is immediate; restart clears all wager state.
+run('start();powers.magnet=1;state="upgrade";offers=[powersList.find(p=>p.id==="echo")];chooseUpgrade(0)');assert(run('hasSynergy("gravity")'));assert(run('synergyHint("echo").includes("引力双生")'));
+run('start()');assert.equal(run('wagerSlot'),0);assert.equal(run('activeWager'),null);assert.equal(run('bonusCredits'),0);assert.equal(run('bonusUpgradeCount'),0);assert.equal(run('flowProgress'),0);assert(els.wager.hidden);
+console.log('V5 PASS: wager schedule/skip/freeze/success/failure/bonus separation, gravity pickup and expiry fallback, shield nova, five-star flow, synergy hints/reset');
+// Real echo pickup advances the gold wager; timed offers cannot cover an upgrade dialog.
+run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
+run('start();elapsed=18;dust=3;offerUpgrade();maybeOfferWager()');assert.equal(run('state'),'upgrade');assert.equal(run('wagerSlot'),0);assert(els.wager.hidden);
+run('chooseUpgrade(0);pause();maybeOfferWager()');assert.equal(run('state'),'wager');assert(els.upgrade.hidden);assert(els.overlay.hidden);
+console.log('PASS: actual echo wager progress and automatic menu priority');
