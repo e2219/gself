@@ -1,23 +1,23 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=3"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=31"></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 03</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 03.1</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>把散落的光，<em>接回月亮。</em></h1><p>驾驶一叶月舟，在陨石之间，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
-<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用左右方向键或A、D移动月舟；空格冲刺，P键暂停。触屏单指拖动移动，另一指轻触游戏区冲刺。"></canvas>
-<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">冲刺击碎陨石，收集青色星屑，二选一强化。<br>90 秒，三段旅程，构筑你的月舟。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">拖动 / ← → 移动 · 空格 / 双指 / 按钮冲刺</small></div></div>
+<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用左右方向键或A、D移动月舟；空格加速，P键暂停。触屏单指拖动移动，另一指轻触游戏区加速。"></canvas>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">开启加速后自由移动，护盾可击碎陨石。<br>90 秒，三段旅程，构筑你的月舟。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">拖动 / ← → 移动 · 空格 / 双指 / 按钮加速</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
-<button id="dash" aria-label="月相冲刺：向移动方向突进并短暂无敌" disabled><span class="dash-icon">↯</span><span id="dashLabel">冲刺</span><span class="charge"><i id="charge"></i></span></button>
-<div class="phase-track" aria-label="旅程进度"><span id="phase0" class="active">01 平静夜空</span><span id="phase1">02 流星雨</span><span id="phase2">03 最后冲刺 ×2</span></div><div id="announcement" class="announcement" role="status"></div>
+<button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
+<div class="phase-track" aria-label="旅程进度"><span id="phase0" class="active">01 平静夜空</span><span id="phase1">02 流星雨</span><span id="phase2">03 终幕星雨 ×2</span></div><div id="announcement" class="announcement" role="status"></div>
 <div id="combo" class="combo" aria-live="polite"></div><div class="coordinates">SECTOR 07 · SEA OF TRANQUILITY</div>
 </section>
-<div class="skillbar"><span id="skillTip">单指拖动移动 · 第二指轻触冲刺 · 冷却 5 秒</span><button id="hand" aria-pressed="false">冲刺键：右侧 ⇄</button></div>
+<div class="skillbar"><span id="skillTip">加速 1.2 秒 · 双倍移速＋护盾 · 冷却 5 秒</span><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div>
 <div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
-<section class="guide"><article><span class="symbol gold">✦</span><div><h3>危险也是机会</h3><p>冲刺击碎陨石，留下可收集的青色星屑。</p></div></article><article><span class="symbol coral">◆</span><div><h3>点亮你的星座</h3><p>收集 3 / 8 / 15 颗星屑，暂停时间二选一强化。</p></div></article><article><span class="symbol mint">↔</span><div><h3>双手配合更顺手</h3><p>拖动时另一指点游戏区或冲刺键，按钮可换边。</p></div></article></section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V3.0</span></footer>
-</main><script src="game.js?v=3"></script>
+<section class="guide"><article><span class="symbol gold">✦</span><div><h3>危险也是机会</h3><p>加速期间接触陨石可击碎，留下青色星屑。</p></div></article><article><span class="symbol coral">◆</span><div><h3>点亮你的星座</h3><p>收集 3 / 8 / 15 颗星屑，暂停时间二选一强化。</p></div></article><article><span class="symbol mint">↔</span><div><h3>双手配合更顺手</h3><p>拖动时另一指点游戏区或加速键，按钮可换边。</p></div></article></section>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V3.1</span></footer>
+</main><script src="game.js?v=31"></script>
 </body></html>

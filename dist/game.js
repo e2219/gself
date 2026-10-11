@@ -2,26 +2,26 @@
 const $=id=>document.getElementById(id),canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
   {name:'平静夜空',subtitle:'循着星阵，找到节奏',flight:3.1,interval:3.2,hazards:8,multiplier:1},
-  {name:'流星雨',subtitle:'留意红色预警 · 冲刺穿越陨石',flight:2.5,interval:2.8,hazards:6,multiplier:1},
-  {name:'最后冲刺',subtitle:'所有星光得分 ×2',flight:2.1,interval:2.4,hazards:4.8,multiplier:2}
+  {name:'流星雨',subtitle:'留意红色预警 · 加速穿越陨石',flight:2.5,interval:2.8,hazards:6,multiplier:1},
+  {name:'终幕星雨',subtitle:'所有星光得分 ×2',flight:2.1,interval:2.4,hazards:4.8,multiplier:2}
 ];
-const COOLDOWN=5,DASH_TIME=.65,MOVE_TIME=.24;
+const COOLDOWN=5,BOOST_TIME=1.2,BOOST_SPEED=2;
 let W=960,H=510,state='ready',score=0,combo=0,hp=3,time=90,best=0,elapsed=0,spawn=0,invincible=0,last=0;
-let phase=0,wave=0,hazardClock=5,dashTime=0,dashCooldown=0,dashDirection=1,announcementTime=0;
+let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
 let ship={x:480,target:480,direction:1};
 const upgradeAt=[3,8,15];
 const powersList=[
  {id:'magnet',name:'磁力月舟',description:['吸引周围 100 像素内的星光与星屑。','吸引范围扩大到 155 像素。']},
- {id:'echo',name:'冲刺分身',description:['冲刺出发点留下分身，代接星光与星屑 2 秒。','分身持续 4 秒，守住错过的星光。']},
+ {id:'echo',name:'加速分身',description:['加速出发点留下分身，代接星光与星屑 2 秒。','分身持续 4 秒，守住错过的星光。']},
  {id:'chain',name:'碎星连爆',description:['击碎陨石时，连锁击碎 85 像素内的陨石。','连爆范围扩大到 125 像素。']}
 ];
 let dust=0,upgradeCount=0,powers={magnet:0,echo:0,chain:0},offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,leftHand=false;
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
 function focusGame(){canvas.focus({preventScroll:true})}
-function clearInput(){keys.clear();touches.clear();movePointer=null}
-function applyHand(){document.querySelector('.game').classList.toggle('controls-left',leftHand);$('hand').textContent='冲刺键：'+(leftHand?'左侧':'右侧')+' ⇄';$('hand').setAttribute('aria-pressed',String(leftHand))}
+function clearInput(){keys.clear();touches.clear();movePointer=null;ship.target=ship.x}
+function applyHand(){document.querySelector('.game').classList.toggle('controls-left',leftHand);$('hand').textContent='加速键：'+(leftHand?'左侧':'右侧')+' ⇄';$('hand').setAttribute('aria-pressed',String(leftHand))}
 
 try{best=Number(localStorage.getItem('mooncatch-best-v3'))||0}catch{}
 $('best').textContent=String(best).padStart(3,'0');
@@ -44,24 +44,25 @@ function hud(){
  $('score').textContent=String(score).padStart(3,'0');$('time').innerHTML=Math.ceil(time)+'<span>s</span>';
  $('health').textContent='● '.repeat(hp)+'○ '.repeat(3-hp);$('health').setAttribute('aria-label',hp+'点护盾');
  $('combo').textContent=combo>=5?`${combo} 连击 · 星光 ×${Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier}`:'';
- $('dash').disabled=state!=='playing'||dashCooldown>0;
- $('dashLabel').textContent=dashTime>0?'无敌':dashCooldown>0?`${dashCooldown.toFixed(1)}s`:'冲刺';
+ $('boost').disabled=state!=='playing'||boostCooldown>0;
+ $('boost').setAttribute('data-active',String(boostTime>0));
+ $('boostLabel').textContent=boostTime>0?'加速中':boostCooldown>0?`${boostCooldown.toFixed(1)}s`:'加速';
  $('dustMeter').textContent=upgradeCount<3?`✧ 星屑 ${dust} / ${upgradeAt[upgradeCount]}`:`✧ 星屑 ${dust} · 星座已满`;
  $('powers').textContent=powersList.filter(p=>powers[p.id]).map(p=>`${p.name} ${powers[p.id]===2?'Ⅱ':'Ⅰ'}`).join(' · ')||'击碎陨石，点亮你的星座';
- $('charge').style.transform=`scaleX(${1-dashCooldown/COOLDOWN})`;
+ $('charge').style.transform=`scaleX(${1-boostCooldown/COOLDOWN})`;
  for(let i=0;i<3;i++)$('phase'+i).className=i===phase?'active':i<phase?'done':'';
  $('announcement').style.opacity=announcementTime>0?'1':'0';
 }
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
- state='playing';score=combo=elapsed=spawn=invincible=dashTime=dashCooldown=wave=0;hp=3;time=90;hazardClock=5;
+ state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=5;
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers={magnet:0,echo:0,chain:0};$('upgrade').hidden=true;clearInput();ship={x:W/2,target:W/2,direction:1};
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus()}
 function pause(){
- if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。冲刺充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
+ if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。加速充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
  else if(state==='paused'){state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phases[phase].subtitle;focusGame()}
  hud();
 }
@@ -71,15 +72,13 @@ function finish(){
  show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分 · 抵达「${phases[phase].name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  $('hint').textContent=`收集 ${dust} 颗星屑 · 获得 ${upgradeCount} 次星座强化`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
 }
-function dash(){
- if(state!=='playing'||dashCooldown>0)return;
- const dir=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
- dashDirection=dir||ship.direction;if(ship.x<30&&dashDirection<0)dashDirection=1;if(ship.x>W-30&&dashDirection>0)dashDirection=-1;
+function boost(){
+ if(state!=='playing'||boostCooldown>0)return;
  if(powers.echo)echoes.push({x:ship.x,life:powers.echo===2?4:2});
- dashTime=DASH_TIME;dashCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
+ boostTime=BOOST_TIME;boostCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
-$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('dash').onclick=()=>{dash()};
-$('dash').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();dash()});
+$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('boost').onclick=()=>{boost()};
+$('boost').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
 $('hand').onclick=()=>{leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
 $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade(1);
 $('sound').onclick=()=>{sound=!sound;$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
@@ -88,9 +87,9 @@ window.addEventListener('keydown',e=>{
  if(state==='upgrade'){if((k==='1'||k==='2')&&!e.repeat){e.preventDefault();chooseUpgrade(Number(k)-1)}return}
  if(k==='p'){e.preventDefault();if(!e.repeat)pause();return}
  if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
- if(['arrowleft','arrowright','a','d',' '].includes(k)){e.preventDefault();if(k===' '){if(!e.repeat)dash()}else keys.add(k)}
+ if(['arrowleft','arrowright','a','d',' '].includes(k)){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else keys.add(k)}
 });
-window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);if(['arrowleft','arrowright','a','d'].includes(k))ship.target=ship.x});
 window.addEventListener('blur',()=>{clearInput();if(state==='playing')pause()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause()});
 function pointer(e){const target=clamp(e.clientX-canvas.getBoundingClientRect().left);if(Math.abs(target-ship.x)>4)ship.direction=Math.sign(target-ship.x);ship.target=target}
@@ -98,8 +97,8 @@ function touchDown(e){
  if(state!=='playing')return;
  if(e.pointerType!=='touch'){pointer(e);canvas.setPointerCapture(e.pointerId);return}
  e.preventDefault();touches.set(e.pointerId,e.clientX);canvas.setPointerCapture(e.pointerId);
- if(movePointer===null){movePointer=e.pointerId;lastTouchX=e.clientX}
- else dash();
+ if(movePointer===null){movePointer=e.pointerId;lastTouchX=e.clientX;ship.target=ship.x}
+ else boost();
 }
 function touchMove(e){
  if(state!=='playing')return;
@@ -110,9 +109,9 @@ function touchMove(e){
  const delta=e.clientX-lastTouchX;lastTouchX=e.clientX;
  if(Math.abs(delta)>.5)ship.direction=Math.sign(delta);
  // Relative dragging lets the thumb stay away from the ship and avoids a jump on touch-down.
- ship.target=clamp(ship.target+delta);
+ ship.target=clamp(ship.target+delta*(boostTime>0?BOOST_SPEED:1));
 }
-function touchEnd(e){touches.delete(e.pointerId);if(movePointer===e.pointerId){const next=touches.entries().next();movePointer=next.done?null:next.value[0];if(!next.done)lastTouchX=next.value[1]}}
+function touchEnd(e){touches.delete(e.pointerId);if(movePointer===e.pointerId){ship.target=ship.x;const next=touches.entries().next();movePointer=next.done?null:next.value[0];if(!next.done)lastTouchX=next.value[1]}}
 canvas.addEventListener('pointerdown',touchDown);
 canvas.addEventListener('pointermove',touchMove);
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,touchEnd);
@@ -167,11 +166,14 @@ function spawnItem(x,rock){items.push({x:clamp(x*W),y:-16,r:rock?12:9,v:(H-55)/p
 function update(dt){
  if(state!=='playing')return;
  elapsed+=dt;time=Math.max(0,90-elapsed);const next=Math.min(2,Math.floor(elapsed/30));if(next!==phase)setPhase(next);
- announcementTime=Math.max(0,announcementTime-dt);invincible=Math.max(0,invincible-dt);dashCooldown=Math.max(0,dashCooldown-dt);
+ announcementTime=Math.max(0,announcementTime-dt);invincible=Math.max(0,invincible-dt);boostCooldown=Math.max(0,boostCooldown-dt);
  const oldX=ship.x,dir=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
- if(dashTime>DASH_TIME-MOVE_TIME){ship.x=clamp(ship.x+dashDirection*W*1.45*dt);ship.target=ship.x}
- else {if(dir){ship.direction=dir;ship.target=clamp(ship.target+dir*W*.85*dt)}ship.x+=(ship.target-ship.x)*Math.min(1,dt*18)}
- const protectedByDash=dashTime>0;dashTime=Math.max(0,dashTime-dt);
+ // Speed is controlled by input, never by the skill itself. No forced lunge or inertia.
+ const moveStep=W*.85*(boostTime>0?BOOST_SPEED:1)*dt;
+ if(dir){ship.direction=dir;ship.target=clamp(ship.x+dir*moveStep)}
+ const distance=ship.target-ship.x;
+ ship.x=clamp(ship.x+Math.sign(distance)*Math.min(Math.abs(distance),moveStep));
+ const protectedByBoost=boostTime>0;boostTime=Math.max(0,boostTime-dt);
  spawn-=dt;if(spawn<=0){starWave();spawn=phases[phase].interval}
  hazardClock-=dt;if(hazardClock<=0){warnWave();hazardClock=phases[phase].hazards}
  for(let i=warnings.length-1;i>=0;i--){const w=warnings[i];w.remaining-=dt;if(w.remaining<=0){const count=Math.max(2,Math.ceil((w.right-w.left)*W/38));for(let j=0;j<count;j++)spawnItem(w.left+(w.right-w.left)*j/(count-1),true);warnings.splice(i,1)}}
@@ -180,11 +182,11 @@ function update(dt){
  for(let i=items.length-1;i>=0;i--){
   const o=items[i];if(o.dead)continue;o.y+=o.v*dt;o.a+=dt;
   if(!o.rock&&powers.magnet){const range=powers.magnet===2?155:100;if(Math.hypot(o.x-ship.x,o.y-y)<range){o.x+=(ship.x-o.x)*Math.min(1,dt*6);o.y+=(y-o.y)*Math.min(1,dt*6)}}
-  // Swept horizontal collision catches stars crossed during a fast dash.
+  // Swept horizontal collision catches stars crossed during a fast boost.
   const hit=o.x>=Math.min(oldX,ship.x)-o.r-18&&o.x<=Math.max(oldX,ship.x)+o.r+18&&Math.abs(o.y-y)<o.r+10;
   const echoHit=!o.rock&&echoes.some(e=>Math.abs(o.x-e.x)<o.r+20&&Math.abs(o.y-y)<o.r+10);
   if(hit||echoHit){
-   if(o.rock){if(protectedByDash)shatter(o);else{o.dead=true;if(invincible<=0){hp--;combo=0;invincible=1.3;burst(ship.x,y,'#f08c79');tone(130,.18);if(!hp){finish();return}}}}
+   if(o.rock){if(protectedByBoost)shatter(o);else{o.dead=true;if(invincible<=0){hp--;combo=0;invincible=1.3;burst(ship.x,y,'#f08c79');tone(130,.18);if(!hp){finish();return}}}}
    else{o.dead=true;combo++;score+=10*Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier;burst(o.x,o.y,'#f3d694');tone(520+Math.min(combo,12)*35)}
   }else if(o.y>H+20){o.dead=true;if(!o.rock)combo=0}
  }
@@ -221,6 +223,6 @@ for(const r of rings){ctx.globalAlpha=r.life/.4;ctx.strokeStyle='#a6d9c9';ctx.li
 for(const e of echoes){ctx.save();ctx.translate(e.x,shipY());ctx.globalAlpha=Math.min(.6,e.life);ctx.strokeStyle='#bca7f5';ctx.fillStyle='#bca7f5';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();star(0,-6,5,t);ctx.restore()}
 if(powers.magnet){ctx.strokeStyle='#a6d9c920';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ship.x,shipY(),powers.magnet===2?155:100,Math.PI,Math.PI*2);ctx.stroke()}
 for(const p of particles){ctx.globalAlpha=Math.max(0,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3)}ctx.globalAlpha=1;
-ctx.save();ctx.translate(ship.x,shipY());if(dashTime>0){ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,33,22,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#a6d9c925';ctx.fill();for(let k=1;k<5;k++){ctx.globalAlpha=(5-k)*.1;ctx.fillRect(-dashDirection*k*14-10,-3,18,4)}ctx.globalAlpha=1}if(invincible>0&&dashTime<=0)ctx.globalAlpha=.4+Math.sin(t*30)*.3;ctx.shadowColor='#a6d9c9';ctx.shadowBlur=18;ctx.strokeStyle='#afdccd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#f3d694';star(0,-5,5,t*.25);ctx.strokeStyle='#a6d9c925';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,15,30,4,0,0,Math.PI*2);ctx.stroke();ctx.restore()}
+ctx.save();ctx.translate(ship.x,shipY());if(boostTime>0){ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,33,22,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#a6d9c925';ctx.fill();ctx.strokeStyle='#a6d9c960';ctx.beginPath();ctx.ellipse(0,0,36+Math.sin(t*16)*3,25,0,0,Math.PI*2);ctx.stroke()}if(invincible>0&&boostTime<=0)ctx.globalAlpha=.4+Math.sin(t*30)*.3;ctx.shadowColor='#a6d9c9';ctx.shadowBlur=18;ctx.strokeStyle='#afdccd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#f3d694';star(0,-5,5,t*.25);ctx.strokeStyle='#a6d9c925';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,15,30,4,0,0,Math.PI*2);ctx.stroke();ctx.restore()}
 
 function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();hud();requestAnimationFrame(frame);
