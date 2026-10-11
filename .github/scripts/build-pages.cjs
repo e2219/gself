@@ -9,6 +9,9 @@ assert(cssTag.test(html) && jsTag.test(html), 'Expected game assets not found');
 html = html.replace(cssTag, () => `<style>${css}</style>`);
 html = html.replace(jsTag, () => `<script>${js.replace(/<\/script/gi, '<\\/script')}</script>`);
 assert(!html.includes('src="game.js') && !html.includes('href="style.css'));
+// Keep branch-based Pages and Actions deployments on the same entry point.
+fs.writeFileSync('index.html', html);
+fs.writeFileSync('.nojekyll', '');
 fs.mkdirSync('_site', { recursive: true });
 fs.writeFileSync('_site/index.html', html);
 fs.writeFileSync('_site/.nojekyll', '');

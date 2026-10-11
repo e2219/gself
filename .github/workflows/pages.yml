@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'dist/**'
+      - 'index.html'
+      - '.nojekyll'
       - 'tests/**'
       - '.github/workflows/pages.yml'
       - '.github/scripts/**'
@@ -41,6 +43,8 @@ jobs:
           test -f dist/index.html
       - name: Build standalone game
         run: node .github/scripts/build-pages.cjs
+      - name: Verify branch and Actions entry points match
+        run: git diff --exit-code -- index.html .nojekyll
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game
