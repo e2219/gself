@@ -1,0 +1,15 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+let html = fs.readFileSync('dist/index.html', 'utf8');
+const css = fs.readFileSync('dist/style.css', 'utf8');
+const js = fs.readFileSync('dist/game.js', 'utf8');
+const cssTag = /<link rel="stylesheet" href="style\.css(?:\?[^"]*)?">/;
+const jsTag = /<script src="game\.js(?:\?[^"]*)?"><\/script>/;
+assert(cssTag.test(html) && jsTag.test(html), 'Expected game assets not found');
+html = html.replace(cssTag, () => `<style>${css}</style>`);
+html = html.replace(jsTag, () => `<script>${js.replace(/<\/script/gi, '<\\/script')}</script>`);
+assert(!html.includes('src="game.js') && !html.includes('href="style.css'));
+fs.mkdirSync('_site', { recursive: true });
+fs.writeFileSync('_site/index.html', html);
+fs.writeFileSync('_site/.nojekyll', '');
+console.log('Built standalone GitHub Pages game');

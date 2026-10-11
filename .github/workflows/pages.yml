@@ -7,6 +7,7 @@ on:
       - 'dist/**'
       - 'tests/**'
       - '.github/workflows/pages.yml'
+      - '.github/scripts/**'
   workflow_dispatch:
 
 permissions:
@@ -38,12 +39,14 @@ jobs:
           node --check dist/game.js
           node tests/game.cjs
           test -f dist/index.html
+      - name: Build standalone game
+        run: node .github/scripts/build-pages.cjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
