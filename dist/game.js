@@ -1,5 +1,5 @@
 'use strict';
-const $=id=>document.getElementById(id),canvas=$('sky'),ctx=canvas.getContext('2d');
+const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
   {name:'平静夜空',subtitle:'循着星阵，找到节奏',flight:3.1,interval:3.2,hazards:8,multiplier:1},
   {name:'流星雨',subtitle:'留意红色预警 · 加速穿越陨石',flight:2.5,interval:2.8,hazards:6,multiplier:1},
@@ -10,20 +10,25 @@ let W=960,H=510,state='ready',score=0,combo=0,hp=3,time=90,best=0,elapsed=0,spaw
 let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
 let ship={x:480,target:480,direction:1};
-const upgradeAt=[3,8,15];
+const upgradeAt=[3,8,15,24];
 const powersList=[
  {id:'magnet',name:'磁力月舟',description:['吸引周围 100 像素内的星光与星屑。','吸引范围扩大到 155 像素。']},
  {id:'echo',name:'加速分身',description:['加速出发点留下分身，代接星光与星屑 2 秒。','分身持续 4 秒，守住错过的星光。']},
- {id:'chain',name:'碎星连爆',description:['击碎陨石时，连锁击碎 85 像素内的陨石。','连爆范围扩大到 125 像素。']}
+ {id:'chain',name:'碎星连爆',description:['击碎陨石时，连锁击碎 85 像素内的陨石。','连爆范围扩大到 125 像素。']},
+ {id:'capacitor',name:'星能回充',description:['每颗青色星屑使加速冷却缩短 0.25 秒。','每颗星屑缩短 0.45 秒冷却。']},
+ {id:'aegis',name:'月辉护甲',description:['获得 1 层额外护甲，抵挡伤害并保住连击。','再获得 2 层护甲，抵挡伤害并保住连击。']},
+ {id:'streak',name:'连击保险',description:['每次加速可容错漏接 2 颗星光，保住连击。','每次加速可容错漏接 4 颗星光。']}
 ];
-let dust=0,upgradeCount=0,powers={magnet:0,echo:0,chain:0},offers=[],shards=[],echoes=[],rings=[];
+const emptyPowers=()=>Object.fromEntries(powersList.map(p=>[p.id,0]));
+let inputMode='keyboard',mouseX=null,hudSignature='',guard=0,grace=0,boostSerial=0,perfectWindow=0,perfectReady=false,perfectCount=0,slowTime=0,boss=null,bossStarted=false;
+let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,leftHand=false;
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
 function focusGame(){canvas.focus({preventScroll:true})}
-function clearInput(){keys.clear();touches.clear();movePointer=null;ship.target=ship.x}
+function clearInput(){keys.clear();touches.clear();movePointer=null;ship.target=ship.x;inputMode='keyboard';mouseX=null}
 function applyHand(){document.querySelector('.game').classList.toggle('controls-left',leftHand);$('hand').textContent='加速键：'+(leftHand?'左侧':'右侧')+' ⇄';$('hand').setAttribute('aria-pressed',String(leftHand))}
 
-try{best=Number(localStorage.getItem('mooncatch-best-v3'))||0}catch{}
+try{best=Number(localStorage.getItem('mooncatch-best-v4'))||0}catch{}
 $('best').textContent=String(best).padStart(3,'0');
 const stars=Array.from({length:75},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,p:Math.random()*6}));
 const shipY=()=>H-112;
@@ -36,28 +41,34 @@ function resize(){
  for(const s of shards){s.x*=W/ow;s.y*=H/oh}
  for(const e of echoes)e.x*=W/ow;
  for(const r of rings){r.x*=W/ow;r.y*=H/oh}
+ if(boss){boss.x*=W/ow;boss.y*=H/oh}
  clearInput();
 }
 new ResizeObserver(resize).observe(canvas);
 function tone(f=600,d=.09){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
 function hud(){
+ const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0].join('|');
+ if(signature===hudSignature)return;hudSignature=signature;
  $('score').textContent=String(score).padStart(3,'0');$('time').innerHTML=Math.ceil(time)+'<span>s</span>';
- $('health').textContent='● '.repeat(hp)+'○ '.repeat(3-hp);$('health').setAttribute('aria-label',hp+'点护盾');
+ $('health').textContent='● '.repeat(hp)+'○ '.repeat(3-hp)+(guard?` +◇${guard}`:'');$('health').setAttribute('aria-label',hp+'点护盾，'+guard+'层护甲');
  $('combo').textContent=combo>=5?`${combo} 连击 · 星光 ×${Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier}`:'';
  $('boost').disabled=state!=='playing'||boostCooldown>0;
  $('boost').setAttribute('data-active',String(boostTime>0));
  $('boostLabel').textContent=boostTime>0?'加速中':boostCooldown>0?`${boostCooldown.toFixed(1)}s`:'加速';
- $('dustMeter').textContent=upgradeCount<3?`✧ 星屑 ${dust} / ${upgradeAt[upgradeCount]}`:`✧ 星屑 ${dust} · 星座已满`;
+ $('dustMeter').textContent=upgradeCount<upgradeAt.length?`✧ 星屑 ${dust} / ${upgradeAt[upgradeCount]}`:`✧ 星屑 ${dust} · 星座已满`;
  $('powers').textContent=powersList.filter(p=>powers[p.id]).map(p=>`${p.name} ${powers[p.id]===2?'Ⅱ':'Ⅰ'}`).join(' · ')||'击碎陨石，点亮你的星座';
  $('charge').style.transform=`scaleX(${1-boostCooldown/COOLDOWN})`;
  for(let i=0;i<3;i++)$('phase'+i).className=i===phase?'active':i<phase?'done':'';
  $('announcement').style.opacity=announcementTime>0?'1':'0';
+ $('bossStatus').hidden=!boss||boss.hp<=0;
+ if(boss&&boss.hp>0)$('bossStatus').textContent=boss.warning>0?'月蚀预警 · 可绕开，也可加速破壳':`月蚀巨陨 · 外壳 ${boss.hp}/3 · 每次加速击破一层`;
+
 }
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=5;
- items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers={magnet:0,echo:0,chain:0};$('upgrade').hidden=true;clearInput();ship={x:W/2,target:W/2,direction:1};
+ items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;clearInput();ship={x:W/2,target:W/2,direction:1};
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus()}
@@ -67,14 +78,15 @@ function pause(){
  hud();
 }
 function finish(){
- state='over';const record=score>best;if(record){best=score;try{localStorage.setItem('mooncatch-best-v3',String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
+ state='over';const record=score>best;if(record){best=score;try{localStorage.setItem('mooncatch-best-v4',String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分 · 抵达「${phases[phase].name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
- $('hint').textContent=`收集 ${dust} 颗星屑 · 获得 ${upgradeCount} 次星座强化`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
+ $('hint').textContent=`收集 ${dust} 颗星屑 · 强化 ${upgradeCount} 次 · 完美碎星 ${perfectCount} 次${boss?.hp===0?" · 巨陨已击破":""}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
 }
 function boost(){
  if(state!=='playing'||boostCooldown>0)return;
  if(powers.echo)echoes.push({x:ship.x,life:powers.echo===2?4:2});
+ boostSerial++;perfectWindow=.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
  boostTime=BOOST_TIME;boostCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
 $('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('boost').onclick=()=>{boost()};
@@ -87,17 +99,24 @@ window.addEventListener('keydown',e=>{
  if(state==='upgrade'){if((k==='1'||k==='2')&&!e.repeat){e.preventDefault();chooseUpgrade(Number(k)-1)}return}
  if(k==='p'){e.preventDefault();if(!e.repeat)pause();return}
  if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
- if(['arrowleft','arrowright','a','d',' '].includes(k)){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else keys.add(k)}
+ if(['arrowleft','arrowright','a','d',' '].includes(k)){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else{inputMode='keyboard';mouseX=null;keys.add(k)}}
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);if(['arrowleft','arrowright','a','d'].includes(k))ship.target=ship.x});
 window.addEventListener('blur',()=>{clearInput();if(state==='playing')pause()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause()});
-function pointer(e){const target=clamp(e.clientX-canvas.getBoundingClientRect().left);if(Math.abs(target-ship.x)>4)ship.direction=Math.sign(target-ship.x);ship.target=target}
+function pointer(e){
+ if(state!=='playing')return;
+ const x=clamp(e.clientX-canvas.getBoundingClientRect().left);
+ if(inputMode!=='pointer'||mouseX===null)ship.target=x;
+ else ship.target=clamp(ship.target+(x-mouseX)*(boostTime>0?BOOST_SPEED:1));
+ mouseX=x;inputMode='pointer';
+}
+
 function touchDown(e){
  if(state!=='playing')return;
  if(e.pointerType!=='touch'){pointer(e);canvas.setPointerCapture(e.pointerId);return}
  e.preventDefault();touches.set(e.pointerId,e.clientX);canvas.setPointerCapture(e.pointerId);
- if(movePointer===null){movePointer=e.pointerId;lastTouchX=e.clientX;ship.target=ship.x}
+ if(movePointer===null){inputMode='pointer';mouseX=null;movePointer=e.pointerId;lastTouchX=e.clientX;ship.target=ship.x}
  else boost();
 }
 function touchMove(e){
@@ -106,35 +125,41 @@ function touchMove(e){
  if(!touches.has(e.pointerId))return;
  touches.set(e.pointerId,e.clientX);
  if(e.pointerId!==movePointer)return;
+ inputMode='pointer';mouseX=null;
  const delta=e.clientX-lastTouchX;lastTouchX=e.clientX;
  if(Math.abs(delta)>.5)ship.direction=Math.sign(delta);
  // Relative dragging lets the thumb stay away from the ship and avoids a jump on touch-down.
  ship.target=clamp(ship.target+delta*(boostTime>0?BOOST_SPEED:1));
 }
-function touchEnd(e){touches.delete(e.pointerId);if(movePointer===e.pointerId){ship.target=ship.x;const next=touches.entries().next();movePointer=next.done?null:next.value[0];if(!next.done)lastTouchX=next.value[1]}}
+function touchEnd(e){touches.delete(e.pointerId);if(movePointer===e.pointerId){const next=touches.entries().next();movePointer=next.done?null:next.value[0];if(!next.done)lastTouchX=next.value[1]}}
 canvas.addEventListener('pointerdown',touchDown);
 canvas.addEventListener('pointermove',touchMove);
 for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,touchEnd);
 function offerUpgrade(){
- if(state!=='playing'||upgradeCount>=3||dust<upgradeAt[upgradeCount])return;
+ if(state!=='playing'||upgradeCount>=upgradeAt.length||dust<upgradeAt[upgradeCount])return;
  state='upgrade';clearInput();
- const candidates=powersList.filter(p=>powers[p.id]<2);
+ const candidates=powersList.filter(p=>(powers[p.id]||0)<2);
  // Shuffle once per offer, with two distinct, non-maxed abilities.
  for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]]}
  offers=candidates.slice(0,2);
- $('upgradeHint').textContent=`第 ${upgradeCount+1} / 3 次强化 · 时间与冷却已暂停`;
- offers.forEach((p,i)=>{$('choice'+i).innerHTML=`<em>${i+1} · ${powers[p.id]?'进阶强化':'获得能力'}</em><strong>${p.name} ${powers[p.id]?'Ⅱ':'Ⅰ'}</strong><span>${p.description[powers[p.id]]}</span>`});
+ $('upgradeHint').textContent=`第 ${upgradeCount+1} / ${upgradeAt.length} 次强化 · 时间与冷却已暂停`;
+ offers.forEach((p,i)=>{$('choice'+i).innerHTML=`<em>${i+1} · ${powers[p.id]?'进阶强化':'获得能力'}</em><strong>${p.name} ${powers[p.id]?'Ⅱ':'Ⅰ'}</strong><span>${p.description[powers[p.id]||0]}</span>`});
  $('upgrade').hidden=false;$('pause').disabled=true;$('choice0').focus({preventScroll:true});hud();
 }
 function chooseUpgrade(i){
  if(state!=='upgrade'||!offers[i])return;
- const power=offers[i];powers[power.id]++;upgradeCount++;offers=[];$('upgrade').hidden=true;
+ const power=offers[i];powers[power.id]=(powers[power.id]||0)+1;upgradeCount++;
+ if(power.id==='aegis')guard+=powers.aegis===2?2:1;
+ if(power.id==='streak')grace=powers.streak===2?4:2;offers=[];$('upgrade').hidden=true;
  // Resume through an explicit button, avoiding movement when returning from a hidden tab.
  state='paused';$('pause').disabled=false;clearInput();
  show('星座已点亮',`${power.name}已生效。准备好后继续旅程。`,'继续旅程 →');
  $('tag').textContent='CONSTELLATION AWAKENED';$('pause').textContent='继续';$('status').textContent='强化已获得 · 等待继续';hud();
 }
 function shatter(rock){
+ if(rock.dead)return;
+ const perfect=claimPerfect(rock.x,rock.y);
+ if(perfect)for(let i=0;i<2;i++)shards.push({x:rock.x+(i?12:-12),y:rock.y-20,life:5,age:0,locked:false});
  const queue=[rock];let count=0;
  while(queue.length&&count<24){
   const r=queue.shift();if(r.dead)continue;r.dead=true;count++;
@@ -145,8 +170,40 @@ function shatter(rock){
  }
  tone(250+count*70,.1);
 }
-function collectDust(){dust++;score+=25*phases[phase].multiplier;tone(980,.07)}
-function burst(x,y,color){for(let i=0;i<12;i++)particles.push({x,y,vx:(Math.random()-.5)*150,vy:(Math.random()-.5)*150,life:.5,color})}
+function collectDust(){dust++;score+=25*phases[phase].multiplier;if(powers.capacitor)boostCooldown=Math.max(0,boostCooldown-(powers.capacitor===2?.45:.25));tone(980,.07)}
+function claimPerfect(x,y){
+ if(!perfectReady||perfectWindow<=0||boostTime<=0)return false;
+ perfectReady=false;perfectCount++;score+=50*phases[phase].multiplier;slowTime=.35;
+ announce('完美碎星 · 额外奖励');rings.push({x,y,radius:100,life:.4});tone(1200,.12);return true;
+}
+function damage(){
+ if(invincible>0)return;
+ if(guard>0){guard--;invincible=1.1;announce('月辉护甲 · 抵挡成功');burst(ship.x,shipY(),'#bca7f5');return}
+ hp--;combo=0;invincible=1.3;burst(ship.x,shipY(),'#f08c79');tone(130,.18);if(hp<=0)finish();
+}
+function missStar(){if(powers.streak&&grace>0)grace--;else combo=0}
+function moveToward(o,x,y,speed,dt){
+ const dx=x-o.x,dy=y-o.y,d=Math.hypot(dx,dy),step=Math.min(d,speed*dt);
+ if(d>0){o.x+=dx/d*step;o.y+=dy/d*step}
+}
+function updateBoss(dt,worldDt,oldX,protectedByBoost){
+ if(!bossStarted&&elapsed>=70){bossStarted=true;boss={x:W/2,y:-60,r:40,hp:3,warning:2,lastBoost:-1};announce('月蚀巨陨 · 破壳奖励 600 分')}
+ if(!boss||boss.hp<=0)return;
+ if(boss.warning>0){boss.warning=Math.max(0,boss.warning-dt);return}
+ boss.x=W*(.5+Math.sin((elapsed-72)*.55)*.23);
+ boss.y=Math.min(shipY()-36,boss.y+worldDt*170);
+ const dx=Math.max(Math.min(oldX,ship.x)-boss.x,0,boss.x-Math.max(oldX,ship.x));
+ if(Math.hypot(dx,boss.y-shipY())>boss.r+18)return;
+ if(protectedByBoost){
+  if(boss.lastBoost===boostSerial)return;
+  boss.lastBoost=boostSerial;boss.hp--;const perfect=claimPerfect(boss.x,boss.y);burst(boss.x,boss.y,'#f3d694');
+  if(perfect)for(let i=0;i<2;i++)shards.push({x:boss.x+(i?12:-12),y:boss.y,age:0,life:5,locked:true});
+  shards.push({x:boss.x,y:boss.y,age:0,life:5,locked:true});
+  announce(boss.hp?`${perfect?'完美破壳':'巨陨破壳'} · 剩余 ${boss.hp} 层`:'月蚀消散 · +600 分');
+  if(boss.hp===0){score+=600;for(let i=0;i<6;i++)shards.push({x:boss.x+(i-2.5)*12,y:boss.y,age:0,life:5,locked:true});rings.push({x:boss.x,y:boss.y,radius:170,life:.4})}
+ }else damage();
+}
+function burst(x,y,color){for(let i=0;i<10&&particles.length<220;i++)particles.push({x,y,vx:(Math.random()-.5)*150,vy:(Math.random()-.5)*150,life:.5,color})}
 // Queue a readable trail, with enough time between stars to follow it on any screen.
 function starWave(){
  const reverse=wave%2,shape=wave%3,n=phase===0?6:8,center=.3+Math.random()*.4;
@@ -167,12 +224,13 @@ function update(dt){
  if(state!=='playing')return;
  elapsed+=dt;time=Math.max(0,90-elapsed);const next=Math.min(2,Math.floor(elapsed/30));if(next!==phase)setPhase(next);
  announcementTime=Math.max(0,announcementTime-dt);invincible=Math.max(0,invincible-dt);boostCooldown=Math.max(0,boostCooldown-dt);
+ const worldDt=dt*(slowTime>0?.4:1);slowTime=Math.max(0,slowTime-dt);
  const oldX=ship.x,dir=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
  // Speed is controlled by input, never by the skill itself. No forced lunge or inertia.
  const moveStep=W*.85*(boostTime>0?BOOST_SPEED:1)*dt;
  if(dir){ship.direction=dir;ship.target=clamp(ship.x+dir*moveStep)}
  const distance=ship.target-ship.x;
- ship.x=clamp(ship.x+Math.sign(distance)*Math.min(Math.abs(distance),moveStep));
+ ship.x=inputMode==='pointer'&&!dir?clamp(ship.target):clamp(ship.x+Math.sign(distance)*Math.min(Math.abs(distance),moveStep));
  const protectedByBoost=boostTime>0;boostTime=Math.max(0,boostTime-dt);
  spawn-=dt;if(spawn<=0){starWave();spawn=phases[phase].interval}
  hazardClock-=dt;if(hazardClock<=0){warnWave();hazardClock=phases[phase].hazards}
@@ -180,15 +238,18 @@ function update(dt){
  for(let i=pending.length-1;i>=0;i--){const p=pending[i];p.delay-=dt;if(p.delay<=0){spawnItem(p.x,p.rock);pending.splice(i,1)}}
  const y=shipY();
  for(let i=items.length-1;i>=0;i--){
-  const o=items[i];if(o.dead)continue;o.y+=o.v*dt;o.a+=dt;
-  if(!o.rock&&powers.magnet){const range=powers.magnet===2?155:100;if(Math.hypot(o.x-ship.x,o.y-y)<range){o.x+=(ship.x-o.x)*Math.min(1,dt*6);o.y+=(y-o.y)*Math.min(1,dt*6)}}
+  const o=items[i];if(o.dead)continue;o.a+=dt;
+  if(!o.rock&&powers.magnet&&Math.hypot(o.x-ship.x,o.y-y)<=(powers.magnet===2?155:100))o.captured=true;
+  // Captured stars no longer fall: gravity must not balance attraction below the boat.
+  if(o.captured)moveToward(o,ship.x,y,420,dt);else o.y+=o.v*worldDt;
   // Swept horizontal collision catches stars crossed during a fast boost.
-  const hit=o.x>=Math.min(oldX,ship.x)-o.r-18&&o.x<=Math.max(oldX,ship.x)+o.r+18&&Math.abs(o.y-y)<o.r+10;
+  const sweptHit=o.x>=Math.min(oldX,ship.x)-o.r-18&&o.x<=Math.max(oldX,ship.x)+o.r+18&&Math.abs(o.y-y)<o.r+10;
+  const hit=sweptHit||(!o.rock&&Math.hypot(o.x-ship.x,o.y-y)<=o.r+24);
   const echoHit=!o.rock&&echoes.some(e=>Math.abs(o.x-e.x)<o.r+20&&Math.abs(o.y-y)<o.r+10);
   if(hit||echoHit){
-   if(o.rock){if(protectedByBoost)shatter(o);else{o.dead=true;if(invincible<=0){hp--;combo=0;invincible=1.3;burst(ship.x,y,'#f08c79');tone(130,.18);if(!hp){finish();return}}}}
+   if(o.rock){if(protectedByBoost)shatter(o);else{o.dead=true;damage();if(state==='over')return}}
    else{o.dead=true;combo++;score+=10*Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier;burst(o.x,o.y,'#f3d694');tone(520+Math.min(combo,12)*35)}
-  }else if(o.y>H+20){o.dead=true;if(!o.rock)combo=0}
+  }else if(o.y>H+20){o.dead=true;if(!o.rock)missStar()}
  }
  items=items.filter(o=>!o.dead);
  for(let i=shards.length-1;i>=0;i--){
@@ -196,10 +257,12 @@ function update(dt){
   const echo=echoes.find(e=>Math.hypot(s.x-e.x,s.y-y)<24);
   const distance=Math.hypot(s.x-ship.x,s.y-y),range=powers.magnet===2?175:powers.magnet?140:110;
   if(distance<range)s.locked=true;
-  if(s.age>.14&&s.locked){s.x+=(ship.x-s.x)*Math.min(1,dt*10);s.y+=(y-s.y)*Math.min(1,dt*10)}else s.y-=dt*5;
-  if(s.age>.14&&(Math.hypot(s.x-ship.x,s.y-y)<22||echo)){collectDust();shards.splice(i,1)}
+  if(s.age>.14&&s.locked){moveToward(s,ship.x,y,500,dt)}else s.y-=dt*5;
+  if(s.age>.14&&(Math.hypot(s.x-ship.x,s.y-y)<=26||echo)){collectDust();shards.splice(i,1)}
   else if(s.life<=0)shards.splice(i,1);
  }
+ updateBoss(dt,worldDt,oldX,protectedByBoost);if(state==='over')return;
+ perfectWindow=Math.max(0,perfectWindow-dt);
  for(const e of echoes)e.life-=dt;echoes=echoes.filter(e=>e.life>0);
  for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);
 
@@ -218,10 +281,11 @@ for(const w of warnings){
  ctx.fillRect(x,92,width*Math.max(0,w.remaining/1.3),2);
 }
 for(const o of items){ctx.fillStyle=o.rock?'#ed8d7d':'#f3d694';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=o.rock?8:17;if(o.rock){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.beginPath();for(let i=0;i<7;i++){const a=i*Math.PI*2/7,r=o.r*(i%2?.8:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.fillStyle='#804e54';ctx.beginPath();ctx.arc(2,-2,3,0,7);ctx.fill();ctx.restore()}else star(o.x,o.y,o.r,o.a);ctx.shadowBlur=0}
+if(boss&&boss.hp>0&&boss.warning<=0){ctx.save();ctx.translate(boss.x,boss.y);ctx.rotate(t*.15);ctx.fillStyle='#6d5367';ctx.strokeStyle='#f3b49c';ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5,r=boss.r*(i%2?.87:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#f3d694';star(0,0,13,t);for(let i=0;i<boss.hp;i++){ctx.beginPath();ctx.arc(0,0,20+i*6,0,Math.PI*1.6);ctx.stroke()}ctx.restore()}
 for(const s of shards){ctx.globalAlpha=Math.min(1,s.life);ctx.fillStyle='#a6ffe0';ctx.shadowColor='#a6ffe0';ctx.shadowBlur=16;star(s.x,s.y,6,t*2);ctx.shadowBlur=0}ctx.globalAlpha=1;
 for(const r of rings){ctx.globalAlpha=r.life/.4;ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x,r.y,r.radius*(1-r.life/.4),0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1;
 for(const e of echoes){ctx.save();ctx.translate(e.x,shipY());ctx.globalAlpha=Math.min(.6,e.life);ctx.strokeStyle='#bca7f5';ctx.fillStyle='#bca7f5';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();star(0,-6,5,t);ctx.restore()}
-if(powers.magnet){ctx.strokeStyle='#a6d9c920';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ship.x,shipY(),powers.magnet===2?155:100,Math.PI,Math.PI*2);ctx.stroke()}
+if(powers.magnet){ctx.strokeStyle='#a6d9c918';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ship.x,shipY(),powers.magnet===2?155:100,0,Math.PI*2);ctx.stroke()}
 for(const p of particles){ctx.globalAlpha=Math.max(0,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3)}ctx.globalAlpha=1;
 ctx.save();ctx.translate(ship.x,shipY());if(boostTime>0){ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,33,22,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#a6d9c925';ctx.fill();ctx.strokeStyle='#a6d9c960';ctx.beginPath();ctx.ellipse(0,0,36+Math.sin(t*16)*3,25,0,0,Math.PI*2);ctx.stroke()}if(invincible>0&&boostTime<=0)ctx.globalAlpha=.4+Math.sin(t*30)*.3;ctx.shadowColor='#a6d9c9';ctx.shadowBlur=18;ctx.strokeStyle='#afdccd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#f3d694';star(0,-5,5,t*.25);ctx.strokeStyle='#a6d9c925';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,15,30,4,0,0,Math.PI*2);ctx.stroke();ctx.restore()}
 

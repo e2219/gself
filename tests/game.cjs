@@ -6,7 +6,7 @@ function el(id){return els[id]??={style:{},textContent:'',innerHTML:'',hidden:fa
 const sandbox={document:{getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:noop},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
-const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[]');
+const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false');
 const hit=rock=>run(`items=[{x:ship.x,y:shipY(),r:9,v:0,rock:${rock},a:0}];update(.01)`);
 run('start()');isolate();for(let i=0;i<10;i++)hit(false);assert.equal(run('score'),170);
 run('items=[{x:0,y:H+21,r:9,v:0,rock:false,a:0}];update(.01)');assert.equal(run('combo'),0);
@@ -23,7 +23,7 @@ run('boostTime=0;combo=0;score=0');hit(false);assert.equal(run('score'),20);
 isolate();run('warnWave()');assert.equal(run('warnings.length'),2);assert.equal(run('items.length'),0);for(let i=0;i<27;i++)run('update(.05)');assert.equal(run('warnings.length'),0);assert(run('items.filter(o=>o.rock).length')>0);
 run('start()');isolate();run('starWave()');assert.equal(run('pending.length'),6);assert(run('pending.every(p=>p.x>=.1&&p.x<=.9)'));
 // Terminal states and records reset cleanly.
-run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v3'],'234');
+run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v4'],'234');
 run('start()');assert.equal(run('phase'),0);assert.equal(run('boostCooldown'),0);assert.equal(run('warnings.length'),0);assert.equal(run('score'),0);
 run('elapsed=89.99;update(.02)');assert.equal(run('state'),'over');assert.equal(run('time'),0);
 width=340;height=330;run('resize();start();starWave();warnWave();draw(1)');assert(run('ship.x>=24&&ship.x<=W-24'));
@@ -38,8 +38,8 @@ const before=run('ship.target');elementEvents['sky:pointerdown'](touch(1,40));as
 elementEvents['sky:pointermove'](touch(1,70));assert.equal(run('ship.target'),before+30);
 elementEvents['sky:pointerdown'](touch(2,330));assert(run('boostTime')>0);assert.equal(run('ship.target'),before+30);
 elementEvents['sky:pointermove'](touch(2,10));assert.equal(run('ship.target'),before+30);
-elementEvents['sky:pointercancel'](touch(1,70));assert.equal(run('movePointer'),2);
-elementEvents['sky:pointermove'](touch(2,20));assert.equal(run('ship.target'),run('ship.x')+20);
+elementEvents['sky:pointercancel'](touch(1,70));assert.equal(run('movePointer'),2);const handoffTarget=run('ship.target');
+elementEvents['sky:pointermove'](touch(2,20));assert.equal(run('ship.target'),handoffTarget+20);
 elementEvents['sky:pointerup'](touch(2,20));assert.equal(run('movePointer'),null);
 run('pause()');assert.equal(run('touches.size'),0);run('pause();boostCooldown=0');
 elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('boostTime')>0);
@@ -55,7 +55,7 @@ const frozen=run('[time,boostCooldown,elapsed].join()');run('update(1)');assert.
 const chosen=run('offers[0].id');run('chooseUpgrade(0)');assert.equal(run('powers["'+chosen+'"]'),1);assert.equal(run('state'),'paused');assert.equal(run('upgradeCount'),1);
 run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);run('pause()');assert.equal(run('state'),'playing');
 run('powers={magnet:2,echo:0,chain:0};dust=8;offerUpgrade()');assert(run('offers.every(p=>p.id!=="magnet")'));
-run('chooseUpgrade(1);pause();dust=15;offerUpgrade();chooseUpgrade(0);pause();dust=50;offerUpgrade()');assert.equal(run('upgradeCount'),3);assert.equal(run('state'),'playing');
+run('chooseUpgrade(1);pause();dust=15;offerUpgrade();chooseUpgrade(0);pause();dust=24;offerUpgrade();chooseUpgrade(0);pause();dust=50;offerUpgrade()');assert.equal(run('upgradeCount'),4);assert.equal(run('state'),'playing');
 // Magnet pulls in an otherwise missed star; echo catches without damaging the real ship.
 run('start()');isolate();run('powers.magnet=1;items=[{x:ship.x+80,y:shipY()-10,v:0,a:0,r:9,rock:false}]');
 const distance=run('items[0].x-ship.x');run('update(.05)');assert(run('items[0].x-ship.x')<distance);
@@ -78,13 +78,56 @@ run('start()');isolate();run('ship.x=ship.target=180;boost();keys.add("d");updat
 const right=run('ship.x');run('keys.delete("d");keys.add("a");update(.05)');assert(run('ship.x')<right);
 events.keyup({key:'a'});const stopped=run('ship.x');run('update(.05)');assert.equal(run('ship.x'),stopped);
 // Same mouse destination, faster approach during boost, no overshoot.
-run('start()');isolate();run('ship.x=ship.target=100;pointer({clientX:300});update(.05)');const normalMouse=run('ship.x');
-run('start()');isolate();run('ship.x=ship.target=100;boost();pointer({clientX:300});update(.05)');assert(run('ship.x')>normalMouse);
+run('start()');isolate();run('ship.x=ship.target=100;pointer({clientX:300});update(.05)');const normalMouse=run('ship.x');assert.equal(normalMouse,300);
+run('start()');isolate();run('ship.x=ship.target=100;boost();pointer({clientX:300});update(.05)');assert.equal(run('ship.x'),normalMouse);
 for(let i=0;i<20;i++)run('update(.05)');assert.equal(run('ship.x'),300);
 // Touch is more responsive during boost, then stops immediately on release.
 run('start()');isolate();run('ship.x=ship.target=180;boost()');elementEvents['sky:pointerdown'](touch(10,50));elementEvents['sky:pointermove'](touch(10,60));assert.equal(run('ship.target'),200);
-elementEvents['sky:pointerup'](touch(10,60));run('update(.05)');assert.equal(run('ship.x'),180);
+elementEvents['sky:pointerup'](touch(10,60));run('update(.05)');assert.equal(run('ship.x'),200);run('update(.05)');assert.equal(run('ship.x'),200);
 // Expiry returns to normal speed and collision damage.
 run('start()');isolate();run('boost();boostTime=.01;update(.02);ship.x=ship.target=180;keys.add("d");update(.05)');assert(Math.abs(run('ship.x')-180-normalMove)<1e-8);
 run('keys.clear();ship.target=ship.x;invincible=0');hit(true);assert.equal(run('hp'),2);
 console.log('V3.1 PASS: stationary activation, double keyboard speed, reversal/release, mouse approach, touch gain/release, normal speed and damage after expiry');
+
+// V4 regression: falling stars below the ship used to hover forever at +33px.
+for(const fps of [30,60,120]){
+ width=960;height=510;run('resize();start()');isolate();
+ run('powers.magnet=1;items=[{x:ship.x,y:shipY()+40,v:220,a:0,r:9,rock:false}]');
+ for(let i=0;i<fps;i++)run('update('+1/fps+')');
+ assert.equal(run('items.length'),0);assert.equal(run('score'),10);
+ for(let i=0;i<fps;i++)run('update('+1/fps+')');assert.equal(run('score'),10);
+}
+// All-around pickup, including underside cyan shards, at both magnet tiers.
+for(const level of [1,2])for(const [dx,dy] of [[0,70],[0,-70],[-70,0],[70,0]]){
+ run('start()');isolate();run('powers.magnet='+level+';shards=[{x:ship.x+('+dx+'),y:shipY()+('+dy+'),age:0,life:5,locked:false}]');
+ for(let i=0;i<60;i++)run('update(1/60)');assert.equal(run('dust'),1);assert.equal(run('score'),25);assert.equal(run('shards.length'),0);
+}
+// No pointer speed backlog: a fast swipe reaches the target on the next frame.
+width=360;height=420;run('resize();start()');isolate();elementEvents['sky:pointerdown'](touch(21,30));elementEvents['sky:pointermove'](touch(21,160));run('update(1/120)');assert.equal(run('ship.x'),310);
+elementEvents['sky:pointerup'](touch(21,160));run('update(1/120)');assert.equal(run('ship.x'),310);
+// Mouse boost changes sensitivity without forcing motion or snapping on expiry.
+run('start()');isolate();run('pointer({clientX:100});update(.01);boost();pointer({clientX:120});update(.01)');assert.equal(run('ship.x'),140);
+run('boostTime=0;pointer({clientX:130});update(.01)');assert.equal(run('ship.x'),150);
+// Perfect reward once per activation, even when several rocks break together.
+run('start()');isolate();run('boost();items=[{x:ship.x,y:shipY(),r:12,v:0,a:0,rock:true},{x:ship.x+5,y:shipY(),r:12,v:0,a:0,rock:true}];update(.01)');assert.equal(run('perfectCount'),1);assert.equal(run('score'),50);assert.equal(run('shards.length'),4);assert(run('slowTime')>0);
+run('start()');isolate();run('boost();update(.2);items=[{x:ship.x,y:shipY(),r:12,v:0,a:0,rock:true}];update(.01)');assert.equal(run('perfectCount'),0);
+// Recharge, armor and combo insurance have distinct, capped effects.
+run('start();powers.capacitor=1;boostCooldown=2;collectDust()');assert.equal(run('boostCooldown'),1.75);
+run('powers.capacitor=2;boostCooldown=.1;collectDust()');assert.equal(run('boostCooldown'),0);
+run('start();guard=1;combo=7;damage()');assert.equal(run('hp'),3);assert.equal(run('guard'),0);assert.equal(run('combo'),7);
+run('invincible=0;damage()');assert.equal(run('hp'),2);assert.equal(run('combo'),0);
+run('start();powers.streak=1;combo=7;boost();missStar();missStar()');assert.equal(run('combo'),7);run('missStar()');assert.equal(run('combo'),0);
+run('start();state="upgrade";offers=[powersList.find(p=>p.id==="aegis")];chooseUpgrade(0)');assert.equal(run('guard'),1);
+run('state="upgrade";offers=[powersList.find(p=>p.id==="aegis")];chooseUpgrade(0)');assert.equal(run('guard'),3);
+// Giant meteor warns first; optional safe lane; one shell per distinct boost.
+run('start()');isolate();run('elapsed=69.99;update(.02)');assert(run('boss.warning')>0);assert.equal(run('boss.hp'),3);
+run('elapsed=72;boss.warning=0;boss.y=shipY()-36;ship.x=ship.target=24;updateBoss(.01,.01,24,false)');assert.equal(run('hp'),3);
+run('ship.x=ship.target=W/2;boostSerial=1;updateBoss(.01,.01,ship.x,true)');assert.equal(run('boss.hp'),2);
+run('updateBoss(.01,.01,ship.x,true)');assert.equal(run('boss.hp'),2);
+run('boostSerial=2;updateBoss(.01,.01,ship.x,true);boostSerial=3;updateBoss(.01,.01,ship.x,true)');assert.equal(run('boss.hp'),0);assert.equal(run('score'),600);
+run('updateBoss(.01,.01,ship.x,true)');assert.equal(run('score'),600);
+run('start()');isolate();run('elapsed=72;updateBoss(.01,.01,ship.x,false);boss.warning=0;boss.y=shipY()-36;ship.x=ship.target=W/2;updateBoss(.01,.01,ship.x,false)');assert.equal(run('hp'),2);
+// New features pause and reset, and both 360px and desktop scenes render.
+run('pause()');const frozenBoss=run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])');run('update(1)');assert.equal(run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])'),frozenBoss);
+run('pause();draw(1);start()');assert.equal(run('boss'),null);assert.equal(run('guard'),0);assert.equal(run('perfectCount'),0);assert.equal(run('powers.capacitor'),0);
+console.log('V4 PASS: underside magnet equilibrium at 30/60/120fps, radial shards, no pointer backlog, perfect window and one-shot reward, recharge/armor/insurance, boss warning/safe lane/3-hit reward/damage, pause/reset');

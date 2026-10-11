@@ -10,3 +10,5 @@
 .game #boost[data-active="true"]{background:#306b66;color:#e5fff3;border-color:#a6ffe0;box-shadow:0 0 20px #a6d9c945}.game #boost[data-active="true"] .charge i{background:#f3d694}
 
 .game #boost{gap:5px}.boost-icon{font-size:22px}#boostLabel{white-space:nowrap}
+
+.bossbar{position:absolute;top:105px;left:50%;transform:translateX(-50%);max-width:90%;width:max-content;padding:7px 12px;border:1px solid #f3b49c60;background:#241e30db;border-radius:20px;color:#f3d694;font-size:10px;pointer-events:none;text-align:center}.bossbar[hidden]{display:none}.charge i{transition:transform .1s linear}.health strong{white-space:nowrap;font-size:16px}.announcement{font-size:19px;letter-spacing:1px}#powers{max-width:70%;overflow-wrap:anywhere}@media(max-width:650px){.health strong{font-size:13px;letter-spacing:2px}.bossbar{top:95px;font-size:9px}.announcement{font-size:16px}.guide p{font-size:10px}}
