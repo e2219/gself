@@ -65,10 +65,13 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 @media(max-height:520px) and (orientation:landscape) and (pointer:coarse),(max-height:520px) and (orientation:landscape) and (max-width:950px){.immersive .route-map{grid-area:map;height:36px;min-height:36px;grid-template-columns:36px 1fr 1fr 36px}.immersive .play-content{grid-template-rows:44px 36px minmax(0,1fr) auto;grid-template-areas:"bar bar" "map map" "game controls" "flight choices"}.immersive .play-content:has(.wager-status[data-active="true"]){grid-template-rows:44px 36px minmax(0,1fr) auto auto;grid-template-areas:"bar bar" "map map" "game controls" "flight choices" "wager wager"}.immersive .route-node{height:15px;line-height:13px}.immersive .map-branch{gap:2px}}
 
 .worlds .fleet-card:nth-child(2){background:linear-gradient(135deg,#173b3a,#192c3b)}.worlds .fleet-card:nth-child(3){background:linear-gradient(135deg,#352643,#1e293f)}.worlds .fleet-card[aria-pressed="true"]{outline:1px solid var(--mint);outline-offset:2px}
+
+/* New maps show an ordered loop rather than the classic forked route diagram. */
+.route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr)) 24px;gap:7px}.route-map[data-layout="steps"] .map-branch{display:contents}.route-map[data-layout="steps"] .map-branch:before,.route-map[data-layout="steps"]>.map-end:last-child:before{content:none}.route-map[data-layout="steps"] .route-node{height:auto;min-height:24px;line-height:1.4;white-space:normal;display:flex;align-items:center;justify-content:center;padding:2px}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 13</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 13.1</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <section class="fleet worlds" aria-label="选择本局地图"><div class="fleet-heading"><strong>选择一片新星空</strong><span id="worldHint">每张地图独立玩法与最高分</span></div><div class="fleet-options">
 <button id="world-classic" class="fleet-card" aria-pressed="true"><span>☾ 拾光星海</span><strong>原版 · 分岔探索</strong><small>货运、遗迹、星鲸与矿场，自选下一站。</small><em>探索 / 综合挑战</em></button>
@@ -129,7 +132,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V13.0</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V13.1</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -199,6 +202,7 @@ function mapHud(){
  if(activeWorld!=='classic'){worldMapHud();return}
  const stages=[elapsed<33?'planned':elapsed<45?'active':'passed',elapsed<62?'planned':elapsed<74?'active':'passed'];
  const signature=[...routePlan,...stages,objective?.sector,!!fork,state].join('|');if(signature===mapSignature)return;mapSignature=signature;
+ $('routeMap').setAttribute('data-layout','branches');
  for(const id of Object.keys(sectors))$('map-'+id).textContent=sectors[id].name;
  sectorPairs.forEach((pair,i)=>pair.forEach(id=>{const selected=routePlan[i]===id,status=selected?(objective?.sector===id?'active':stages[i]):routePlan[i]?'skipped':'pending';$('map-'+id).setAttribute('data-state',status);$('map-'+id).setAttribute('aria-current',status==='active'?'step':'false')}));
  $('routeMap').setAttribute('aria-label','本局星图：起航 → '+(routePlan[0]?sectors[routePlan[0]].name:'货运港或引力遗迹')+' → '+(routePlan[1]?sectors[routePlan[1]].name:'星鲸迁徙带或陨石矿场')+' → 星空风暴');
@@ -210,28 +214,41 @@ const worlds=[
  {id:'aurora',name:'极光航道',color:'#123e41',hint:'跟随绿色缺口穿越光幕 · 加速也可穿幕'},
  {id:'warp',name:'折跃回廊',color:'#342650',hint:'加速进入蓝门 → 紫门跃出 → 按顺序收集信标'}
 ];
-let selectedWorld='classic',activeWorld='classic',worldEvent=null,worldSlot=0,worldWins=0,worldJumps=0,worldSignature='';
+let selectedWorld='classic',activeWorld='classic',worldEvent=null,worldSlot=0,worldWins=0,worldJumps=0,worldSignature='',worldNotice=null;
 try{const saved=localStorage.getItem('mooncatch-world');if(worlds.some(w=>w.id===saved))selectedWorld=activeWorld=saved}catch{}
 const worldInfo=()=>worlds.find(w=>w.id===activeWorld);
 const bestKey=()=>activeWorld==='classic'?'mooncatch-best-v6':'mooncatch-best-'+activeWorld+'-v13';
 function loadWorldBest(){try{best=Number(localStorage.getItem(bestKey()))||0}catch{best=0}$('best').textContent=String(best).padStart(3,'0')}
 function selectWorld(id){
  if(!['ready','over'].includes(state)||!worlds.some(w=>w.id===id))return;
- selectedWorld=activeWorld=id;worldEvent=null;worldSlot=worldWins=worldJumps=0;mapSignature='';
- try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();
+ selectedWorld=activeWorld=id;worldEvent=null;worldNotice=null;worldSlot=worldWins=worldJumps=0;mapSignature='';
+ try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · 90 秒返航挑战';$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
 }
 function worldHud(){
  const sig=[state,activeWorld,worldSlot,worldWins,worldJumps,worldEvent?.index,worldEvent?.used,Math.ceil(elapsed)].join('|');if(sig===worldSignature)return;worldSignature=sig;
  for(const w of worlds){const b=$('world-'+w.id);b.disabled=!['ready','over'].includes(state);b.setAttribute('aria-pressed',String(selectedWorld===w.id))}
+ for(let i=0;i<3;i++)$('phase'+i).textContent=`0${i+1} ${phaseInfo(i).name}${i===2?' ×2':''}`;
  $('worldHint').textContent=worldInfo().hint+(['ready','over'].includes(state)?' · 出发前可切换':' · 本局地图已锁定');
 }
+function phaseInfo(n=phase){
+ if(activeWorld==='classic')return phases[n];
+ const names=activeWorld==='aurora'?['极光初航','追光巡航','极光终程']:['折跃初航','信标接力','回廊终程'];
+ return {name:names[n],subtitle:worldInfo().name+' · '+worldInfo().hint};
+}
+function worldStep(){
+ if(elapsed>=70)return 3;
+ if(activeWorld==='aurora')return !worldEvent||elapsed<worldEvent.at+2?0:worldEvent.cleared?2:1;
+ return !worldEvent?.used?0:elapsed<worldEvent.protectedUntil?1:2;
+}
 function worldMapHud(){
- const current=elapsed>=70?3:activeWorld==='aurora'?(worldEvent?1:0):(worldEvent?.used?2:0);
- const signature=activeWorld+'|'+current;if(mapSignature===signature)return;mapSignature=signature;
- const labels=activeWorld==='aurora'?['寻找缺口','穿越光幕','追踪极光','风暴返航']:['加速入门','折跃保护','依次寻标','风暴返航'];
- ['port','relic','whale','mine'].forEach((id,i)=>{const e=$('map-'+id);e.textContent=labels[i];e.setAttribute('data-state',i===current?'active':'planned');e.setAttribute('aria-current',i===current?'step':'false')});
+ const current=worldStep(),preview=state==='ready',signature=activeWorld+'|'+current+'|'+preview;
+ if(mapSignature===signature)return;mapSignature=signature;
+ const labels=activeWorld==='aurora'?['等待光幕','追踪缺口','穿幕完成','风暴返航']:['加速入门','折跃保护','依次寻标','风暴返航'];
+ $('routeMap').setAttribute('data-layout','steps');
+ ['port','relic','whale','mine'].forEach((id,i)=>{const e=$('map-'+id),active=!preview&&i===current;e.textContent=labels[i];e.setAttribute('data-state',active?'active':!preview&&i<current?'passed':'planned');e.setAttribute('aria-current',active?'step':'false')});
  $('routeMap').setAttribute('aria-label',worldInfo().name+'：'+labels.join(' → '));
 }
+function notifyWorld(text){worldNotice={text,until:elapsed+2.4};adventureResult=text}
 const auroraTimes=[10,20,32,42,54,62],warpTimes=[8,24,40,56];
 function auroraGeometry(e,at){
  const travel=Math.max(0,Math.min(1,(at-e.at-2)/5));
@@ -247,7 +264,7 @@ function stepWorld(dt,oldX,oldY){
  }
  const e=worldEvent;if(!e)return false;
  if(activeWorld==='aurora'){
-  if(elapsed>=e.at+7){worldEvent=null;return false}
+  if(elapsed>=e.at+7){worldEvent=null;if(!e.cleared)notifyWorld('光幕已离开 · 未完成穿越，继续下一道');return false}
   if(elapsed<e.at+2)return false;
   const before=auroraGeometry(e,Math.max(e.at+2,elapsed-dt)),now=auroraGeometry(e,elapsed);
   // Relative swept intersection with the moving curtain, not just its final location.
@@ -257,31 +274,41 @@ function stepWorld(dt,oldX,oldY){
    const x=oldX+(ship.x-oldX)*u,gap=before.x+(now.x-before.x)*u;
    const safe=Math.abs(x-gap)<=now.half-shipRadius();
    if(!safe&&boostTime<=0)damage();
-   if((safe||boostTime>0)&&!e.cleared){e.cleared=true;worldWins++;score+=120;collectDust();adventureResult='光幕穿越 · +120 分、1 星屑'}
+   if((safe||boostTime>0)&&!e.cleared){e.cleared=true;worldWins++;score+=120;collectDust();notifyWorld('光幕穿越完成 · +120 分、1 星屑')}
   }
   return false;
  }
- if(elapsed>=e.at+12){worldEvent=null;adventureResult='折跃窗口关闭 · 已获奖励保留';return false}
+ if(elapsed>=e.at+12){worldEvent=null;notifyWorld(e.used?'信标窗口结束 · 已获奖励保留':'错过折跃窗口 · 不扣分');return false}
  const flip=x=>e.mirror?1-x:x,entry={x:W*flip(.22),y:H*.4},exit={x:W*flip(.78),y:H*.64};
  if(!e.used&&elapsed>=e.at+1.5&&boostTime>0&&segmentDistance(entry.x,entry.y,oldX,oldY,ship.x,ship.y)<28){
-  e.used=true;worldJumps++;score+=40;ship.x=ship.target=clamp(exit.x);ship.y=ship.targetY=clampY(exit.y);resumeShield=Math.max(resumeShield,1.5);flight.trail=[];
-  burst(ship.x,ship.y,'#d3b6ff');adventureResult='折跃完成 · +40 分，保护 1.5 秒';return true;
+  e.used=true;e.protectedUntil=elapsed+1.5;worldJumps++;score+=40;ship.x=ship.target=clamp(exit.x);ship.y=ship.targetY=clampY(exit.y);resumeShield=Math.max(resumeShield,1.5);flight.trail=[];
+  burst(ship.x,ship.y,'#d3b6ff');notifyWorld('折跃完成 · +40 分，保护 1.5 秒');return true;
  }
  if(e.used){
   const points=warpBeacons(e),p=points[e.index];
   if(p&&segmentDistance(p.x*W,p.y*H,oldX,oldY,ship.x,ship.y)<24){
    e.index++;score+=60;collectDust();boostCooldown=Math.max(0,boostCooldown-.5);burst(p.x*W,p.y*H,'#d3b6ff');
-   if(e.index===3){worldWins++;score+=120;worldEvent=null;adventureResult='信标链点亮 · 额外 +120 分'}
+   if(e.index===3){worldWins++;score+=120;worldEvent=null;notifyWorld('信标链点亮 · 额外 +120 分')}
   }
  }
  return false;
 }
 function warpBeacons(e){return [{x:.7,y:.43},{x:.48,y:.3},{x:.28,y:.67}].map(p=>({...p,x:e.mirror?1-p.x:p.x}))}
 function worldCaption(){
+ if(state==='ready')return worldInfo().hint;
+ if(state==='over')return worldInfo().name+` · 本局${activeWorld==='aurora'?'穿幕':'信标链'}完成 ${worldWins}/${activeWorld==='aurora'?6:4}`;
  if(elapsed>=70)return worldInfo().name+' · 抵达终局风暴';
- const e=worldEvent;
- if(activeWorld==='aurora')return e?(elapsed<e.at+2?'极光蓄能 · 跟随绿色缺口，或加速穿幕':`光幕穿越 ${worldWins}/6 · 绿色缺口安全`):`极光航道 · 已穿越 ${worldWins}/6 道光幕`;
- return e?(!e.used?'蓝门 → 紫门 · 加速入门折跃 · '+Math.max(0,Math.ceil(e.at+12-elapsed))+'s':`信标 ${e.index}/3 · 按编号拾取 · ${Math.max(0,Math.ceil(e.at+12-elapsed))}s`):`折跃回廊 · 已点亮 ${worldWins}/4 组信标`;
+ const e=worldEvent,schedule=activeWorld==='aurora'?auroraTimes:warpTimes,next=schedule[worldSlot];
+ const waiting=next===undefined?`风暴还有 ${Math.max(0,Math.ceil(70-elapsed))}s`:`下一轮还有 ${Math.max(0,Math.ceil(next-elapsed))}s`;
+ if(!e)return (worldNotice&&elapsed<worldNotice.until?worldNotice.text+' · ':`已完成 ${worldWins}/${schedule.length} · `)+waiting;
+ if(activeWorld==='aurora'){
+  if(elapsed<e.at+2)return `第 ${worldSlot}/6 道 · 极光蓄能 ${Math.ceil(e.at+2-elapsed)}s · 跟随绿色缺口`;
+  if(e.cleared)return worldNotice&&elapsed<worldNotice.until?worldNotice.text:`本次穿幕完成 · 已完成 ${worldWins}/6 · 继续避开光幕`;
+  return `第 ${worldSlot}/6 道 · 追踪绿色缺口 / 加速穿幕`;
+ }
+ if(!e.used)return elapsed<e.at+1.5?`第 ${worldSlot}/4 轮 · 传送门蓄能 ${Math.ceil(e.at+1.5-elapsed)}s`:`第 ${worldSlot}/4 轮 · 加速入蓝门 · 窗口 ${Math.max(0,Math.ceil(e.at+12-elapsed))}s`;
+ const protection=elapsed<e.protectedUntil?`折跃保护 ${(e.protectedUntil-elapsed).toFixed(1)}s · `:'';
+ return protection+`信标 ${e.index}/3 · 按编号拾取 · ${Math.max(0,Math.ceil(e.at+12-elapsed))}s`;
 }
 function drawWorld(t){
  if(activeWorld==='classic')return;
@@ -507,10 +534,10 @@ function hud(){
 
 }
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
-function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
+function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
  if(panelOpen)closePanel(false);
- activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldSlot=worldWins=worldJumps=0;loadWorldBest();
+ activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldNotice=null;worldSlot=worldWins=worldJumps=0;loadWorldBest();
  resetAdventure();menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
@@ -521,7 +548,7 @@ function start(){
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus({preventScroll:true})}
 function pause(){
  if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。加速充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
- else if(state==='paused'){clearInput();if(resumeSafetyPending){resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false}state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phases[phase].subtitle;focusGame()}
+ else if(state==='paused'){clearInput();if(resumeSafetyPending){resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false}state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phaseInfo().subtitle;focusGame()}
  hud();
 }
 function finish(){
@@ -529,7 +556,7 @@ function finish(){
  if(hp>0&&elapsed>=90&&bossStarted&&boss?.hp>0&&!stormRewarded){score+=200;stormRewarded=true}
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
- show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 风暴生还 +200":""} · 抵达「${phases[phase].name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
+ show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 风暴生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  const itinerary=activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
  $('hint').textContent=`${itinerary} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
 }
@@ -993,7 +1020,7 @@ function updateChoiceDock(){
 let adventureSignature='';
 function adventureHud(){
  const o=objective,ready=canUpgrade(),invite=wagerInviteUntil>elapsed;
- const signature=[activeWorld,worldSlot,worldWins,worldEvent?.used,worldEvent?.index,Math.ceil(elapsed),state,inputMode,mouseX!==null,resumeShield>0,moonPhase,moonCooldown>0,o?.kind,o?.sector,o?.index,oreCount,minesCleared,o?.following,o?.load,Math.floor(o?.follow||0),whaleSafe,!!orbit,Math.ceil(laser?(laser.warningEnd-elapsed)*10:0),!!laser,Math.ceil((o?.deadline||0)-elapsed),fork?.deadline,Math.ceil((fork?.deadline||0)-elapsed),activeRoute?.id,adventureResult,ready,invite,Math.ceil(wagerInviteUntil-elapsed),bonusCredits].join('|');
+ const signature=[activeWorld,worldStep(),!!worldEvent,worldEvent?.cleared,worldNotice&&elapsed<worldNotice.until,Math.ceil(Math.max(0,(worldEvent?.protectedUntil||0)-elapsed)*10),worldSlot,worldWins,worldEvent?.used,worldEvent?.index,Math.ceil(elapsed),state,inputMode,mouseX!==null,resumeShield>0,moonPhase,moonCooldown>0,o?.kind,o?.sector,o?.index,oreCount,minesCleared,o?.following,o?.load,Math.floor(o?.follow||0),whaleSafe,!!orbit,Math.ceil(laser?(laser.warningEnd-elapsed)*10:0),!!laser,Math.ceil((o?.deadline||0)-elapsed),fork?.deadline,Math.ceil((fork?.deadline||0)-elapsed),activeRoute?.id,adventureResult,ready,invite,Math.ceil(wagerInviteUntil-elapsed),bonusCredits].join('|');
  if(signature===adventureSignature)return;adventureSignature=signature;
  $('moonToggle').disabled=state!=='playing'||moonCooldown>0;$('moonToggle').setAttribute('aria-pressed',String(moonPhase==='dark'));
  $('moonToggle').textContent=moonPhase==='bright'?'☀ 明月 · 吸星  ⇄':'☾ 暗月 · 小巧  ⇄';

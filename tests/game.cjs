@@ -704,6 +704,29 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V13 journeys PASS: both worlds at mobile/desktop size, all encounters, bounded hazards, shared finale, no forced dialogs, classic map restored');
 }
 
+// V13.1: displayed steps and map-specific phase titles match real event state.
+{
+ const active=()=>['port','relic','whale','mine'].find(id=>els['map-'+id].attributes['data-state']==='active');
+ run('state="over";selectWorld("aurora");start()');isolate();assert.equal(els.phase0.textContent,'01 极光初航');assert.equal(els.announcement.textContent,'极光初航');assert.equal(active(),'port');assert(els.flightStatus.textContent.includes('下一轮还有'));
+ run('elapsed=10;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'port');assert(els.flightStatus.textContent.includes('蓄能 2s'));
+ run('elapsed=12;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'relic');
+ run('elapsed=14;ship.x=auroraGeometry(worldEvent,elapsed).x;ship.y=auroraGeometry(worldEvent,elapsed).y;stepWorld(.01,ship.x,ship.y);hud()');assert.equal(active(),'whale');assert(els.flightStatus.textContent.includes('+120 分'));assert.equal(els['map-whale'].attributes['aria-current'],'step');
+ run('pause()');const caption=els.flightStatus.textContent;run('update(5);hud()');assert.equal(els.flightStatus.textContent,caption);run('pause();elapsed=17;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'port');assert(els.flightStatus.textContent.includes('下一轮还有 3s'));
+ run('elapsed=30;setPhase(1);hud()');assert.equal(els.announcement.textContent,'追光巡航');assert.equal(els.phase1.className,'active');assert(els.status.textContent.includes('极光航道'));
+ run('elapsed=70;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'mine');
+ run('state="over";selectWorld("warp");start()');isolate();assert.equal(els.phase1.textContent,'02 信标接力');assert.equal(active(),'port');
+ run('elapsed=8;stepWorld(0,ship.x,ship.y);hud()');assert(els.flightStatus.textContent.includes('传送门蓄能'));
+ run('elapsed=9.6;ship.x=W*.22;ship.y=H*.4;boostTime=.5;stepWorld(.01,ship.x,ship.y);hud()');assert.equal(active(),'relic');assert(els.flightStatus.textContent.includes('折跃保护 1.5s'));
+ run('elapsed=11.09;hud()');assert.equal(active(),'relic');run('elapsed=11.11;hud()');assert.equal(active(),'whale');assert(!els.flightStatus.textContent.includes('折跃保护'));assert(els.flightStatus.textContent.includes('信标 0/3'));
+ for(let i=0;i<3;i++)run('globalThis.p=warpBeacons(worldEvent)[worldEvent.index];ship.x=p.x*W;ship.y=p.y*H;stepWorld(.01,ship.x,ship.y)');
+ run('hud()');assert(els.flightStatus.textContent.includes('额外 +120 分'));assert(els.flightStatus.textContent.includes('下一轮'));run('elapsed+=2.5;hud()');assert(!els.flightStatus.textContent.includes('额外 +120 分'));
+ run('elapsed=24;stepWorld(0,ship.x,ship.y);elapsed=36;stepWorld(0,ship.x,ship.y);hud()');assert(els.flightStatus.textContent.includes('错过折跃窗口'));
+ run('elapsed=60;setPhase(2);hud()');assert.equal(els.announcement.textContent,'回廊终程 · 得分 ×2');run('elapsed=70;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'mine');
+ run('hp=0;finish()');assert(!els.flightStatus.textContent.includes('下一轮'));assert(els.message.textContent.includes('回廊终程'));
+ run('selectWorld("classic");start()');assert.equal(els.phase0.textContent,'01 巡航起步');assert.equal(els['map-port'].textContent,'货运港');assert.equal(els.routeMap.attributes['data-layout'],'branches');assert.equal(run('worldNotice'),null);
+ console.log('V13.1 feedback PASS: all eight step labels reachable, precise warmup/protection transitions, map-specific phases, completion/expiry/countdown text, paused notices and clean classic restoration');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
