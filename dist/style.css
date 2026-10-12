@@ -54,3 +54,6 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 
 /* V11.1: optional event messages must not push the driving controls around. */
 .immersive .flight-status{height:32px;min-height:32px;max-height:32px;overflow:hidden}.immersive #flightStatus{flex:1;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:15px;max-height:30px;overflow:hidden}.immersive #routeStatus{max-width:28%;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}.immersive .choice-dock{height:40px;min-height:40px;max-height:40px;flex-wrap:nowrap}.immersive .choice-dock button{min-width:0;white-space:nowrap}
+
+/* The moon button is an independent second-finger action, like acceleration. */
+#padMoon,#moonToggle{touch-action:none;user-select:none;-webkit-user-select:none}

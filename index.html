@@ -56,10 +56,13 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 
 /* V11.1: optional event messages must not push the driving controls around. */
 .immersive .flight-status{height:32px;min-height:32px;max-height:32px;overflow:hidden}.immersive #flightStatus{flex:1;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:15px;max-height:30px;overflow:hidden}.immersive #routeStatus{max-width:28%;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}.immersive .choice-dock{height:40px;min-height:40px;max-height:40px;flex-wrap:nowrap}.immersive .choice-dock button{min-width:0;white-space:nowrap}
+
+/* The moon button is an independent second-finger action, like acceleration. */
+#padMoon,#moonToggle{touch-action:none;user-select:none;-webkit-user-select:none}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 11.1</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 11.2</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <section class="fleet" aria-label="选择本局星舰"><div class="fleet-heading"><strong>选择你的航行方式</strong><span id="fleetHint">出发前选择星舰 · 每局技能重置</span></div><div class="fleet-options">
 <button id="ship-collector" class="fleet-card" aria-pressed="true"><span>◎ 拾光者</span><strong>收集 · 货运</strong><small>吸星范围与货运奖励 +20%</small><em>专属：双生卫星</em></button>
@@ -113,7 +116,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V11.1</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V11.2</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -226,7 +229,7 @@ function drawSpecialSpace(t){
 
 function canUpgrade(){return (bonusCredits>0||(upgradeCount<upgradeAt.length&&dust>=upgradeAt[upgradeCount]))&&availablePowers().filter(p=>(powers[p.id]||0)<2).length>=2}
 function resetAdventure(){storm=null;stormRewarded=false;routeMirror=Math.random()<.5;orbit=launch=laser=null;whaleSafe=false;slingWins=whaleWins=laserSlot=0;reflections=[];reflectCount=cargoDelivered=0;adventureSignature='';moonPhase='bright';moonCooldown=0;objective=fork=activeRoute=null;adventureSlot=routeSlot=ringWins=escortWins=0;adventureResult='追逐星环、护送月灵 · 都可自由略过';wagerInviteUntil=0}
-function switchMoon(){if(state!=='playing'||moonCooldown>0)return;moonPhase=moonPhase==='bright'?'dark':'bright';moonCooldown=.35;tone(moonPhase==='bright'?780:420,.08);hud();focusGame()}
+function switchMoon(refocus=true){if(state!=='playing'||panelOpen||moonCooldown>0)return;moonPhase=moonPhase==='bright'?'dark':'bright';moonCooldown=.35;tone(moonPhase==='bright'?780:420,.08);hud();if(refocus)focusGame()}
 
 const upgradeAt=[3,8,15,24];
 const powersList=[
@@ -409,7 +412,12 @@ for(const id of ['boost','padBoost']){
 $('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
 for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
 $('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
-$('moonToggle').onclick=switchMoon;$('padMoon').onclick=switchMoon;
+// A second touch may not synthesize a click while the driving finger stays down.
+// Act on contact without moving focus; keep keyboard activation and suppress the later pointer click.
+for(const id of ['moonToggle','padMoon']){
+ $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();switchMoon(false)});
+ $(id).onclick=e=>{if(!e||e.detail===0)switchMoon()};
+}
 $('upgradeReady').onclick=()=>{if(state==='playing'&&canUpgrade())offerUpgrade(true)};
 $('wagerReady').onclick=()=>{if(state==='playing'&&wagerInviteUntil>elapsed)maybeOfferWager(true)};
 $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade(1);

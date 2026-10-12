@@ -558,6 +558,31 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V11.1 PASS: event-driven/no-op/DPR canvas resize preserves stationary joystick, dpad and keys; layout shifts do not inject drag deltas; pause still releases input');
 }
 
+// V11.2: the second finger switches moon phase on contact, without a synthesized click.
+{
+ const pe=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',isPrimary:false,currentTarget:surface,preventDefault:noop,stopPropagation:noop});
+ for(const mode of ['stick','dpad','drag']){
+  width=360;height=400;run('resize();start()');isolate();run(`selectControlMode("${mode}")`);
+  if(mode==='stick')elementEvents['joystick:pointerdown'](pe(111,112,546,els.joystick));
+  else if(mode==='dpad')elementEvents['dir-r:pointerdown'](pe(111,120,570,els['dir-r']));
+  else elementEvents['touchPad:pointerdown'](pe(111,40,570,els.touchPad));
+  const input=run('JSON.stringify([stickPointer,stickVector,[...directionPointers.keys()],movePointer,inputMode])'),focus=sandbox.document.activeElement;
+  elementEvents['padMoon:pointerdown'](pe(112,310,620,els.padMoon));assert.equal(run('moonPhase'),'dark');assert.equal(sandbox.document.activeElement,focus);
+  assert.equal(run('JSON.stringify([stickPointer,stickVector,[...directionPointers.keys()],movePointer,inputMode])'),input);
+  // Ignore both a rapid repeat during cooldown and a late compatibility click after cooldown.
+  elementEvents['padMoon:pointerdown'](pe(113,310,620,els.padMoon));assert.equal(run('moonPhase'),'dark');
+  const x=run('ship.x');if(mode==='drag')elementEvents['touchPad:pointermove'](pe(111,50,570,els.touchPad));run('update(.04)');assert(run('ship.x')>x);
+  run('update(.36)');els.padMoon.onclick({detail:1});assert.equal(run('moonPhase'),'dark');
+  elementEvents['padMoon:pointerdown'](pe(112,310,620,els.padMoon));assert.equal(run('moonPhase'),'bright');assert.equal(run('JSON.stringify([stickPointer,stickVector,[...directionPointers.keys()],movePointer,inputMode])'),input);
+  run('pause();moonCooldown=0');elementEvents['padMoon:pointerdown'](pe(112,310,620,els.padMoon));assert.equal(run('moonPhase'),'bright');assert.equal(run('stickPointer'),null);assert.equal(run('directionPointers.size'),0);assert.equal(run('movePointer'),null);
+ }
+ run('start()');isolate();run('keys.add("d")');events.keydown({key:'q',target:{tagName:'CANVAS'},repeat:false,preventDefault:noop});assert.equal(run('moonPhase'),'dark');assert(run('keys.has("d")'));
+ run('moonCooldown=0');els.moonToggle.onclick({detail:0});assert.equal(run('moonPhase'),'bright');assert(run('keys.has("d")'));
+ run('moonCooldown=0');elementEvents['moonToggle:pointerdown'](pe(114,20,20,els.moonToggle));assert.equal(run('moonPhase'),'dark');run('moonCooldown=0');els.moonToggle.onclick({detail:1});assert.equal(run('moonPhase'),'dark');
+ run('start();selectControlMode("drag")');
+ console.log('V11.2 PASS: second-finger phase switch during all three drivers, pointer capture/focus retained, ongoing movement, cooldown, late-click deduplication, pause guards and keyboard activation');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
