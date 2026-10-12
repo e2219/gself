@@ -175,9 +175,11 @@ $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade
 $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$('wagerSkip').onclick=skipWager;
 $('sound').onclick=()=>{sound=!sound;$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
 window.addEventListener('keydown',e=>{
+ if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const k=e.key.toLowerCase();
  if(state==='wager'){if(!e.repeat){if(k==='1'||k==='2'){e.preventDefault();chooseWager(Number(k)-1)}else if(k==='escape'){e.preventDefault();skipWager()}}return}
  if(state==='upgrade'){if((k==='1'||k==='2')&&!e.repeat){e.preventDefault();chooseUpgrade(Number(k)-1)}return}
+ if(state==='playing'&&(k==='e'||k==='r')){e.preventDefault();if(!e.repeat)$(k==='e'?'upgradeReady':'wagerReady').onclick();return}
  if(k==='q'){e.preventDefault();if(!e.repeat)switchMoon();return}
  if(k==='p'){e.preventDefault();if(!e.repeat)pause();return}
  if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
@@ -510,7 +512,7 @@ function adventureHud(){
  $('padMoon').disabled=$('moonToggle').disabled;$('padMoon').textContent=moonPhase==='bright'?'☀ 明月':'☾ 暗月';$('padMoon').setAttribute('aria-pressed',String(moonPhase==='dark'));
  $('upgradeReady').hidden=!ready;$('upgradeReady').disabled=state!=='playing'||resumeShield>0;
  $('wagerReady').hidden=!invite;$('wagerReady').disabled=state!=='playing'||resumeShield>0;
- $('wagerReady').textContent=`赌约可选 · ${Math.max(0,Math.ceil(wagerInviteUntil-elapsed))}s`;
+ $('wagerReady').textContent=`赌约可选 · R · ${Math.max(0,Math.ceil(wagerInviteUntil-elapsed))}s`;
  $('choiceHint').hidden=ready||invite;
  let text=adventureResult;
  if(o?.kind==='rings')text=`星环 ${o.index}/4 · 按亮起顺序穿过 · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;

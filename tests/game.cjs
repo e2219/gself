@@ -333,3 +333,17 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),3);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
  console.log('V7 PASS: ring order/rewards/expiry, escort reconnect/delivery, phase hitboxes/attraction, gate grace/default/reward/expiry, opt-in choices, resize/pause/reset, full 90-second run without forced modals');
 }
+
+// Desktop choice shortcuts share the button eligibility rules and preserve browser shortcuts.
+{
+ const key=(k,extra={})=>events.keydown({key:k,repeat:false,target:{tagName:'CANVAS'},preventDefault:noop,...extra});
+ run('start()');isolate();key('e');key('r');assert.equal(run('state'),'playing');
+ run('dust=3;resumeShield=1.5');key('e');assert.equal(run('state'),'playing');
+ run('resumeShield=0');key('e',{repeat:true});assert.equal(run('state'),'playing');
+ key('e',{target:{tagName:'INPUT'}});key('e',{target:{tagName:'DIV',isContentEditable:true}});key('e',{isComposing:true});assert.equal(run('state'),'playing');
+ key('E');assert.equal(run('state'),'menuIntro');key('r');assert.equal(run('menuIntro.kind'),'upgrade');run('update(.8)');key('1');assert.equal(run('state'),'paused');key('r');assert.equal(run('state'),'paused');
+ run('start()');isolate();run('wagerSlot=0;elapsed=18;updateChoiceDock();hud()');
+ for(const modifier of ['ctrlKey','metaKey','altKey']){let prevented=false;key('r',{[modifier]:true,preventDefault:()=>{prevented=true}});assert(!prevented);assert.equal(run('state'),'playing')}
+ key('R',{target:{tagName:'BUTTON'}});assert.equal(run('state'),'menuIntro');assert.equal(run('menuIntro.kind'),'wager');run('update(.8)');key('2');assert.equal(run('state'),'paused');assert(run('activeWager'));
+ console.log('V7.1 PASS: E/R eligibility, uppercase/repeat/menu guards, existing number selection, editable/composition guard and browser modifier shortcuts');
+}
