@@ -6,7 +6,7 @@ function el(id){return els[id]??={style:{},classList:{toggle:noop},attributes:{}
 const sandbox={document:{getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:noop},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
-const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length');
+const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length');
 const hit=rock=>run(`items=[{x:ship.x,y:shipY(),r:9,v:0,rock:${rock},a:0}];update(.01)`);
 run('start()');isolate();for(let i=0;i<10;i++)hit(false);assert.equal(run('score'),170);
 run('items=[{x:0,y:H+21,r:9,v:0,rock:false,a:0}];update(.01)');assert.equal(run('combo'),0);
@@ -167,7 +167,7 @@ run('start();powers.magnet=1;state="upgrade";offers=[powersList.find(p=>p.id==="
 run('start()');assert.equal(run('wagerSlot'),0);assert.equal(run('activeWager'),null);assert.equal(run('bonusCredits'),0);assert.equal(run('bonusUpgradeCount'),0);assert.equal(run('flowProgress'),0);assert(els.wager.hidden);
 console.log('V5 PASS: wager schedule/skip/freeze/success/failure/bonus separation, gravity pickup and expiry fallback, shield nova, five-star flow, synergy hints/reset');
 // Real echo pickup advances the gold wager; timed offers cannot cover an upgrade dialog.
-run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'menuIntro');run('update(.8)');assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
+run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'playing');assert(!els.upgradeReady.hidden);els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');run('update(.8)');assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
 run('start();elapsed=18;dust=3;offerUpgrade();maybeOfferWager()');assert.equal(run('state'),'upgrade');assert.equal(run('wagerSlot'),0);assert(els.wager.hidden);
 run('chooseUpgrade(0);pause();maybeOfferWager()');assert.equal(run('state'),'wager');assert(els.upgrade.hidden);assert(els.overlay.hidden);
 console.log('PASS: actual echo wager progress and automatic menu priority');
@@ -294,8 +294,42 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   run('guard=0;update(1.48);damage()');assert.equal(run('hp'),3);run('update(.02)');hit(true);assert.equal(run('hp'),2);
  }
  // Scheduled wager introduction freezes its clock, and upgrades do not immediately cover a return shield.
- run('start()');isolate();run('wagerSlot=0;elapsed=17.99;update(.02)');assert.equal(run('state'),'menuIntro');const t=run('elapsed');run('update(.8)');assert.equal(run('state'),'wager');assert.equal(run('elapsed'),t);
- run('start()');isolate();run('dust=3;bonusCredits=1;offerUpgrade();chooseUpgrade(0);pause();offerUpgrade(true)');assert.equal(run('state'),'playing');run('update(1.51)');assert.equal(run('state'),'menuIntro');
+ run('start()');isolate();run('wagerSlot=0;elapsed=17.99;update(.02)');assert.equal(run('state'),'playing');els.wagerReady.onclick();assert.equal(run('state'),'menuIntro');const t=run('elapsed');run('update(.8)');assert.equal(run('state'),'wager');assert.equal(run('elapsed'),t);
+ run('start()');isolate();run('dust=3;bonusCredits=1;offerUpgrade();chooseUpgrade(0);pause();offerUpgrade(true)');assert.equal(run('state'),'playing');run('update(1.51)');assert.equal(run('state'),'playing');els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');
  els.restart.onclick();assert.equal(run('menuIntro'),null);assert.equal(run('resumeShield'),0);assert.equal(run('resumeSafetyPending'),false);assert(els.menuCue.hidden);
  console.log('V6.4 PASS: frozen intro, explicit continue after wager/skip/upgrade, full return shield against rocks/boss, no armor/combo loss or free rewards, pause cannot replenish shield, delayed next menu and restart reset');
+}
+
+// V7: ordered optional objectives, phase tradeoffs, route choices and uninterrupted full runs.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ run('beginObjective({kind:"rings",duration:12});ship.x=objective.points[2].x*W;ship.y=objective.points[2].y*H;updateAdventure(0,ship.x,ship.y)');assert.equal(run('objective.index'),0);
+ for(let i=0;i<4;i++)run('ship.x=objective.points[objective.index].x*W;ship.y=objective.points[objective.index].y*H;updateAdventure(0,ship.x,ship.y)');
+ assert.equal(run('ringWins'),1);assert.equal(run('objective'),null);assert.equal(run('dust'),3);const reward=run('score');run('updateAdventure(.01,ship.x,ship.y);updateChoiceDock();hud()');assert.equal(run('score'),reward);assert.equal(run('state'),'playing');assert(!els.upgradeReady.hidden);
+ run('start()');isolate();run('combo=8;score=90;beginObjective({kind:"rings",duration:1});elapsed=2;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('objective'),null);assert.equal(run('hp'),3);assert.equal(run('score'),90);assert.equal(run('combo'),8);
+ // Escort is picked up spatially, drops when outrun, reconnects, and rewards exactly once at home.
+ run('start()');isolate();run('beginObjective({kind:"escort",duration:16});ship.x=ship.target=objective.x;ship.y=ship.targetY=objective.y;updateAdventure(.01,ship.x,ship.y)');assert(run('objective.following'));
+ run('ship.x=W-objective.x;updateAdventure(.01,ship.x,ship.y)');assert(!run('objective.following'));assert(run('objective.met'));
+ run('ship.x=objective.x;ship.y=objective.y;updateAdventure(.01,ship.x,ship.y)');assert(run('objective.following'));
+ run('objective.x=objective.home.x*W;objective.y=objective.home.y*H;ship.x=objective.x;ship.y=objective.y;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('objective'),null);assert.equal(run('escortWins'),1);assert.equal(run('bonusCredits'),1);assert.equal(run('score'),200);run('updateAdventure(.01,ship.x,ship.y)');assert.equal(run('bonusCredits'),1);
+ // Phase changes affect real collision and collection, without consuming boost or pausing.
+ run('start()');isolate();assert(run('starAttraction()>0'));const radius=run('shipRadius()');els.padMoon.onclick();assert.equal(run('moonPhase'),'dark');assert(run('shipRadius()<'+radius));assert.equal(run('starAttraction()'),0);assert.equal(run('boostCooldown'),0);assert.equal(run('state'),'playing');run('switchMoon()');assert.equal(run('moonPhase'),'dark');
+ run('items=[{x:ship.x+25,y:ship.y,r:12,v:0,rock:true,a:0}];update(.01)');assert.equal(run('hp'),3);run('moonCooldown=0;switchMoon();update(.01)');assert.equal(run('hp'),2);
+ run('start()');isolate();run('items=[{x:ship.x+55,y:ship.y,r:9,v:0,rock:false,a:0}];update(.01)');assert(run('items[0].captured'));
+ // Gates arm for one second; ignore defaults to calm. Routes expire and reward only the rich route.
+ run('start()');isolate();run('fork={deadline:7,armed:1};ship.x=W*.75;ship.y=H*.48;updateAdventure(0,ship.x,ship.y)');assert.equal(run('activeRoute'),null);
+ run('elapsed=1;updateAdventure(0,ship.x,ship.y)');assert.equal(run('activeRoute.id'),'rich');run('collectStar({x:0,y:0})');assert.equal(run('score'),14);assert(run('difficulty().interval<2.1-elapsed/90'));
+ run('elapsed=22;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('activeRoute'),null);
+ run('fork={deadline:22,armed:20};updateAdventure(.01,ship.x,ship.y)');assert.equal(run('activeRoute.id'),'calm');assert(run('difficulty().interval>2.1-elapsed/90'));
+ // Ready choices wait for a click; optional wager invitation expires freely.
+ run('start()');isolate();run('dust=3;wagerSlot=0;elapsed=18;updateChoiceDock();hud()');assert.equal(run('state'),'playing');assert(!els.upgradeReady.hidden&&!els.wagerReady.hidden);assert(els.upgrade.hidden&&els.wager.hidden);
+ run('elapsed=26.01;updateChoiceDock();hud()');assert.equal(run('wagerInviteUntil'),0);assert.equal(run('wagerSlot'),1);assert.equal(run('score'),0);assert.equal(run('state'),'playing');els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');run('update(.8);chooseUpgrade(0);pause()');assert.equal(run('resumeShield'),1.5);
+ // Resize uses normalized gates/rings and rescales the escort. Pauses freeze all deadlines.
+ run('start()');isolate();run('beginObjective({kind:"escort",duration:16})');const relative=run('[objective.x/W,objective.y/H]');width=360;height=350;run('resize()');assert(Math.abs(run('objective.x/W')-relative[0])<1e-8);assert(Math.abs(run('objective.y/H')-relative[1])<1e-8);
+ run('fork={deadline:7,armed:1};draw(1);pause()');const frozen=run('JSON.stringify([objective,fork,elapsed,moonCooldown])');run('update(10)');assert.equal(run('JSON.stringify([objective,fork,elapsed,moonCooldown])'),frozen);run('start();beginObjective({kind:"rings",duration:12});draw(1)');
+ els.restart.onclick();assert.equal(run('objective'),null);assert.equal(run('fork'),null);assert.equal(run('activeRoute'),null);assert.equal(run('moonPhase'),'bright');assert.equal(run('ringWins+escortWins+adventureSlot+routeSlot'),0);
+ // A complete unattended journey never opens an automatic modal, even with upgrades ready.
+ run(`start();invincible=1000;dust=3;let seen=new Set(),peak=0;for(let n=0;n<5500&&state==='playing';n++){update(1/60);if(objective)seen.add(objective.kind);if(fork)seen.add('fork');if(wagerInviteUntil)seen.add('invite');peak=Math.max(peak,items.length)};globalThis.journey={seen:[...seen],peak}`);
+ assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),3);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
+ console.log('V7 PASS: ring order/rewards/expiry, escort reconnect/delivery, phase hitboxes/attraction, gate grace/default/reward/expiry, opt-in choices, resize/pause/reset, full 90-second run without forced modals');
 }
