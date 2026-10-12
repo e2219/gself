@@ -1,9 +1,10 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const els={},events={},elementEvents={},storage={},noop=()=>{};
+const els={},events={},docEvents={},elementEvents={},storage={},noop=()=>{};
+const classList=()=>({values:new Set(),toggle(k,v){if(v)this.values.add(k);else this.values.delete(k)},contains(k){return this.values.has(k)}});
 const ctx=new Proxy({createRadialGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
 let width=960,height=510;
-function el(id){return els[id]??={style:{},classList:{toggle:noop},attributes:{},captures:new Set(),textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:function(k,v){this.attributes[k]=v},focus:noop,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:function(id){this.captures.add(id)},releasePointerCapture:function(id){this.captures.delete(id)},getContext:()=>ctx,getBoundingClientRect:()=>({width,height,left:0})}}
-const sandbox={document:{getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:noop},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
+function el(id){return els[id]??={style:{},classList:classList(),attributes:{},captures:new Set(),textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:function(k,v){this.attributes[k]=v},focus:function(){sandbox.document.activeElement=this},closest:()=>null,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:function(id){this.captures.add(id)},releasePointerCapture:function(id){this.captures.delete(id)},getContext:()=>ctx,getBoundingClientRect:function(){return this.bounds||{width,height,left:0,top:0}}}}
+const sandbox={document:{body:{classList:classList()},getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:(n,f)=>docEvents[n]=f},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
 const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length');
@@ -495,3 +496,55 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('state="over"');els['ship-collector'].onclick();run('start()');
  console.log('V10 routes PASS: narrow/desktop reachable rings, ordered swept pickups, whale preview identity/gate protection, and three complete 90-second runs without forced modals');
 }
+
+// V11: three independently selectable mobile drivers, no stale held input after menus or mode switches.
+{
+ width=360;height=400;run('resize();start()');isolate();
+ const pe=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop,stopPropagation:noop});
+ el('stickRing').bounds={left:30,top:500,width:92,height:92};els.dpad.bounds={left:0,top:500,width:150,height:140};
+ els['mode-stick'].onclick();assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],'stick');assert(els.touchPad.hidden&&!els.joystick.hidden&&els.dpad.hidden);
+ const begin=run('[ship.x,ship.y].join()');elementEvents['joystick:pointerdown'](pe(91,76,546,els.joystick));run('update(.02)');assert.equal(run('[ship.x,ship.y].join()'),begin);
+ elementEvents['joystick:pointermove'](pe(91,96.16,546,els.joystick));assert(Math.abs(run('stickVector.x')-.5)<1e-8);const x=run('ship.x');run('update(.1)');assert(Math.abs(run('ship.x')-x-360*.9*.1*.5)<1e-8);
+ elementEvents['joystick:pointermove'](pe(91,112,582,els.joystick));assert(Math.abs(run('Math.hypot(stickVector.x,stickVector.y)')-1)<1e-8);
+ elementEvents['joystick:pointercancel'](pe(91,112,582,els.joystick));const stopped=run('[ship.x,ship.y].join()');run('update(.1)');assert.equal(run('[ship.x,ship.y].join()'),stopped);assert.equal(run('stickPointer'),null);assert.equal(els.joystick.captures.size,0);
+ elementEvents['joystick:pointerdown'](pe(92,112,546,els.joystick));els['mode-dpad'].onclick();assert.equal(run('stickPointer'),null);assert.equal(run('controlMode'),'dpad');assert.equal(run('directionPointers.size'),0);
+ elementEvents['joystick:pointermove'](pe(92,200,546,els.joystick));assert.equal(run('stickVector.x'),0);
+ // The old canvas drag surface cannot move a ship while an alternative driver is selected.
+ const target=run('[ship.target,ship.targetY].join()');elementEvents['sky:pointerdown'](pe(2,20,20,els.sky));elementEvents['sky:pointermove'](pe(2,160,160,els.sky));assert.equal(run('[ship.target,ship.targetY].join()'),target);
+ run('ship.x=ship.target=180;ship.y=ship.targetY=200;boostTime=0');elementEvents['dir-ur:pointerdown'](pe(93,125,510,els['dir-ur']));run('update(.1)');assert(Math.abs(run('Math.hypot(ship.x-180,ship.y-200)')-32.4)<1e-8);
+ elementEvents['dir-ur:pointermove'](pe(93,20,620,els['dir-ur']));assert.equal(run('virtualDirection().x'),-1);assert.equal(run('virtualDirection().y'),1);
+ elementEvents['dir-ur:lostpointercapture'](pe(93,20,620,els['dir-ur']));assert.equal(run('directionPointers.size'),0);
+ elementEvents['dir-l:pointerdown'](pe(94,20,570,els['dir-l']));elementEvents['dir-r:pointerdown'](pe(95,125,570,els['dir-r']));assert.equal(run('virtualDirection().x'),0);elementEvents['dir-l:pointerup'](pe(94,20,570,els['dir-l']));assert.equal(run('virtualDirection().x'),1);
+ run('boostCooldown=0;ship.x=ship.target=100');elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});const before=run('ship.x');run('update(.1)');assert(Math.abs(run('ship.x')-before-64.8)<1e-8);
+ els.pause.onclick();assert.equal(run('state'),'paused');assert.equal(run('directionPointers.size'),0);assert(!els.pause.disabled);assert.equal(els.pause.textContent,'继续');els.pause.onclick();assert.equal(run('state'),'playing');
+ const idle=run('[ship.x,ship.y].join()');elementEvents['dir-r:pointermove'](pe(95,150,570,els['dir-r']));run('update(.05)');assert.equal(run('[ship.x,ship.y].join()'),idle);
+ elementEvents['dir-u:keydown']({key:'Enter',repeat:false,preventDefault:noop,stopPropagation:noop});assert.equal(run('virtualDirection().y'),-1);elementEvents['dir-u:keyup']({key:'Enter',preventDefault:noop});assert.equal(run('virtualDirection().y'),0);
+ els['mode-drag'].onclick();assert(!els.touchPad.hidden&&els.joystick.hidden&&els.dpad.hidden);assert.equal(storage['mooncatch-controls'],'drag');run('boostTime=0');const startX=run('ship.x');elementEvents['touchPad:pointerdown'](pe(96,50,570,els.touchPad));elementEvents['touchPad:pointermove'](pe(96,60,570,els.touchPad));run('update(.01)');assert.equal(run('ship.x'),Math.min(width-24,startX+16.5));
+ console.log('V11 controls PASS: persisted selection, proportional 360-degree stick, normalized eight-way keys, hold/slide/multi-touch, boost, stale capture rejection, pause/release and original drag');
+}
+
+// Rules/settings are on-demand, freeze every timer, and preserve the menu the player came from.
+{
+ run('start()');isolate();els.helpOpen.onclick();assert(run('panelOpen'));assert.equal(run('state'),'paused');assert(els.playContent.inert);assert(!els.gameRules.hidden&&els.controlSettings.hidden);assert(els.pause.disabled);
+ const frozen=run('JSON.stringify([elapsed,ship,boostCooldown,objective])');run('update(4)');assert.equal(run('JSON.stringify([elapsed,ship,boostCooldown,objective])'),frozen);
+ els.panelClose.onclick();assert(!run('panelOpen'));assert(!els.playContent.inert);assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
+ els.pause.onclick();els.controlsOpen.onclick();assert(!els.controlSettings.hidden&&els.gameRules.hidden);els['mode-stick'].onclick();els.panelClose.onclick();assert.equal(run('state'),'paused');els.pause.onclick();
+ run('resumeShield=0;dust=3;offerUpgrade(true)');assert.equal(run('state'),'menuIntro');els.helpOpen.onclick();run('update(5)');assert.equal(run('state'),'menuIntro');els.panelClose.onclick();run('update(.81)');assert.equal(run('state'),'upgrade');
+ const offers=run('offers.map(p=>p.id).join()');els.helpOpen.onclick();events.keydown({key:'1',target:{tagName:'BUTTON'}});assert.equal(run('offers.map(p=>p.id).join()'),offers);events.keydown({key:'Escape',target:{tagName:'BUTTON'},preventDefault:noop});assert(!run('panelOpen'));assert.equal(run('state'),'upgrade');
+ els.controlsOpen.onclick();els.restart.onclick();assert.equal(run('state'),'playing');assert(!run('panelOpen'));assert(!els.playContent.inert);assert.equal(run('elapsed'),0);assert.equal(run('controlMode'),'stick');assert.equal(run('stickPointer'),null);
+ els.helpOpen.onclick();els.gamePanel.querySelectorAll=()=>[els.panelClose,els.restart];sandbox.document.activeElement=els.panelClose;events.keydown({key:'Tab',shiftKey:true,target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.restart);events.keydown({key:'Tab',target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.panelClose);els.panelClose.onclick();run('selectControlMode("drag")');
+ console.log('V11 panels PASS: rules/settings access, input isolation, focus loop, frozen intro/upgrade/gameplay, safe explicit return, paused-state preservation and restart');
+}
+
+(async()=>{
+ run('start()');isolate();
+ // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
+ el('playShell').requestFullscreen=async()=>{sandbox.document.fullscreenElement=els.playShell;docEvents.fullscreenchange()};
+ sandbox.document.exitFullscreen=async()=>{sandbox.document.fullscreenElement=null;docEvents.fullscreenchange()};
+ await els.fullscreen.onclick();assert(run('focusMode'));assert.equal(run('state'),'paused');assert(els.playShell.classList.contains('immersive'));assert(sandbox.document.body.classList.contains('game-focused'));
+ els.pause.onclick();assert(run('resumeShield>=1.5'));sandbox.document.fullscreenElement=null;docEvents.fullscreenchange();assert(!run('focusMode'));assert.equal(run('state'),'paused');assert(!sandbox.document.body.classList.contains('game-focused'));
+ delete els.playShell.requestFullscreen;await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('nativeScreen'));await els.fullscreen.onclick();assert(!run('focusMode'));assert.equal(els.fullscreen.attributes['aria-pressed'],'false');
+ el('playShell').requestFullscreen=async()=>{throw Error('unsupported')};await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('fullscreenBusy'));events.keydown({key:'Escape',target:{tagName:'CANVAS'},preventDefault:noop});assert(!run('focusMode'));assert(!sandbox.document.body.classList.contains('game-focused'));
+ delete els.playShell.requestFullscreen;run('start()');assert.equal(run('state'),'playing');
+ console.log('V11 fullscreen PASS: native enter/system exit, safe pause/resume, CSS fallback on unsupported/rejected API, Escape and body-scroll restoration');
+})().catch(e=>{console.error(e);process.exitCode=1});

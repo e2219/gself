@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><style>:root{color-scheme:dark;--bg:#101b27;--ink:#edf2e9;--muted:#95a6b4;--gold:#f3d694;--mint:#a6d9c9;--coral:#f08c79}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#21364066,transparent 55%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}main{max-width:1120px;padding:30px 40px 20px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;padding-bottom:26px;border-bottom:1px solid #ffffff12}.brand{color:var(--ink);text-decoration:none;font-weight:650;letter-spacing:2px;display:flex;align-items:center;gap:12px}.brand-icon{color:var(--gold);font-size:32px}.brand small{font-size:10px;letter-spacing:3px;color:var(--muted);font-weight:400}.edition,.eyebrow{font-size:10px;letter-spacing:2.5px;color:var(--muted)}.intro{display:flex;align-items:center;justify-content:space-between;margin:34px 0 26px}h1{font-size:34px;letter-spacing:1px;line-height:1.5;margin:10px 0}h1 em{font-weight:400;font-style:normal;color:var(--gold)}.intro p{font-size:13px;color:var(--muted);margin:0}.best{text-align:right;display:flex;flex-direction:column;gap:4px}.best span{font-size:11px;color:var(--muted)}.best strong{font-size:32px;font-weight:400;color:var(--gold);font-variant-numeric:tabular-nums}.best small{font-size:8px;letter-spacing:2px;color:var(--muted)}.game{position:relative;overflow:hidden;border-radius:16px;border:1px solid #ffffff24;background:#0a1625;box-shadow:0 24px 65px #0003}canvas{display:block;width:100%;height:clamp(330px,48vw,510px);touch-action:none;outline-offset:-4px}.hud{position:absolute;inset:20px 26px auto;display:flex;justify-content:space-between;pointer-events:none;z-index:1}.hud>div{display:flex;flex-direction:column;gap:4px;min-width:85px}.hud span{font-size:10px;color:var(--muted);letter-spacing:2px}.hud strong{font-size:26px;font-weight:450;font-variant-numeric:tabular-nums}.hud .time{text-align:center}.health{text-align:right}.health strong{color:var(--mint);font-size:18px;letter-spacing:5px}.hud strong span{margin-left:3px;letter-spacing:0}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#08142170;z-index:2;backdrop-filter:blur(3px)}.overlay[hidden]{display:none}.dialog{text-align:center;padding:20px}.moon{font-size:65px;color:var(--gold);line-height:1.1;text-shadow:0 0 45px #efd39866}.dialog .eyebrow{font-size:8px;margin-top:16px}.dialog h2{font-size:30px;font-weight:500;margin:12px 0}.dialog p{font-size:12px;line-height:1.9;color:#aab9c6;margin:0 0 22px}.dialog small{display:block;font-size:10px;letter-spacing:1px;color:var(--muted);margin-top:15px}button{font:inherit;cursor:pointer;border:0}.primary{background:var(--gold);color:#27302e;padding:14px 26px;border-radius:7px;min-width:196px;font-weight:650;font-size:13px;box-shadow:0 6px 30px #f3d69413}.primary span{margin-left:30px}.primary:hover{background:#ffe4ad;transform:translateY(-1px)}button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:4px}.coordinates{position:absolute;bottom:15px;left:24px;font-size:8px;color:#78909f;letter-spacing:2px;pointer-events:none}.combo{position:absolute;left:0;right:0;top:85px;text-align:center;color:var(--gold);font-size:12px;letter-spacing:2px;pointer-events:none}.toolbar{display:flex;justify-content:space-between;align-items:center;margin:13px 2px 28px;font-size:10px;color:var(--muted)}.toolbar>span{display:flex;align-items:center;gap:8px}.dot{background:var(--mint);height:5px;width:5px;border-radius:50%}.toolbar button{background:transparent;color:var(--muted);padding:8px 10px;font-size:11px}.toolbar button:disabled{opacity:.35;cursor:default}.toolbar button:hover:not(:disabled){color:var(--gold)}kbd{border:1px solid #ffffff25;border-radius:3px;padding:2px 4px;font-family:inherit;font-size:9px;margin-left:4px}.guide{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:0 0 28px;border-bottom:1px solid #ffffff12}.guide article{display:flex;gap:14px;align-items:center}.symbol{font-size:25px;min-width:26px;text-align:center}.gold{color:var(--gold)}.coral{color:var(--coral)}.mint{color:var(--mint)}h3{font-size:12px;font-weight:500;margin:0 0 7px}.guide p{font-size:10px;line-height:1.7;color:var(--muted);margin:0}footer{display:flex;justify-content:space-between;font-size:9px;color:#7e919f;letter-spacing:1px;margin-top:20px}@media(max-width:650px){main{padding:18px 18px 20px}.brand small,.edition{display:none}.intro{margin-top:24px;gap:15px}h1{font-size:25px}h1 em{display:block}.eyebrow{font-size:8px;letter-spacing:1.4px}.intro p{font-size:11px;max-width:235px;line-height:1.7}.best strong{font-size:26px}.hud{inset:17px 16px auto}.hud strong{font-size:23px}.health strong{font-size:16px}.dialog h2{font-size:26px}.dialog .moon{font-size:47px}.guide{grid-template-columns:1fr;gap:18px;padding-top:2px}.guide p{font-size:11px}.toolbar{gap:6px}.toolbar button{padding:7px 5px}.toolbar kbd{display:none}footer{gap:12px;line-height:1.8}footer span:last-child{font-size:7px;text-align:right;max-width:120px}.coordinates{font-size:7px;letter-spacing:1px}}
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><style>:root{color-scheme:dark;--bg:#101b27;--ink:#edf2e9;--muted:#95a6b4;--gold:#f3d694;--mint:#a6d9c9;--coral:#f08c79}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% 0%,#21364066,transparent 55%),var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}main{max-width:1120px;padding:30px 40px 20px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;padding-bottom:26px;border-bottom:1px solid #ffffff12}.brand{color:var(--ink);text-decoration:none;font-weight:650;letter-spacing:2px;display:flex;align-items:center;gap:12px}.brand-icon{color:var(--gold);font-size:32px}.brand small{font-size:10px;letter-spacing:3px;color:var(--muted);font-weight:400}.edition,.eyebrow{font-size:10px;letter-spacing:2.5px;color:var(--muted)}.intro{display:flex;align-items:center;justify-content:space-between;margin:34px 0 26px}h1{font-size:34px;letter-spacing:1px;line-height:1.5;margin:10px 0}h1 em{font-weight:400;font-style:normal;color:var(--gold)}.intro p{font-size:13px;color:var(--muted);margin:0}.best{text-align:right;display:flex;flex-direction:column;gap:4px}.best span{font-size:11px;color:var(--muted)}.best strong{font-size:32px;font-weight:400;color:var(--gold);font-variant-numeric:tabular-nums}.best small{font-size:8px;letter-spacing:2px;color:var(--muted)}.game{position:relative;overflow:hidden;border-radius:16px;border:1px solid #ffffff24;background:#0a1625;box-shadow:0 24px 65px #0003}canvas{display:block;width:100%;height:clamp(330px,48vw,510px);touch-action:none;outline-offset:-4px}.hud{position:absolute;inset:20px 26px auto;display:flex;justify-content:space-between;pointer-events:none;z-index:1}.hud>div{display:flex;flex-direction:column;gap:4px;min-width:85px}.hud span{font-size:10px;color:var(--muted);letter-spacing:2px}.hud strong{font-size:26px;font-weight:450;font-variant-numeric:tabular-nums}.hud .time{text-align:center}.health{text-align:right}.health strong{color:var(--mint);font-size:18px;letter-spacing:5px}.hud strong span{margin-left:3px;letter-spacing:0}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#08142170;z-index:2;backdrop-filter:blur(3px)}.overlay[hidden]{display:none}.dialog{text-align:center;padding:20px}.moon{font-size:65px;color:var(--gold);line-height:1.1;text-shadow:0 0 45px #efd39866}.dialog .eyebrow{font-size:8px;margin-top:16px}.dialog h2{font-size:30px;font-weight:500;margin:12px 0}.dialog p{font-size:12px;line-height:1.9;color:#aab9c6;margin:0 0 22px}.dialog small{display:block;font-size:10px;letter-spacing:1px;color:var(--muted);margin-top:15px}button{font:inherit;cursor:pointer;border:0}.primary{background:var(--gold);color:#27302e;padding:14px 26px;border-radius:7px;min-width:196px;font-weight:650;font-size:13px;box-shadow:0 6px 30px #f3d69413}.primary span{margin-left:30px}.primary:hover{background:#ffe4ad;transform:translateY(-1px)}button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:4px}.coordinates{position:absolute;bottom:15px;left:24px;font-size:8px;color:#78909f;letter-spacing:2px;pointer-events:none}.combo{position:absolute;left:0;right:0;top:85px;text-align:center;color:var(--gold);font-size:12px;letter-spacing:2px;pointer-events:none}.toolbar{display:flex;justify-content:space-between;align-items:center;margin:13px 2px 28px;font-size:10px;color:var(--muted)}.toolbar>span{display:flex;align-items:center;gap:8px}.dot{background:var(--mint);height:5px;width:5px;border-radius:50%}.toolbar button{background:transparent;color:var(--muted);padding:8px 10px;font-size:11px}.toolbar button:disabled{opacity:.35;cursor:default}.toolbar button:hover:not(:disabled){color:var(--gold)}kbd{border:1px solid #ffffff25;border-radius:3px;padding:2px 4px;font-family:inherit;font-size:9px;margin-left:4px}.guide{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:0 0 28px;border-bottom:1px solid #ffffff12}.guide article{display:flex;gap:14px;align-items:center}.symbol{font-size:25px;min-width:26px;text-align:center}.gold{color:var(--gold)}.coral{color:var(--coral)}.mint{color:var(--mint)}h3{font-size:12px;font-weight:500;margin:0 0 7px}.guide p{font-size:10px;line-height:1.7;color:var(--muted);margin:0}footer{display:flex;justify-content:space-between;font-size:9px;color:#7e919f;letter-spacing:1px;margin-top:20px}@media(max-width:650px){main{padding:18px 18px 20px}.brand small,.edition{display:none}.intro{margin-top:24px;gap:15px}h1{font-size:25px}h1 em{display:block}.eyebrow{font-size:8px;letter-spacing:1.4px}.intro p{font-size:11px;max-width:235px;line-height:1.7}.best strong{font-size:26px}.hud{inset:17px 16px auto}.hud strong{font-size:23px}.health strong{font-size:16px}.dialog h2{font-size:26px}.dialog .moon{font-size:47px}.guide{grid-template-columns:1fr;gap:18px;padding-top:2px}.guide p{font-size:11px}.toolbar{gap:6px}.toolbar button{padding:7px 5px}.toolbar kbd{display:none}footer{gap:12px;line-height:1.8}footer span:last-child{font-size:7px;text-align:right;max-width:120px}.coordinates{font-size:7px;letter-spacing:1px}}
 
 .phase-track{position:absolute;bottom:14px;left:22px;right:22px;display:flex;gap:12px;pointer-events:none}.phase-track span{flex:1;padding-top:7px;border-top:2px solid #ffffff14;font-size:9px;color:#718695;letter-spacing:1px}.phase-track .active{border-color:var(--gold);color:var(--gold)}.phase-track .done{border-color:#a6d9c955;color:var(--mint)}.coordinates{display:none}.announcement{position:absolute;top:35%;left:0;right:0;text-align:center;color:var(--gold);font-size:22px;letter-spacing:3px;pointer-events:none;text-shadow:0 2px 15px #000;transition:opacity .3s;opacity:0}.skillbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 2px 0}.skillbar>span{font-size:10px;color:var(--muted)}#boost{position:relative;background:#a6d9c912;border:1px solid #a6d9c95c;color:var(--mint);min-width:185px;border-radius:7px;overflow:hidden;padding:12px 18px;font-size:12px;touch-action:manipulation}#boost:disabled{cursor:default;color:#82949f;border-color:#ffffff20}#boost:not(:disabled):hover{background:#a6d9c925}.charge{position:absolute;bottom:0;left:0;right:0;height:3px;background:#ffffff0b}.charge i{display:block;height:100%;background:var(--mint);width:100%;transform-origin:left}.toolbar{margin-bottom:24px}@media(max-width:650px){.skillbar>span{max-width:145px;line-height:1.8}#boost{min-width:150px;padding:14px 12px}.phase-track{left:14px;right:14px;gap:7px}.phase-track span{font-size:8px;letter-spacing:0}.announcement{font-size:18px}.dialog p{max-width:270px}.dialog small{font-size:9px;max-width:265px;line-height:1.8}.combo{top:75px}}
 
@@ -42,22 +42,36 @@
 /* Preflight choices stay outside the canvas and never interrupt a run. */
 .fleet{margin:0 0 18px}.fleet-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:11px}.fleet-heading strong{font-weight:500;color:var(--gold)}.fleet-heading span{font-size:10px;color:var(--muted)}.fleet-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.fleet-card{display:flex;flex-direction:column;gap:7px;padding:14px;text-align:left;color:var(--ink);background:#162a38;border:1px solid #ffffff20;border-radius:10px;touch-action:manipulation}.fleet-card span{font-size:15px;color:var(--mint)}.fleet-card strong{font-size:11px;font-weight:400}.fleet-card small{font-size:10px;line-height:1.5;color:var(--muted)}.fleet-card em{font-size:10px;font-style:normal;color:#d2bff4}.fleet-card[aria-pressed="true"]{border-color:var(--mint);background:#234049}.fleet-card:disabled{cursor:default}.fleet-card:disabled:not([aria-pressed="true"]){opacity:.5}.fleet-card:not(:disabled):hover{border-color:var(--gold)}
 @media(max-width:650px){.fleet{margin-bottom:12px}.fleet-heading{align-items:flex-start;flex-direction:column;gap:4px}.fleet-options{gap:5px}.fleet-card{padding:10px 7px;gap:6px}.fleet-card span{font-size:12px}.fleet-card small,.fleet-card em{font-size:9px}.fleet-card strong{font-size:10px}}
+
+/* V11: a self-contained cockpit, with help and controls inside the fullscreen root. */
+.play-shell{position:relative}.playbar{display:flex;gap:8px;align-items:center;padding:8px 0 12px}.playbar button{min-height:44px;border:1px solid #a6d9c930;border-radius:9px;background:#1b303d;color:var(--ink);padding:10px 16px;font-size:12px;touch-action:manipulation}.playbar button:disabled{opacity:.45;cursor:default}.playbar #pause{background:#24464c;color:var(--mint)}.playbar #fullscreen[aria-pressed="true"]{color:var(--gold);border-color:var(--gold)}
+.move-controls{min-width:0;min-height:0;height:100%}.move-controls .touch-pad{height:100%}.move-controls [hidden]{display:none!important}.touch-controls.controls-left .move-controls{grid-column:2;grid-row:1}.touch-controls.controls-left .touch-pad{grid-column:auto;grid-row:auto}.joystick{height:100%;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;border:1px solid #a6d9c940;border-radius:14px;background:radial-gradient(ellipse at center,#203e4b,#152733);touch-action:none;user-select:none;-webkit-user-select:none}.stick-ring{width:92px;height:92px;border:1px solid #b8e9d64d;border-radius:50%;display:grid;place-items:center;background:#a6efdc08;pointer-events:none}.stick-knob{display:block;width:43px;height:43px;border-radius:50%;background:#a6d9c9;border:4px solid #d6ffed80;box-shadow:0 4px 14px #0005;will-change:transform;pointer-events:none}.joystick small{font-size:9px;color:var(--muted);pointer-events:none}.joystick[data-active="true"]{border-color:var(--mint)}.dpad{height:100%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:3px;touch-action:none}.dpad button{min-width:44px;min-height:44px;border:1px solid #a6d9c940;border-radius:9px;background:#1d3846;color:var(--mint);font-size:21px;touch-action:none;user-select:none;-webkit-user-select:none}.dpad button[data-active="true"]{background:#447369;color:#fff}.dpad span{display:grid;place-items:center;color:#7caba6}.touch-controls{height:140px}.touch-controls[aria-disabled="true"] .move-controls{opacity:.5}
+.game-panel{position:absolute;inset:0;z-index:30;background:#061320df;backdrop-filter:blur(8px);padding:12px;display:flex;align-items:flex-start;justify-content:center;overflow:hidden}.game-panel[hidden]{display:none}.panel-sheet{width:100%;max-width:720px;max-height:100%;overflow:auto;overscroll-behavior:contain;border:1px solid #a6d9c93d;border-radius:14px;background:#132736;padding:0 18px 18px;box-shadow:0 16px 50px #0008}.panel-heading{position:sticky;top:0;z-index:1;background:#132736;padding:14px 0;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px}.panel-heading h2{font-size:18px;font-weight:500;margin:0}.panel-heading button{background:var(--mint);color:#17383e;border-radius:8px;min-height:44px;padding:10px 14px;font-size:12px}.panel-intro{font-size:12px;line-height:1.9;color:#b3c6d1}.control-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.control-options button{color:var(--ink);background:#1c3847;border:1px solid #a6d9c940;border-radius:10px;text-align:left;padding:16px 12px;min-height:110px}.control-options button[aria-pressed="true"]{border-color:var(--gold);background:#3c403b}.control-options strong{display:block;font-size:13px;color:var(--gold);margin-bottom:8px}.control-options small{display:block;font-size:11px;line-height:1.7;color:#b3c6d1}.panel-actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.panel-actions button{min-height:44px;color:var(--mint);background:#1e3c49;border:1px solid #a6d9c940;border-radius:8px;padding:10px 14px;font-size:12px}.panel-actions #hand{padding:10px 14px}.panel-sheet .guide{padding:18px 0;margin:0;grid-template-columns:1fr 1fr;gap:18px}.panel-sheet .guide p{font-size:11px}.panel-sheet .recipes>div{grid-template-columns:1fr}.panel-sheet [hidden]{display:none!important}
+body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z-index:1000;width:100%;height:100vh;height:100dvh;background:#101b27;padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));box-sizing:border-box}.immersive .play-content{height:100%;display:flex;flex-direction:column;gap:5px;min-height:0}.immersive .playbar{padding:0;flex-shrink:0;position:static}.immersive .constellationbar,.immersive .synergybar,.immersive .skillbar,.immersive .toolbar{display:none}.immersive .game{flex:1;min-height:140px;width:100%;border-radius:12px}.immersive .game canvas{height:100%;width:100%}.immersive .touch-controls{margin:0;flex-shrink:0}.immersive .flight-status{min-height:24px;font-size:10px;flex-shrink:0}.immersive .choice-dock{min-height:32px;flex-shrink:0}.immersive .choice-dock button{padding:7px 12px}.immersive .wager-status{display:none;margin:0;padding:4px 8px;font-size:10px;flex-shrink:0}.immersive .wager-status[data-active="true"]{display:block}.immersive .game-panel{position:absolute;padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}.immersive .panel-sheet{height:100%}.immersive .panel-heading{padding-top:8px}.game .overlay{overflow:auto;overscroll-behavior:contain;align-items:safe center}.game .dialog{margin:auto}
+@media(pointer:coarse),(max-width:650px){.playbar{position:sticky;top:0;z-index:6;background:#101b27ed;backdrop-filter:blur(10px);gap:5px;padding:6px 0}.playbar button{flex:1;padding:9px 6px;font-size:11px;white-space:nowrap}.playbar kbd{display:none}.play-shell{scroll-margin-top:8px}.play-content>.skillbar{display:none}.play-content>.toolbar{margin:6px 0 12px}.flight-status{min-height:32px}.game-panel{position:fixed;inset:0;z-index:1100;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}.panel-sheet{border-radius:0;height:100%;max-width:none;padding:0 14px 16px}.control-options{grid-template-columns:1fr}.control-options button{min-height:70px;padding:12px}.control-options strong{margin-bottom:5px}.panel-sheet .guide{grid-template-columns:1fr}.immersive .touch-controls{height:140px}.immersive .dialog{padding:12px}.immersive .dialog .moon{font-size:32px}.immersive .dialog .eyebrow{margin-top:8px}.immersive .dialog h2{font-size:22px;margin:8px 0}.immersive .dialog p{margin-bottom:12px}.immersive .dialog small{margin-top:9px}.immersive .hud{inset:10px 12px auto}.immersive .pressure{top:60px}.immersive .combo{top:77px}.immersive .bossbar{top:96px}}
+@media(max-height:520px) and (orientation:landscape) and (pointer:coarse),(max-height:520px) and (orientation:landscape) and (max-width:950px){.immersive .play-content{display:grid;grid-template-columns:minmax(0,1fr) 216px;grid-template-rows:44px minmax(0,1fr) auto;grid-template-areas:"bar bar" "game controls" "flight choices";gap:5px}.immersive .playbar{grid-area:bar}.immersive .game{grid-area:game;min-height:0;height:100%}.immersive .touch-controls{grid-area:controls;display:grid;height:100%;grid-template-columns:minmax(0,1fr) 64px;gap:5px}.immersive .touch-controls.controls-left{grid-template-columns:64px minmax(0,1fr)}.immersive .flight-status{grid-area:flight}.immersive .choice-dock{grid-area:choices;flex-wrap:wrap;gap:3px}.immersive .choice-dock button{font-size:10px;padding:8px 5px;flex:1}.immersive .wager-status[data-active="true"]{display:none}.immersive .dpad button{min-width:32px;min-height:44px;font-size:18px}.immersive .dpad{align-content:center;grid-template-rows:repeat(3,minmax(44px,1fr))}.immersive .touch-pad{padding:6px;text-align:center}.immersive .touch-pad small{display:none}.immersive .stick-ring{width:84px;height:84px}.immersive .joystick small{font-size:8px;text-align:center}.immersive .dialog .moon,.immersive .dialog .eyebrow,.immersive .dialog small{display:none}.immersive .bossbar{top:75px}.immersive .combo{top:58px}.immersive .pressure{display:none}.immersive .phase-track{bottom:7px}.immersive .panel-sheet{max-width:700px}.immersive .control-options{grid-template-columns:repeat(3,1fr)}}
+
+/* Keep active wager timing visible even on a short landscape display. */
+@media(max-height:520px) and (orientation:landscape) and (pointer:coarse),(max-height:520px) and (orientation:landscape) and (max-width:950px){.immersive .play-content:has(.wager-status[data-active="true"]){grid-template-rows:44px minmax(0,1fr) auto auto;grid-template-areas:"bar bar" "game controls" "flight choices" "wager wager"}.immersive .wager-status[data-active="true"]{display:block;grid-area:wager;line-height:1.4}}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 10</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 11</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <section class="fleet" aria-label="选择本局星舰"><div class="fleet-heading"><strong>选择你的航行方式</strong><span id="fleetHint">出发前选择星舰 · 每局技能重置</span></div><div class="fleet-options">
 <button id="ship-collector" class="fleet-card" aria-pressed="true"><span>◎ 拾光者</span><strong>收集 · 货运</strong><small>吸星范围与货运奖励 +20%</small><em>专属：双生卫星</em></button>
 <button id="ship-falcon" class="fleet-card" aria-pressed="false"><span>➤ 游隼</span><strong>加速 · 穿环</strong><small>1.4s 加速 / 4.3s 冷却 · 穿环分 +20%</small><em>专属：引力尾迹</em></button>
 <button id="ship-warden" class="fleet-card" aria-pressed="false"><span>⬡ 守望者</span><strong>护盾 · 反击</strong><small>初始护甲 +1 · 精准窗口 0.26s</small><em>专属：反射分裂</em></button>
 </div></section>
+<section id="playShell" class="play-shell" aria-label="航行驾驶舱">
+<div id="playContent" class="play-content">
+<nav class="playbar" aria-label="游戏快捷操作"><button id="pause" disabled>暂停 <kbd>P</kbd></button><button id="fullscreen" aria-pressed="false">全屏</button><button id="controlsOpen" aria-haspopup="dialog">操作：拖动</button><button id="helpOpen" aria-haspopup="dialog">玩法</button></nav>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <div id="synergyBar" class="synergybar">技能两两搭配，可自动激活星座合成</div>
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
-<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机在下方独立触控板拖动，旁边的按钮加速。"></canvas>
-<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">选一艘星舰，打造你的专属流派。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">触控板 / WASD 移动 · 空格加速 · Q 月相 · E 强化 / R 赌约</small></div></div>
+<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机可自选拖动、摇杆或方向键，旁边的按钮加速。"></canvas>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">选一艘星舰，打造你的专属流派。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
 <div id="wager" class="upgrade wager" role="dialog" aria-modal="true" aria-labelledby="wagerTitle" hidden><div class="upgrade-panel"><div class="eyebrow">A LITTLE RISK, A NEW POSSIBILITY</div><h2 id="wagerTitle">和星空打个赌？</h2><p>时间已暂停。成功获得额外一次二选一强化，失败不扣分。<br>选择或跳过后，准备好再继续；恢复享有 1.5 秒无敌。</p><div class="choices"><button id="wager0" class="choice"></button><button id="wager1" class="choice"></button></div><button id="wagerSkip" class="skip">这次跳过 →</button><small>键盘 1 / 2 选择 · Esc 跳过</small></div></div>
 <button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
@@ -69,20 +83,34 @@
 <div id="combo" class="combo" aria-live="polite"></div><div class="coordinates">SECTOR 07 · SEA OF TRANQUILITY</div>
 </section>
 <div id="touchControls" class="touch-controls" aria-label="手机驾驶控制区">
+ <div id="moveControls" class="move-controls">
  <div id="touchPad" class="touch-pad" aria-label="相对移动触控板：任意位置落指并滑动，抬手停止" aria-disabled="true" data-active="false"><span class="pad-mark" aria-hidden="true">✥</span><strong>滑动驾驶</strong><span id="padHint">出发后，在这里滑动驾驶</span><small>不必按住飞船 · 可抬手换位置</small></div>
+ <div id="joystick" class="joystick" aria-label="摇杆：按住并推向移动方向" hidden><span id="stickRing" class="stick-ring"><span id="stickKnob" class="stick-knob"></span></span><small>推向任意方向 · 松手停</small></div>
+ <div id="dpad" class="dpad" aria-label="方向键控制区" hidden>
+ <button id="dir-ul" aria-label="向左上移动">↖</button><button id="dir-u" aria-label="向上移动">↑</button><button id="dir-ur" aria-label="向右上移动">↗</button><button id="dir-l" aria-label="向左移动">←</button><span aria-hidden="true">✥</span><button id="dir-r" aria-label="向右移动">→</button><button id="dir-dl" aria-label="向左下移动">↙</button><button id="dir-d" aria-label="向下移动">↓</button><button id="dir-dr" aria-label="向右下移动">↘</button>
+ </div></div>
  <div class="pad-actions"><button id="padBoost" class="pad-boost" aria-label="加速：双倍移速和护盾" disabled><span class="boost-icon">↯</span><span id="padBoostLabel">加速</span><span class="charge"><i id="padCharge"></i></span></button><button id="padMoon" aria-pressed="false" title="切换月相：明月吸星，暗月小巧但吸星较弱" disabled>☀ 明月</button></div>
 </div>
 <div class="flight-status"><span id="flightStatus" role="status">追逐星环、护送月灵 · 都可自由略过</span><small id="routeStatus">自由航行</small></div>
 <div class="choice-dock"><span id="choiceHint">强化 E / 赌约 R · 可选时按键打开</span><button id="upgradeReady" aria-keyshortcuts="E" title="有强化可选时按 E 打开" hidden>✧ 强化可选 · E</button><button id="wagerReady" aria-keyshortcuts="R" title="有赌约可选时按 R 打开" hidden>赌约可选 · R</button></div>
-<div class="skillbar"><span id="skillTip">加速 1.2 秒 · 起手可精准反射 · 冷却 5 秒</span><button id="moonToggle" title="Q 切换：明月吸星更远，暗月船身更小但吸星较弱" aria-pressed="false" disabled>☀ 明月 · 吸星 ⇄</button><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div>
+<div class="skillbar"><span id="skillTip">加速 1.2 秒 · 起手可精准反射 · 冷却 5 秒</span><button id="moonToggle" title="Q 切换：明月吸星更远，暗月船身更小但吸星较弱" aria-pressed="false" disabled>☀ 明月 · 吸星 ⇄</button></div>
 <div id="wagerStatus" class="wager-status" role="status">赌约到来时可主动查看，忽略即可继续飞行</div>
-<div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
-<section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。穿左门更安全，右门星光 ×1.4、陨石略增。</p></div></article></section>
+<div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span></div>
+</div>
+<div id="gamePanel" class="game-panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
+<div class="panel-sheet"><header class="panel-heading"><h2 id="panelTitle">驾驶设置</h2><button id="panelClose">返回游戏</button></header>
+<section id="controlSettings"><p class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
+<button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动；抬手可换位置。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>推向任意方向，推得越远飞得越快。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住持续移动，支持八向与斜向。</small></button>
+</div><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
+<section id="gameRules" hidden><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。穿左门更安全，右门星光 ×1.4、陨石略增。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>星光货运</h3><p>靠近方箱装货，飞到金色空间站交付。最多 3 件，满载奖励更高，键盘／触控最多减速 24%；鼠标保持跟手；到期未交货不扣分。</p></div></article><article><span class="symbol mint">↗</span><div><h3>反射护盾</h3><p>加速起手 0.18 秒内（守望者 0.26 秒）接触陨石，可沿来路反弹；绿色弹体能碎星、破巨陨外壳。普通陨石每次加速反射一次，紫色核心弹在加速护盾期间均可反射。</p></div></article></section>
 <section class="guide"><article><span class="symbol mint">◉</span><div><h3>引力弹弓</h3><p>靠近紫环，点加速入轨，再点沿切线弹射；蓄力 1.3 秒也会自动弹出。沿预览轨迹连穿三枚星环，移动可接管弹射。</p></div></article><article><span class="symbol gold">≈</span><div><h3>追逐星鲸</h3><p>蓝色尾流内免受伤害并可收集星光，累计同行 5 秒获得奖励。提前显示航线，跟随尾流可安全穿越激光闸门；星鲸离开时有短暂保护。</p></div></article><article><span class="symbol coral">ϟ</span><div><h3>激光闸门</h3><p>虚线预警 1.8 秒后开启；绿色缺口始终安全，也可用加速护盾穿越。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol coral">✺</span><div><h3>终局 · 星空风暴</h3><p>最后 20 秒依次迎来碎星环、缺口冲击波和核心攻击，每轮预警 1.8 秒，中间留有间歇。风暴期间暂停生成普通陨石。</p></div></article><article><span class="symbol gold">◇</span><div><h3>选择你的终局</h3><p>朝绿色缺口移动，或加速反射紫色核心弹。生还获得 200 分，击破三层核心获得 600 分；两项奖励不叠加。</p></div></article></section>
 <details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V10.0</span></footer>
+</section>
+</div></div>
+</section>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V11.0</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -232,9 +260,14 @@ const emptyPowers=()=>Object.fromEntries(powersList.map(p=>[p.id,0]));
 let inputMode='keyboard',mouseX=null,mouseY=null,hudSignature='',guard=0,grace=0,boostSerial=0,perfectWindow=0,perfectReady=false,perfectCount=0,slowTime=0,boss=null,bossStarted=false;
 let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
+let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0};
+let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
+const directions={ul:[-1,-1],u:[0,-1],ur:[1,-1],l:[-1,0],r:[1,0],dl:[-1,1],d:[0,1],dr:[1,1]};
+try{const saved=localStorage.getItem('mooncatch-controls');if(['drag','stick','dpad'].includes(saved))controlMode=saved}catch{}
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
 function focusGame(){canvas.focus({preventScroll:true})}
 function clearInput(){
+ clearVirtualInput();
  const held=[...touches];touches.clear();movePointer=null;lastTouchX=lastTouchY=0;
  keys.clear();ship.target=ship.x;ship.targetY=ship.y;inputMode='keyboard';mouseX=mouseY=null;flight.throttle=0;flight.trail=[];
  $('touchPad').setAttribute('data-active','false');
@@ -286,6 +319,13 @@ function resize(){
 new ResizeObserver(resize).observe(canvas);
 function tone(f=600,d=.09){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
 function hud(){
+ const controlSignature=state+'|'+panelOpen;
+ if(controlSignature!==controlHudSignature){
+  controlHudSignature=controlSignature;
+  $('pause').disabled=panelOpen||!['playing','paused'].includes(state);$('pause').textContent=state==='paused'?'继续':'暂停';
+  $('touchControls').setAttribute('aria-disabled',String(state!=='playing'||panelOpen));
+  for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
+ }
  fleetHud();adventureHud();
  const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,Math.ceil(resumeShield*10),!!orbit,canSling()].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
@@ -320,6 +360,7 @@ function hud(){
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
+ if(panelOpen)closePanel(false);
  activeShip=selectedShip;skillWake=[];
  resetAdventure();menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;
@@ -357,6 +398,8 @@ for(const id of ['boost','padBoost']){
  $(id).onclick=e=>{if(!e||e.detail===0)boost()};
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
 }
+$('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
+for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
 $('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
 $('moonToggle').onclick=switchMoon;$('padMoon').onclick=switchMoon;
 $('upgradeReady').onclick=()=>{if(state==='playing'&&canUpgrade())offerUpgrade(true)};
@@ -367,6 +410,17 @@ $('sound').onclick=()=>{sound=!sound;$('sound').textContent='音效：'+(sound?'
 window.addEventListener('keydown',e=>{
  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const k=e.key.toLowerCase();
+ if(panelOpen){
+  if(k==='escape'){e.preventDefault();closePanel()}
+  else if(k==='tab'){
+   const buttons=[...$('gamePanel').querySelectorAll('button:not([disabled]),summary')].filter(b=>!b.closest('[hidden]'));
+   const first=buttons[0],last=buttons[buttons.length-1];
+   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}
+   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}
+  }
+  return;
+ }
+ if(k==='escape'&&focusMode&&!document.fullscreenElement){e.preventDefault();toggleFullscreen();return}
  if(state==='wager'){if(!e.repeat){if(k==='1'||k==='2'){e.preventDefault();chooseWager(Number(k)-1)}else if(k==='escape'){e.preventDefault();skipWager()}}return}
  if(state==='upgrade'){if((k==='1'||k==='2')&&!e.repeat){e.preventDefault();chooseUpgrade(Number(k)-1)}return}
  if(state==='playing'&&(k==='e'||k==='r')){e.preventDefault();if(!e.repeat)$(k==='e'?'upgradeReady':'wagerReady').onclick();return}
@@ -379,7 +433,8 @@ window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);i
 window.addEventListener('blur',()=>{clearInput();if(state==='playing')pause()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause()});
 function pointer(e){
- if(state!=='playing')return;
+ if(state!=='playing'||panelOpen)return;
+ clearVirtualInput();
  launch=null;
  // Mouse coordinates are absolute. Boost/cargo gain belongs only to relative touch input.
  const p=eventPoint(e);
@@ -387,8 +442,9 @@ function pointer(e){
  mouseX=p.x;mouseY=p.y;inputMode='pointer';
 }
 function touchDown(e){
- if(state!=='playing')return;
+ if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
+ if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
  if(e.pointerType!=='touch'&&!isPad){pointer(e);canvas.setPointerCapture(e.pointerId);return}
  e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
  if(isPad)$('touchPad').setAttribute('data-active','true');
@@ -396,8 +452,9 @@ function touchDown(e){
  else boost();
 }
 function touchMove(e){
- if(state!=='playing')return;
+ if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
+ if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
  if(e.pointerType!=='touch'&&!isPad){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
  if(!touches.has(e.pointerId))return;
  e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
@@ -630,6 +687,7 @@ function spawnItem(x,rock){
 }
 
 function update(dt){
+ if(panelOpen)return;
  if(state==='menuIntro'){
   menuIntro.remaining-=dt;
   if(menuIntro.remaining<=0){const kind=menuIntro.kind;menuIntro=null;$('menuCue').hidden=true;state='playing';if(kind==='upgrade')offerUpgrade();else maybeOfferWager()}
@@ -641,12 +699,14 @@ function update(dt){
  announcementTime=Math.max(0,announcementTime-dt);invincible=Math.max(0,invincible-dt);boostCooldown=Math.max(0,boostCooldown-dt);
  const worldDt=dt*(slowTime>0?.4:1);slowTime=Math.max(0,slowTime-dt);
  const oldX=ship.x,oldY=ship.y;
- const dx=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
- const dy=Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w'));
+ const keyboardX=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
+ const keyboardY=Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w'));
+ const virtual=inputMode==='virtual'?virtualDirection():{x:0,y:0};
+ const dx=keyboardX||keyboardY?keyboardX:virtual.x,dy=keyboardX||keyboardY?keyboardY:virtual.y;
  const length=Math.hypot(dx,dy),moveStep=Math.min(W,H)*.9*(boostTime>0?BOOST_SPEED:1)*cargoSpeed()*dt;
  const special=stepSpecialMovement(dt);
  if(!special){
- if(length){ship.target=clamp(ship.x+dx/length*moveStep);ship.targetY=clampY(ship.y+dy/length*moveStep)}
+ if(length){ship.target=clamp(ship.x+dx/length*moveStep*Math.min(1,length));ship.targetY=clampY(ship.y+dy/length*moveStep*Math.min(1,length))}
  if(inputMode==='pointer'&&!length){ship.x=clamp(ship.target);ship.y=clampY(ship.targetY)}
  else{moveToward(ship,ship.target,ship.targetY,moveStep/(dt||1),dt);ship.x=clamp(ship.x);ship.y=clampY(ship.y)}
  }
@@ -1013,6 +1073,110 @@ function drawNavigation(){
  ctx.restore();
 }
 
-function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();hud();requestAnimationFrame(frame);
+
+function clearVirtualInput(){
+ if(!directionPointers.size&&stickPointer===null)return;
+ const held=[...directionPointers.entries()];directionPointers.clear();
+ const stick=stickPointer;stickPointer=null;stickOrigin=null;stickVector={x:0,y:0};
+ for(const [id,p] of held){try{p.surface?.releasePointerCapture?.(id)}catch{}}
+ if(stick!==null){try{$('joystick').releasePointerCapture(stick)}catch{}}
+ $('stickKnob').style.transform='translate(0px,0px)';$('joystick').setAttribute('data-active','false');
+ for(const id of Object.keys(directions))$('dir-'+id).setAttribute('data-active','false');
+}
+function virtualDirection(){
+ if(controlMode==='stick')return stickVector;
+ let x=0,y=0;for(const p of directionPointers.values()){x+=p.x;y+=p.y}
+ return {x,y};
+}
+function claimVirtual(){inputMode='virtual';mouseX=mouseY=null;launch=null;ship.target=ship.x;ship.targetY=ship.y}
+function selectControlMode(mode){
+ if(!['drag','stick','dpad'].includes(mode))return;
+ clearInput();controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}
+ applyControlMode();hud();
+}
+function applyControlMode(){
+ $('touchPad').hidden=controlMode!=='drag';$('joystick').hidden=controlMode!=='stick';$('dpad').hidden=controlMode!=='dpad';
+ for(const mode of ['drag','stick','dpad'])$('mode-'+mode).setAttribute('aria-pressed',String(controlMode===mode));
+ $('controlsOpen').textContent='操作：'+{drag:'拖动',stick:'摇杆',dpad:'方向键'}[controlMode];
+}
+function syncDirections(){
+ for(const [id,[x,y]] of Object.entries(directions))$('dir-'+id).setAttribute('data-active',String([...directionPointers.values()].some(p=>p.x===x&&p.y===y)));
+}
+function endDirection(e){
+ const held=directionPointers.get(e.pointerId);directionPointers.delete(e.pointerId);
+ if(held){try{held.surface.releasePointerCapture?.(e.pointerId)}catch{}ship.target=ship.x;ship.targetY=ship.y}
+ syncDirections();
+}
+for(const [id,[x,y]] of Object.entries(directions)){
+ const b=$('dir-'+id);
+ b.addEventListener('pointerdown',e=>{
+  if(state!=='playing'||panelOpen||controlMode!=='dpad')return;
+  e.preventDefault();claimVirtual();directionPointers.set(e.pointerId,{x,y,surface:b});b.setPointerCapture(e.pointerId);syncDirections();
+ });
+ b.addEventListener('pointermove',e=>{
+  if(state!=='playing'||panelOpen||!directionPointers.has(e.pointerId))return;
+  e.preventDefault();const box=$('dpad').getBoundingClientRect();
+  const dx=Math.max(-1,Math.min(1,Math.floor((e.clientX-box.left)/box.width*3)-1));
+  const dy=Math.max(-1,Math.min(1,Math.floor((e.clientY-(box.top||0))/box.height*3)-1));
+  directionPointers.set(e.pointerId,{x:dx,y:dy,surface:b});claimVirtual();syncDirections();
+ });
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,endDirection);
+ b.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&state==='playing'&&controlMode==='dpad'&&!panelOpen){e.preventDefault();e.stopPropagation();claimVirtual();directionPointers.set('key-'+id,{x,y,surface:b});syncDirections()}});
+ b.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();endDirection({pointerId:'key-'+id})}});
+}
+function moveStick(e){
+ if(state!=='playing'||panelOpen||e.pointerId!==stickPointer||!stickOrigin)return;
+ e.preventDefault();const x=e.clientX-stickOrigin.x,y=e.clientY-stickOrigin.y,d=Math.hypot(x,y),radius=36;
+ const strength=Math.max(0,Math.min(1,(d/radius-.12)/.88));
+ stickVector=d?{x:x/d*strength,y:y/d*strength}:{x:0,y:0};
+ const scale=d?Math.min(d,radius)/d:0;$('stickKnob').style.transform=`translate(${x*scale}px,${y*scale}px)`;
+ claimVirtual();
+}
+$('joystick').addEventListener('pointerdown',e=>{
+ if(state!=='playing'||panelOpen||controlMode!=='stick'||stickPointer!==null)return;
+ e.preventDefault();const box=$('stickRing').getBoundingClientRect();stickOrigin={x:box.left+box.width/2,y:(box.top||0)+box.height/2};stickPointer=e.pointerId;
+ $('joystick').setPointerCapture(e.pointerId);$('joystick').setAttribute('data-active','true');moveStick(e);
+});
+$('joystick').addEventListener('pointermove',moveStick);
+for(const type of ['pointerup','pointercancel','lostpointercapture'])$('joystick').addEventListener(type,e=>{if(e.pointerId===stickPointer){clearVirtualInput();ship.target=ship.x;ship.targetY=ship.y}});
+function openPanel(kind){
+ if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
+ $('playContent').inert=true;$('gamePanel').hidden=false;
+ $('gameRules').hidden=kind!=='rules';$('controlSettings').hidden=kind!=='controls';
+ $('panelTitle').textContent=kind==='rules'?'航行手册':'驾驶设置';
+ $('panelClose').textContent=panelResume?'继续游戏':'返回游戏';$('panelClose').focus({preventScroll:true});hud();
+}
+function closePanel(resume=true){
+ if(!panelOpen)return;
+ const shouldResume=resume&&panelResume&&state==='paused';panelOpen=false;panelResume=false;
+ $('playContent').inert=false;$('gamePanel').hidden=true;clearInput();panelTrigger?.focus({preventScroll:true});
+ if(shouldResume){resumeSafetyPending=true;pause()}else hud();
+}
+function prepareLayoutChange(){
+ clearInput();if(state==='playing'){pause();resumeSafetyPending=true}
+}
+function setFocused(value){
+ focusMode=value;$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
+ $('fullscreen').textContent=value?'退出全屏':'全屏';$('fullscreen').setAttribute('aria-pressed',String(value));
+}
+async function toggleFullscreen(){
+ if(fullscreenBusy)return;fullscreenBusy=true;prepareLayoutChange();
+ try{
+  if(focusMode){
+   if(document.fullscreenElement&&document.exitFullscreen){await document.exitFullscreen()}
+   nativeScreen=false;setFocused(false);
+  }else{
+   setFocused(true);
+   // CSS immersion remains available on browsers that do not support element fullscreen.
+   if($('playShell').requestFullscreen){try{await $('playShell').requestFullscreen({navigationUI:'hide'});nativeScreen=document.fullscreenElement===$('playShell')}catch{}}
+  }
+ }catch{}finally{fullscreenBusy=false;clearInput();hud()}
+}
+document.addEventListener('fullscreenchange',()=>{
+ if(document.fullscreenElement===$('playShell')){nativeScreen=true;setFocused(true)}
+ else if(nativeScreen){nativeScreen=false;prepareLayoutChange();setFocused(false)}
+});
+
+function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();hud();requestAnimationFrame(frame);
 </script>
 </body></html>
