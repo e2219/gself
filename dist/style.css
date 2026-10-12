@@ -66,3 +66,5 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 
 /* New maps show an ordered loop rather than the classic forked route diagram. */
 .route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr)) 24px;gap:7px}.route-map[data-layout="steps"] .map-branch{display:contents}.route-map[data-layout="steps"] .map-branch:before,.route-map[data-layout="steps"]>.map-end:last-child:before{content:none}.route-map[data-layout="steps"] .route-node{height:auto;min-height:24px;line-height:1.4;white-space:normal;display:flex;align-items:center;justify-content:center;padding:2px}
+
+.worlds .fleet-options{grid-template-columns:repeat(4,minmax(0,1fr))}.worlds .fleet-card:nth-child(4){background:linear-gradient(135deg,#33424c,#1b2b3d)}@media(max-width:650px){.worlds .fleet-options{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -727,6 +727,89 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V13.1 feedback PASS: all eight step labels reachable, precise warmup/protection transitions, map-specific phases, completion/expiry/countdown text, paused notices and clean classic restoration');
 }
 
+// V14: resonance rewards require three clean curtains and cannot farm a single event.
+{
+ run('state="over";selectWorld("aurora");start()');isolate();
+ run('items=[{x:30,y:60,rock:true},{x:50,y:60,rock:false},{x:70,y:60,rock:true,core:true}];warnings=[{}];chargeResonance(true);chargeResonance(true)');assert.equal(run('resonance'),2);assert.equal(run('score'),0);
+ run('chargeResonance(true)');assert.equal(run('resonance'),0);assert.equal(run('resonanceWaves'),1);assert.equal(run('score'),150);assert(run('items[0].dead'));assert(!run('items[1].dead'));assert(!run('items[2].dead'));assert.equal(run('warnings.length'),0);
+ run('chargeResonance(true);chargeResonance(false)');assert.equal(run('resonance'),0);
+ run('elapsed=14;worldEvent={at:10,seed:1,cleared:false};ship.x=auroraGeometry(worldEvent,elapsed).x;ship.y=auroraGeometry(worldEvent,elapsed).y;stepWorld(0,ship.x,ship.y);stepWorld(0,ship.x,ship.y)');assert.equal(run('resonance'),1);assert.equal(run('worldWins'),1);
+ run('worldEvent={at:20,seed:2,cleared:false};elapsed=27;stepWorld(0,ship.x,ship.y)');assert.equal(run('resonance'),0);
+ run('start()');assert.equal(run('resonance+resonanceWaves'),0);
+ console.log('V14 resonance PASS: three clean passes, one-time clear/reward, ordinary hazards only, broken streak/miss and restart');
+}
+// Distinct portal options preserve ordered pickups, finite rewards and protected exit.
+{
+ for(const route of ['safe','risk']){
+  run('state="over";selectWorld("warp");start()');isolate();run(`elapsed=10;worldEvent={at:8,index:0,used:false,mirror:false};globalThis.g=warpGates(worldEvent).find(g=>g.id==='${route}');ship.x=g.x*W;ship.y=g.y*H;boostTime=1;stepWorld(0,ship.x,ship.y)`);
+  assert.equal(run('worldEvent.route'),route);assert.equal(run('worldJumps'),1);assert(run('resumeShield>=1.5'));
+  if(route==='risk'){
+   run('boostTime=0;elapsed=11;ship.x=warpRocks(worldEvent)[0].x*W;ship.y=warpRocks(worldEvent)[0].y*H;stepWorld(.01,ship.x,ship.y)');assert.equal(run('hp'),3);
+   run('elapsed=12;resumeShield=0;stepWorld(.01,ship.x,ship.y)');assert.equal(run('hp'),2);
+  }
+  for(let i=0;i<3;i++)run('globalThis.p=warpBeacons(worldEvent)[worldEvent.index];ship.x=p.x*W;ship.y=p.y*H;stepWorld(.01,ship.x,ship.y)');
+  assert.equal(run('worldWins'),1);assert.equal(run('dust'),3);assert.equal(run('score'),route==='safe'?415:635);assert.equal(run('worldEvent'),null);
+ }
+ console.log('V14 gates PASS: both real gate entries, distinct rewards/routes, protected risk exit, solid obstacles and one-shot completion');
+}
+// Map-specific finales keep telegraphs, shared damage protection and correct facing.
+{
+ run('state="over";selectWorld("aurora");start()');isolate();run('elapsed=70;updateBoss(0,0,ship.x,false);elapsed=72;boss.warning=0;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'iris');assert.equal(run('items.length'),0);
+ run('elapsed=74;globalThis.g=irisGeometry(storm.event);ship.x=g.x+g.r*Math.cos(g.gap);ship.y=g.y+g.r*Math.sin(g.gap);stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('hp'),3);
+ run('ship.x=g.x+g.r*Math.cos(g.gap+Math.PI);ship.y=g.y+g.r*Math.sin(g.gap+Math.PI);stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('hp'),2);
+ run('invincible=0;stepStorm(.01,ship.x,ship.y,true);draw(74)');assert.equal(run('hp'),2);
+ run('pause()');const frozen=run('JSON.stringify(storm)');run('update(2)');assert.equal(run('JSON.stringify(storm)'),frozen);
+ run('state="over";selectWorld("warp");start()');isolate();run('elapsed=70;updateBoss(0,0,ship.x,false);boss.warning=0;elapsed=72;updateBoss(0,0,0,false,0);stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'rift');
+ run('breakBossShell(false,boss.x,boss.y+100)');assert.equal(run('boss.hp'),3);run('breakBossShell(false,boss.x,boss.y-100)');assert.equal(run('boss.hp'),2);
+ run('globalThis.g=finaleGate(storm.event);ship.x=g.x*W;ship.y=g.y*H;boostTime=1;globalThis.jumped=stepFinalePortal(ship.x,ship.y)');assert(!run('jumped'));
+ run('elapsed=74;stepStorm(.01,ship.x,ship.y,true);globalThis.jumped=stepFinalePortal(ship.x,ship.y)');assert(run('jumped'));assert.equal(run('ship.x'),run('W*.5'));assert.equal(run('ship.y'),run('clampY(H*.15)'));assert(run('resumeShield>=1.5'));assert(run('items.every(o=>o.dy>0)'));
+ assert(!run('stepFinalePortal(ship.x,ship.y)'));run('draw(74);boss.hp=1;breakBossShell(false,boss.x,boss.y-100)');assert.equal(run('score'),600);assert.equal(run('storm.event'),null);assert.equal(run('items.length'),0);
+ // A normal-speed pilot can use all three portal windows to defeat the rear-facing core.
+ for(const size of [[360,400],[960,510]]){
+  [width,height]=size;run(`state='over';selectWorld('warp');resize();start();elapsed=70;invincible=1000;inputMode='keyboard';
+   for(let i=0;i<1250&&state==='playing';i++){
+    const e=storm?.event;
+    if(e?.kind==='rift'&&!e.used){const g=finaleGate(e);ship.target=g.x*W;ship.targetY=g.y*H;if(elapsed>=e.fire&&Math.hypot(ship.x-ship.target,ship.y-ship.targetY)<24)boost();}
+    else if(e?.used&&boss?.hp>0){ship.target=boss.x;ship.targetY=boss.y;}
+    update(1/60);
+   }`);assert.equal(run('boss.hp'),0);assert(!run('stormRewarded'));
+ }
+ console.log('V14 finales PASS: iris safe gap/hit/boost/pause, warp front armor/back weakness, armed one-shot portal, exit shield, forward volleys and defeat cleanup');
+}
+// Space station: independent health, delivery, rescue, intercepted shots and terminal payouts.
+{
+ width=360;height=400;run('state="over";selectWorld("station");resize();start()');isolate();run('stepStation(0,ship.x,ship.y)');assert.equal(run('station.hp'),2);assert.equal(els['world-station'].attributes['aria-pressed'],'true');
+ run('globalThis.c=station.cells[0];ship.x=c.x*W;ship.y=c.y*H;stepStation(0,ship.x,ship.y)');assert.equal(run('station.load'),1);run('ship.x=W*.5;ship.y=H*.52;stepStation(0,ship.x,ship.y)');assert.equal(run('station.hp'),3);assert.equal(run('station.delivered'),1);assert.equal(run('score'),70);run('stepStation(0,ship.x,ship.y)');assert.equal(run('score'),70);
+ run('station.rescue={x:.5,y:.55,until:20,following:false};stepStation(.1,ship.x,ship.y)');assert.equal(run('station.rescued'),1);assert.equal(run('station.hp'),4);assert.equal(run('dust'),3);
+ run('items=[{x:40,y:80,rock:true,stationRaid:true}];shatter(items[0],false);shatter(items[0],false)');assert.equal(run('station.intercepts'),1);
+ run('items=[{x:W*.5,y:H*.52,prevX:W*.5,prevY:H*.52,r:12,rock:true,stationRaid:true,v:0,a:0}];ship.x=ship.target=30;ship.y=ship.targetY=H-30;update(.01)');assert.equal(run('station.hp'),3);assert.equal(run('hp'),3);
+ run('elapsed=10;station.raidSlot=0;warnings=[];stepStation(0,ship.x,ship.y)');assert.equal(run('warnings.length'),1);assert.equal(run('warnings[0].remaining'),2);run('spawnMeteor(warnings[0])');assert(run('items[items.length-1].stationRaid'));
+ run('pause()');const frozen=run('JSON.stringify([station,elapsed])');run('update(3)');assert.equal(run('JSON.stringify([station,elapsed])'),frozen);run('pause();draw(10)');width=800;height=500;resizeCallback();run('draw(10)');assert.equal(run('station.hp'),3);
+ run('station.hp=1;items=[{x:W*.5,y:H*.52,r:12,rock:true,stationRaid:true,v:0,a:0}];update(.01)');assert.equal(run('state'),'over');assert(run('station.failed'));assert(els.title.textContent.includes('失守'));assert(!run('station.paid'));
+ run('start();elapsed=90;station.hp=4;station.rescued=2;score=0;finish()');assert.equal(run('score'),800);run('finish()');assert.equal(run('score'),800);assert.equal(storage['mooncatch-best-station-v13'],'800');assert(!run('bossStarted'));
+ run('start()');assert.equal(run('station.hp'),2);assert.equal(run('station.load+station.rescued+station.delivered'),0);
+ console.log('V14 station PASS: separate HP, delivery/reward caps, escort, intercept idempotency, raid damage/telegraph, pause/resize, station loss and one-shot evacuation/record');
+}
+// Full station journey and new finales execute on both narrow and wide canvases.
+{
+ for(const map of ['aurora','warp','station'])for(const size of [[360,400],[960,510]]){
+  [width,height]=size;run(`state='over';selectWorld('${map}');resize();start();invincible=1000;inputMode='keyboard';globalThis.v14Seen=new Set();
+   for(let i=0;i<5500&&state==='playing';i++){
+    if(station){
+     const c=station.cells.find(c=>!c.taken);const r=station.rescue;
+     if(station.load||station.hp<2&&!c){ship.target=W*.5;ship.targetY=H*.52;if(station.hp<=2)boost();}
+     else if(r&&station.hp>=3){ship.target=r.x*W;ship.targetY=r.y*H;}
+     else if(c){ship.target=c.x*W;ship.targetY=c.y*H;}
+    }
+    update(1/60);if(storm?.event)v14Seen.add(storm.event.kind);if(i%90===0)draw(i/60);
+   }`);
+  assert.equal(run('state'),'over');assert(run('elapsed>=90'),map+' must reach end '+JSON.stringify(run('[elapsed,station,ship]')));assert(els.upgrade.hidden&&els.wager.hidden);
+  if(map==='station'){assert(run('station.paid'));assert(run('station.delivered>0'));assert(run('station.rescued>0'));assert.equal(run('boss'),null)}else assert.equal(run('[...v14Seen].join()'),map==='aurora'?'iris':'rift');
+ }
+ run('state="over";selectWorld("classic");start()');assert.equal(run('station'),null);assert.equal(els['map-port'].textContent,'货运港');
+ console.log('V14 journeys PASS: all new finale kinds, station supply/rescue/defense to 90s, mobile/desktop draws, optional menus and classic restoration');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
