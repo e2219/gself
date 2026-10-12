@@ -217,3 +217,25 @@ run('start()');assert.equal(run('hazardWave'),0);assert.equal(run('ship.targetY'
 console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY and handoff, swept crossings and near misses, four-edge telegraphs, fixed trajectories, continuous difficulty, 2D echo attraction/expiry, resize/pause/reset');
 
 }
+
+// V6.1 pose easing is independent of frame rate and never delays ship position.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ const angles=[];
+ for(const fps of [30,60,120]){
+  run('flight=newFlight();ship.x=300;ship.y=200');
+  for(let i=0;i<fps/2;i++)run(`updateFlight(${1/fps},ship.x-3,ship.y)`);
+  angles.push(run('flight.angle'));
+ }
+ assert(Math.abs(angles[0]-angles[2])<1e-10);
+ run('flight.angle=Math.PI-.01;ship.x=100;ship.y=100;updateFlight(.01,103,100.03)');
+ assert(run('Math.abs(flight.angle)>3')); // shortest turn across the +/-pi seam
+ run('start()');isolate();run('inputMode="pointer";ship.target=230;ship.targetY=170;update(1/120)');
+ assert.equal(run('ship.x'),230);assert.equal(run('ship.y'),170);assert(run('flight.trail.length')>0);
+ for(let i=0;i<100;i++)run('update(1/120)');
+ assert.equal(run('ship.x'),230);assert.equal(run('ship.y'),170);assert.equal(run('flight.trail.length'),0);assert(run('flight.throttle<.001'));
+ run('powers.echo=1;flight.angle=.7;boost()');assert.equal(run('echoes[0].angle'),.7);
+ for(let i=0;i<200;i++)run('updateFlight(.001,ship.x-1,ship.y)');assert(run('flight.trail.length<=32'));
+ run('draw(3);pause()');assert.equal(run('flight.trail.length'),0);run('start()');assert.equal(run('flight.angle'),-Math.PI/2);assert.equal(run('flight.throttle'),0);
+ console.log('V6.1 PASS: frame-rate-independent pose, shortest rotation, immediate 2D position/stop, fading bounded trails, echo orientation and reset');
+}

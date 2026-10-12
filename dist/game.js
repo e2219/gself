@@ -11,6 +11,8 @@ let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
 let ship={x:480,y:350,target:480,targetY:350,direction:1};
 let hazardWave=0;
+const newFlight=()=>({angle:-Math.PI/2,bank:0,throttle:0,trail:[]});
+let flight=newFlight();
 const upgradeAt=[3,8,15,24];
 const powersList=[
  {id:'magnet',name:'磁力月舟',description:['吸引周围 100 像素内的星光与星屑。','吸引范围扩大到 155 像素。']},
@@ -44,7 +46,7 @@ let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rin
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
 function focusGame(){canvas.focus({preventScroll:true})}
-function clearInput(){keys.clear();touches.clear();movePointer=null;ship.target=ship.x;ship.targetY=ship.y;inputMode='keyboard';mouseX=mouseY=null}
+function clearInput(){keys.clear();touches.clear();movePointer=null;ship.target=ship.x;ship.targetY=ship.y;inputMode='keyboard';mouseX=mouseY=null;flight.throttle=0;flight.trail=[]}
 function applyHand(){document.querySelector('.game').classList.toggle('controls-left',leftHand);$('hand').textContent='加速键：'+(leftHand?'左侧':'右侧')+' ⇄';$('hand').setAttribute('aria-pressed',String(leftHand))}
 
 try{best=Number(localStorage.getItem('mooncatch-best-v6'))||0}catch{}
@@ -108,7 +110,7 @@ function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=2;hazardWave=0;
- items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};
+ items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus()}
@@ -126,7 +128,7 @@ function finish(){
 function boost(){
  if(state!=='playing'||boostCooldown>0)return;
  if(activeWager?.id==='quiet')resolveWager(false);
- if(powers.echo)echoes.push({x:ship.x,y:ship.y,life:powers.echo===2?4:2});
+ if(powers.echo)echoes.push({x:ship.x,y:ship.y,angle:flight.angle,life:powers.echo===2?4:2});
  boostSerial++;perfectWindow=.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
  boostTime=BOOST_TIME;boostCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
@@ -353,6 +355,7 @@ function update(dt){
  if(length){ship.target=clamp(ship.x+dx/length*moveStep);ship.targetY=clampY(ship.y+dy/length*moveStep)}
  if(inputMode==='pointer'&&!length){ship.x=clamp(ship.target);ship.y=clampY(ship.targetY)}
  else{moveToward(ship,ship.target,ship.targetY,moveStep/(dt||1),dt);ship.x=clamp(ship.x);ship.y=clampY(ship.y)}
+ updateFlight(dt,oldX,oldY);
  const protectedByBoost=boostTime>0;boostTime=Math.max(0,boostTime-dt);
  spawn-=dt;if(spawn<=0){starWave();spawn=phases[phase].interval}
  hazardClock-=dt;if(hazardClock<=0){warnWave();hazardClock=difficulty().interval}
@@ -393,6 +396,47 @@ function update(dt){
  hud();if(time<=0)finish();else{offerUpgrade();maybeOfferWager()}
 }
 function star(x,y,r,a){ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.beginPath();for(let i=0;i<8;i++){const t=i*Math.PI/4,rr=i%2?r*.35:r;ctx.lineTo(Math.cos(t)*rr,Math.sin(t)*rr)}ctx.closePath();ctx.fill();ctx.restore()}
+// Position follows input immediately; only the craft's pose and engine ease into motion.
+function updateFlight(dt,oldX,oldY){
+ const dx=ship.x-oldX,dy=ship.y-oldY,distance=Math.hypot(dx,dy);
+ const moving=distance>.01;
+ let turn=0;
+ if(moving){
+  const desired=Math.atan2(dy,dx);
+  turn=Math.atan2(Math.sin(desired-flight.angle),Math.cos(desired-flight.angle));
+  flight.angle+=turn*(-Math.expm1(-26*dt));
+  flight.angle=Math.atan2(Math.sin(flight.angle),Math.cos(flight.angle));
+ }
+ flight.bank+=(Math.max(-.22,Math.min(.22,turn*.16))-flight.bank)*(-Math.expm1(-18*dt));
+ const power=moving?Math.min(1,distance/Math.max(.001,dt)/(Math.min(W,H)*.9)):0;
+ flight.throttle+=(power-flight.throttle)*(-Math.expm1(-(moving?45:15)*dt));
+ for(const p of flight.trail)p.life-=dt;
+ flight.trail=flight.trail.filter(p=>p.life>0);
+ if(moving){
+  const life=boostTime>0?.22:.13;
+  flight.trail.push({x:oldX,y:oldY,x2:ship.x,y2:ship.y,life,total:life,boost:boostTime>0});
+  if(flight.trail.length>32)flight.trail.shift();
+ }
+}
+function drawCraft(x,y,angle,bank,throttle,t,ghost=false){
+ ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(1,1-Math.abs(bank));
+ const mint=ghost?'#c1aaf0':'#a6efdc';
+ // Twin swept fins surround a compact capsule, with the gold moon core at its center.
+ if(!ghost&&throttle>.02){
+  const flame=(9+throttle*16+(boostTime>0?15:0))*(1+Math.sin(t*36)*.08);
+  ctx.fillStyle=boostTime>0?'#b9ffe67a':'#86dac45c';ctx.shadowColor=mint;ctx.shadowBlur=12;
+  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(-11,side*7-3);ctx.quadraticCurveTo(-flame-14,side*7,-11,side*7+3);ctx.fill()}
+  ctx.shadowBlur=0;
+ }
+ ctx.lineWidth=1.5;ctx.strokeStyle=mint;ctx.fillStyle=ghost?'#bca7f522':'#244d5a';
+ for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(8,side*5);ctx.quadraticCurveTo(-2,side*19,-15,side*17);ctx.lineTo(-10,side*7);ctx.closePath();ctx.fill();ctx.stroke()}
+ ctx.shadowColor=mint;ctx.shadowBlur=ghost?5:10;ctx.fillStyle=ghost?'#bca7f533':'#a9dfd4';
+ ctx.beginPath();ctx.moveTo(21,0);ctx.bezierCurveTo(12,-10,-6,-12,-13,-5);ctx.lineTo(-13,5);ctx.bezierCurveTo(-6,12,12,10,21,0);ctx.closePath();ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+ ctx.fillStyle=ghost?'#e6dbff':'#183748';ctx.beginPath();ctx.ellipse(3,0,8,5,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#f3d694';ctx.beginPath();ctx.arc(2,0,3.2,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle=ghost?'#e6dbff':'#edfff8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(11,-2);ctx.lineTo(15,0);ctx.lineTo(11,2);ctx.stroke();
+ ctx.restore();
+}
 function draw(t){ctx.clearRect(0,0,W,H);const bg=ctx.createRadialGradient(W*.55,H*.25,0,W*.5,H*.5,W*.7);bg.addColorStop(0,['#1c3046','#302640','#3b3040'][phase]);bg.addColorStop(1,'#0a1524');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillStyle='#dde8ec';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
@@ -405,9 +449,15 @@ for(const o of items){if(o.rock&&o.dx!==undefined){ctx.strokeStyle='#ed8d7d55';c
 if(boss&&boss.hp>0&&boss.warning<=0){ctx.save();ctx.translate(boss.x,boss.y);ctx.rotate(t*.15);ctx.fillStyle='#6d5367';ctx.strokeStyle='#f3b49c';ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5,r=boss.r*(i%2?.87:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#f3d694';star(0,0,13,t);for(let i=0;i<boss.hp;i++){ctx.beginPath();ctx.arc(0,0,20+i*6,0,Math.PI*1.6);ctx.stroke()}ctx.restore()}
 for(const s of shards){ctx.globalAlpha=Math.min(1,s.life);ctx.fillStyle='#a6ffe0';ctx.shadowColor='#a6ffe0';ctx.shadowBlur=16;star(s.x,s.y,6,t*2);ctx.shadowBlur=0}ctx.globalAlpha=1;
 for(const r of rings){ctx.globalAlpha=r.life/.4;ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x,r.y,r.radius*(1-r.life/.4),0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1;
-for(const e of echoes){if(hasSynergy('gravity')){ctx.strokeStyle='#bca7f530';ctx.lineWidth=1;ctx.beginPath();ctx.arc(e.x,e.y,powers.magnet===2?130:90,0,Math.PI*2);ctx.stroke()}ctx.save();ctx.translate(e.x,e.y);ctx.globalAlpha=Math.min(.6,e.life);ctx.strokeStyle='#bca7f5';ctx.fillStyle='#bca7f5';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();star(0,-6,5,t);ctx.restore()}
+for(const e of echoes){if(hasSynergy('gravity')){ctx.strokeStyle='#bca7f530';ctx.lineWidth=1;ctx.beginPath();ctx.arc(e.x,e.y,powers.magnet===2?130:90,0,Math.PI*2);ctx.stroke()}ctx.save();ctx.globalAlpha=Math.min(.6,e.life);drawCraft(e.x,e.y,e.angle??-Math.PI/2,0,0,t,true);ctx.restore()}
 if(powers.magnet){ctx.strokeStyle='#a6d9c918';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ship.x,shipY(),powers.magnet===2?155:100,0,Math.PI*2);ctx.stroke()}
 for(const p of particles){ctx.globalAlpha=Math.max(0,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3)}ctx.globalAlpha=1;
-ctx.save();ctx.translate(ship.x,shipY());if(boostTime>0){ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,0,33,22,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#a6d9c925';ctx.fill();ctx.strokeStyle='#a6d9c960';ctx.beginPath();ctx.ellipse(0,0,36+Math.sin(t*16)*3,25,0,0,Math.PI*2);ctx.stroke()}if(invincible>0&&boostTime<=0)ctx.globalAlpha=.4+Math.sin(t*30)*.3;ctx.shadowColor='#a6d9c9';ctx.shadowBlur=18;ctx.strokeStyle='#afdccd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-23,-7);ctx.quadraticCurveTo(0,22,23,-7);ctx.quadraticCurveTo(0,5,-23,-7);ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#f3d694';star(0,-5,5,t*.25);ctx.strokeStyle='#a6d9c925';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,15,30,4,0,0,Math.PI*2);ctx.stroke();ctx.restore()}
+ctx.save();ctx.lineCap='round';
+for(const p of flight.trail){ctx.globalAlpha=p.life/p.total*(p.boost?.32:.14);ctx.strokeStyle=p.boost?'#b3ffe5':'#a6d9c9';ctx.lineWidth=p.boost?6:3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x2,p.y2);ctx.stroke()}
+ctx.restore();
+if(boostTime>0){ctx.save();ctx.translate(ship.x,ship.y);ctx.strokeStyle='#a6d9c9a0';ctx.lineWidth=1.5;ctx.fillStyle='#a6d9c912';ctx.beginPath();ctx.arc(0,0,27+Math.sin(t*16),0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}
+ctx.save();if(invincible>0&&boostTime<=0)ctx.globalAlpha=.55+Math.sin(t*30)*.25;
+drawCraft(ship.x,ship.y,flight.angle,flight.bank,flight.throttle,t);ctx.restore()}
+
 
 function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();hud();requestAnimationFrame(frame);
