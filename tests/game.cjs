@@ -355,8 +355,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  const crate=i=>run(`ship.x=objective.crates[${i}].x*W;ship.y=objective.crates[${i}].y*H;updateAdventure(0,ship.x,ship.y)`);
  const deliver=()=>run('ship.x=objective.station.x*W;ship.y=objective.station.y*H;updateAdventure(0,ship.x,ship.y)');
  beginCargo();for(let i=0;i<3;i++)crate(i);assert.equal(run('cargoLoad()'),3);assert.equal(run('cargoSpeed()'),.76);assert.equal(run('score'),0);
- run('boostCooldown=4');deliver();assert.equal(run('score'),360);assert.equal(run('cargoDelivered'),3);assert.equal(run('cargoSpeed()'),1);assert.equal(run('objective'),null);assert.equal(run('boostCooldown'),3);run('updateAdventure(.01,ship.x,ship.y)');assert.equal(run('score'),360);
- run('start()');isolate();beginCargo();crate(0);deliver();assert.equal(run('score'),70);assert.equal(run('cargoLoad()'),0);assert(run('objective.crates[0].taken'));crate(0);assert.equal(run('cargoLoad()'),0);crate(1);crate(2);deliver();assert.equal(run('score'),260);assert.equal(run('cargoDelivered'),3);
+ run('boostCooldown=4');deliver();assert.equal(run('score'),432);assert.equal(run('cargoDelivered'),3);assert.equal(run('cargoSpeed()'),1);assert.equal(run('objective'),null);assert.equal(run('boostCooldown'),3);run('updateAdventure(.01,ship.x,ship.y)');assert.equal(run('score'),432);
+ run('start()');isolate();beginCargo();crate(0);deliver();assert.equal(run('score'),84);assert.equal(run('cargoLoad()'),0);assert(run('objective.crates[0].taken'));crate(0);assert.equal(run('cargoLoad()'),0);crate(1);crate(2);deliver();assert.equal(run('score'),312);assert.equal(run('cargoDelivered'),3);
  run('start()');isolate();beginCargo();crate(0);run('score=90;combo=6;elapsed=15;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('cargoLoad()'),0);assert.equal(run('score'),90);assert.equal(run('hp'),3);assert.equal(run('combo'),6);
  // Load scales keyboard and pad motion, while the mouse remains absolute, without input backlog.
  run('start()');isolate();beginCargo();run('objective.load=3;keys.add("d");update(.1)');assert(Math.abs(run('ship.x-W/2')-height*.9*.1*.76)<1e-8);
@@ -417,4 +417,81 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('pause()');const frozen=run('[ship.x,ship.y].join()');elementEvents['sky:pointermove']({pointerType:'mouse',clientX:300,clientY:300});assert.equal(run('[ship.x,ship.y].join()'),frozen);run('pause()');move(320,250);
  run('objective=null;ship.x=ship.target=100;ship.y=ship.targetY=200;boostTime=0;invincible=resumeShield=0;items=[{x:400,y:200,r:12,v:0,a:0,rock:true}]');move(700,200);assert.equal(run('hp'),2);
  console.log('V9.1 PASS: absolute mouse alignment across fast reversals, clamped borders, boost/cargo/resume; swept collisions retained');
+}
+
+// V10: fleet choices, exclusive build paths and game-time-only signature skills.
+{
+ const freshHull=id=>{run('state="over"');els['ship-'+id].onclick();run('start()');isolate()};
+ width=960;height=510;run('resize()');
+ for(const id of ['collector','falcon','warden']){
+  freshHull(id);assert.equal(run('activeShip'),id);assert.equal(storage['mooncatch-ship'],id);assert(els['ship-'+id].disabled);
+  els['ship-'+(id==='collector'?'falcon':'collector')].onclick();assert.equal(run('activeShip'),id);
+  run('dust=3;offerUpgrade()');assert.equal(run('offers[0].id'),run('hull().skill'));assert(run('offers.every(p=>!p.owner||p.owner===activeShip)'));
+  run('chooseUpgrade(0);pause()');assert.equal(run('powers[hull().skill]'),1);assert(run('resumeShield>=1.5'));
+  run('dust=8;offerUpgrade();chooseUpgrade(0);pause()');assert.equal(run('powers[hull().skill]'),2);
+  run('dust=15;offerUpgrade()');assert(run('offers.every(p=>p.id!==hull().skill)'));run('draw(1);start()');assert.equal(run('powers[hull().skill]'),0);
+ }
+ freshHull('collector');assert.equal(run('starAttraction()'),78);assert.equal(run('cargoReward(3)'),432);
+ // Dark moon disables base attraction so these pickups can only come from the satellites.
+ run('moonPhase="dark";powers.satellite=2;const sat=satellites()[0];items=[{...sat,r:5,v:0,rock:false,a:0}];shards=[{...sat,life:5,age:.2,locked:false}];update(.01)');assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('items.length'),0);assert.equal(run('satellites().length'),3);
+ freshHull('falcon');run('boost()');assert.equal(run('boostTime'),1.4);assert.equal(run('boostCooldown'),4.3);assert.equal(run('ringReward(150)'),180);assert.equal(run('cargoReward(3)'),360);
+ run('powers.wake=1;moonPhase="dark";ship.x=ship.target=400;ship.y=ship.targetY=250;items=[{x:200,y:258,r:7,v:0,rock:false,a:0}];shards=[{x:220,y:255,life:5,age:.2}];stepFleet(.02,100,250)');assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('skillWake.length'),1);
+ run('pause()');const trailFrozen=run('JSON.stringify(skillWake)');run('update(10)');assert.equal(run('JSON.stringify(skillWake)'),trailFrozen);run('pause();boostTime=0;stepFleet(2,ship.x,ship.y)');assert.equal(run('skillWake.length'),0);
+ run('powers.wake=2;boostTime=100;for(let i=0;i<300;i++)stepFleet(.01,ship.x-10,ship.y)');assert(run('skillWake.length<=96'));width=360;height=400;run('resize();draw(1)');assert(run('skillWake.every(p=>Number.isFinite(p.x2+p.y2))'));
+ freshHull('falcon');run('powers.wake=1;boostTime=1.4;for(let i=0;i<168;i++){elapsed+=1/120;ship.x+=2;stepFleet(1/120,ship.x-2,ship.y)}');assert(run('skillWake.length>30&&skillWake.length<45'));assert(run('skillWake[0].life>.35'));
+ freshHull('warden');assert.equal(run('guard'),1);run('boost();powers.split=1;items=[{x:ship.x,y:ship.y,dx:0,dy:1,r:12,rock:true,a:0}];reflectMeteor(items[0])');assert.equal(run('reflections.length'),3);assert.equal(run('perfectCount'),1);assert(run('reflections.every(s=>Math.abs(Math.hypot(s.dx,s.dy)-1)<1e-9)'));
+ run('boostCooldown=0;boost();powers.split=2;reflectMeteor({x:ship.x,y:ship.y,dx:0,dy:1,r:12,rock:true})');assert.equal(run('reflections.length'),8);assert.equal(run('perfectWindow'),.26);
+ run('boostTime=0;damage()');assert.equal(run('hp'),3);assert.equal(run('guard'),0);run('start()');assert.equal(run('guard'),1);assert.equal(run('skillWake.length'),0);
+ freshHull('collector');
+ console.log('V10 fleet PASS: selection locking/persistence, exclusive two-tier offers, satellite gold/dust pickup, wake pickup/expiry/pause/cap/resize, three/five-way reflection, hull passives and clean restart');
+}
+
+// V10 storm: readable attacks, swept gap collisions, core reflection and exclusive end rewards.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ run('elapsed=70;updateBoss(0,0,ship.x,false);elapsed=72;boss.warning=0;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'fragments');assert.equal(run('items.length'),0);
+ run('elapsed=73.7;stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('items.length'),0);
+ run('elapsed=73.81;stepStorm(.01,ship.x,ship.y,false)');assert(run('items.length>=7&&items.length<=9'));assert(run('items.every(o=>angleGap(Math.atan2(o.dy,o.dx),storm.event.gap)>.7)'));
+ const emitted=run('items.length');run('stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('items.length'),emitted);
+ run('elapsed=76.1;stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('storm.event'),null);assert.equal(run('items.length'),0);
+ run('elapsed=78;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'wave');run('pause()');const stormFrozen=run('JSON.stringify([storm,elapsed])');run('update(4)');assert.equal(run('JSON.stringify([storm,elapsed])'),stormFrozen);run('pause()');
+ // Known center/gap/radius: cross the damaging side in one pointer step, then the green side.
+ run('storm.event={kind:"wave",x:.5,y:.5,gap:0,fire:0,end:10,fired:true,radius:100};elapsed=(100-32)/(Math.hypot(W,H)*.5);ship.x=W/2-140;ship.y=H/2;invincible=resumeShield=0;stepStorm(0,W/2-60,H/2,false)');assert.equal(run('hp'),2);
+ run('hp=3;invincible=0;ship.x=W/2+140;stepStorm(0,W/2+60,H/2,false)');assert.equal(run('hp'),3);
+ run('ship.x=W/2-140;stepStorm(0,W/2-60,H/2,true)');assert.equal(run('hp'),3);
+ run('resumeShield=1;stepStorm(0,W/2-60,H/2,false)');assert.equal(run('hp'),3);
+ run('resumeShield=0;storm.event=null;storm.slot=2;elapsed=84;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'core');assert.equal(run('items.length'),0);
+ run('elapsed=85.81;stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('items.filter(o=>o.core).length'),3);
+ run('boost();perfectWindow=0;reflectMeteor(items[0])');assert.equal(run('reflections.length'),1);assert.equal(run('perfectCount'),0);
+ run('storm.event=null;hazardClock=0;update(.01)');assert.equal(run('warnings.length'),0);
+ run('items=[{rock:true,core:true},{rock:true,storm:true}];boss.hp=1;boss.warning=0;breakBossShell(false)');assert.equal(run('boss.hp'),0);assert.equal(run('storm.event'),null);assert.equal(run('items.length'),0);assert.equal(run('score'),600);
+ run('elapsed=90;finish()');assert.equal(run('score'),600);assert(!run('stormRewarded'));run('finish()');assert.equal(run('score'),600);
+ run('start();bossStarted=true;boss={hp:3};score=50;elapsed=90;finish()');assert.equal(run('score'),250);assert(run('stormRewarded'));run('finish()');assert.equal(run('score'),250);
+ run('start();bossStarted=true;boss={hp:3};score=50;hp=0;finish()');assert.equal(run('score'),50);
+ run('start()');assert.equal(run('storm'),null);assert(!run('stormRewarded'));
+ console.log('V10 storm PASS: warning/one-shot spawning/gaps, swept wave damage and immunity, pause, core reflection, ordinary hazard suppression, defeat cleanup and one-time exclusive survival reward');
+}
+
+// V10 routes: reachable previews, connected rings, whale/gate overlap and no extra modals.
+{
+ for(const [w,h] of [[360,400],[960,510]]){
+  width=w;height=h;run('resize();start()');isolate();
+  run('beginObjective({kind:"sling",duration:12});ship.x=ship.target=W*.5+Math.min(W,H)*.18;ship.y=ship.targetY=H*.56;boost();drawNavigation();releaseOrbit()');
+  assert.equal(run('objective.kind'),'rings');assert(run('objective.linked'));assert.equal(run('objective.points.length'),3);assert.equal(run('objective.deadline-elapsed'),8);
+  assert(run('objective.points.every(p=>p.x*W>=35&&p.x*W<=W-35&&p.y*H>=40&&p.y*H<=H-40)'));
+  run('launch=null;for(const p of [...objective.points]){ship.x=p.x*W;ship.y=p.y*H;updateAdventure(0,ship.x,ship.y)}');assert.equal(run('ringWins'),1);assert.equal(run('objective'),null);
+  // Ordered swept contacts let fast movement collect a whole straight chain in one frame.
+  run('objective={kind:"rings",linked:true,index:0,deadline:10,points:[{x:.3,y:.5},{x:.5,y:.5},{x:.7,y:.5}]};ship.x=W*.9;ship.y=H*.5;updateAdventure(0,W*.1,H*.5)');assert.equal(run('objective'),null);
+  run('objective={kind:"rings",linked:true,index:0,deadline:10,points:[{x:.3,y:.5},{x:.5,y:.5},{x:.7,y:.5}]};ship.x=W*.1;ship.y=H*.5;updateAdventure(0,W*.9,H*.5)');assert.equal(run('objective.index'),1);
+  run('objective=null;adventureSlot=4;elapsed=60;drawNavigation();elapsed=62;updateAdventure(0,ship.x,ship.y)');assert.equal(run('objective.mirror'),run('routeMirror'));
+  run('elapsed=65;laserSlot=2;stepLaser(0,ship.x,ship.y,false)');assert(run('laser.vertical'));assert.equal(run('laser.at'),.5);
+  run('{elapsed=67;const u=(elapsed-objective.born)/objective.duration;ship.x=(objective.mirror?.88-u*.76:.12+u*.76)*W;ship.y=(.53+Math.sin(u*Math.PI*3)*.14)*H;updateAdventure(.01,ship.x,ship.y);stepLaser(.01,ship.x,ship.y,false)}');assert(run('whaleSafe'));assert.equal(run('hp'),3);run('draw(1)');
+ }
+ for(const id of ['collector','falcon','warden']){
+  run('state="over"');els['ship-'+id].onclick();run('start();invincible=1000');
+  run(`globalThis.observed={kinds:[],peak:0};for(let i=0;i<5500&&state==='playing';i++){update(1/60);if(storm?.event&&!observed.kinds.includes(storm.event.kind))observed.kinds.push(storm.event.kind);observed.peak=Math.max(observed.peak,items.length);if(i%60===0)draw(i/60)}`);
+  assert.equal(run('state'),'over');assert.equal(run('observed.kinds.join()'),'fragments,wave,core');assert(run('observed.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);assert(run('stormRewarded'));
+ }
+ run('state="over"');els['ship-collector'].onclick();run('start()');
+ console.log('V10 routes PASS: narrow/desktop reachable rings, ordered swept pickups, whale preview identity/gate protection, and three complete 90-second runs without forced modals');
 }
