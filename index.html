@@ -59,10 +59,14 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 
 /* The moon button is an independent second-finger action, like acceleration. */
 #padMoon,#moonToggle{touch-action:none;user-select:none;-webkit-user-select:none}
+
+/* A fixed-height map keeps route changes from moving the controls. Nodes are a preview, gates are the choice. */
+.route-map{height:46px;min-height:46px;flex-shrink:0;display:grid;grid-template-columns:36px minmax(0,1fr) minmax(0,1fr) 36px;gap:16px;align-items:center;margin:0 0 8px;color:var(--muted);font-size:9px;text-align:center}.map-branch{position:relative;display:grid;gap:3px}.map-branch:before,.route-map>.map-end:last-child:before{content:'›';position:absolute;left:-12px;top:50%;transform:translateY(-50%);color:#829caa}.map-end{position:relative;line-height:1.4}.route-node{display:block;line-height:16px;height:18px;border:1px solid #ffffff20;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.route-node[data-state="planned"]{color:var(--gold);border-color:#f3d69490}.route-node[data-state="active"]{color:#ecfff7;background:#30534f;border-color:var(--mint)}.route-node[data-state="passed"]{color:var(--mint);border-color:#a6d9c94d}.route-node[data-state="skipped"]{opacity:.35}.immersive .route-map{margin:0;height:40px;min-height:40px}.immersive .route-node{height:17px;line-height:15px}
+@media(max-height:520px) and (orientation:landscape) and (pointer:coarse),(max-height:520px) and (orientation:landscape) and (max-width:950px){.immersive .route-map{grid-area:map;height:36px;min-height:36px;grid-template-columns:36px 1fr 1fr 36px}.immersive .play-content{grid-template-rows:44px 36px minmax(0,1fr) auto;grid-template-areas:"bar bar" "map map" "game controls" "flight choices"}.immersive .play-content:has(.wager-status[data-active="true"]){grid-template-rows:44px 36px minmax(0,1fr) auto auto;grid-template-areas:"bar bar" "map map" "game controls" "flight choices" "wager wager"}.immersive .route-node{height:15px;line-height:13px}.immersive .map-branch{gap:2px}}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 11.2</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 12</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <section class="fleet" aria-label="选择本局星舰"><div class="fleet-heading"><strong>选择你的航行方式</strong><span id="fleetHint">出发前选择星舰 · 每局技能重置</span></div><div class="fleet-options">
 <button id="ship-collector" class="fleet-card" aria-pressed="true"><span>◎ 拾光者</span><strong>收集 · 货运</strong><small>吸星范围与货运奖励 +20%</small><em>专属：双生卫星</em></button>
@@ -72,12 +76,13 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <section id="playShell" class="play-shell" aria-label="航行驾驶舱">
 <div id="playContent" class="play-content">
 <nav class="playbar" aria-label="游戏快捷操作"><button id="pause" disabled>暂停 <kbd>P</kbd></button><button id="fullscreen" aria-pressed="false">全屏</button><button id="controlsOpen" aria-haspopup="dialog">操作：拖动</button><button id="helpOpen" aria-haspopup="dialog">玩法</button></nav>
+<div id="routeMap" class="route-map" role="group" aria-label="本局分岔星图"><span class="map-end">起航</span><div class="map-branch"><span id="map-port" class="route-node">货运港</span><span id="map-relic" class="route-node">引力遗迹</span></div><div class="map-branch"><span id="map-whale" class="route-node">星鲸迁徙带</span><span id="map-mine" class="route-node">陨石矿场</span></div><span class="map-end">风暴<br>返航</span></div>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <div id="synergyBar" class="synergybar">技能两两搭配，可自动激活星座合成</div>
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
 <canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机可自选拖动、摇杆或方向键，旁边的按钮加速。"></canvas>
-<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">选一艘星舰，打造你的专属流派。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">飞入航门，选择自己的下一站。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
 <div id="wager" class="upgrade wager" role="dialog" aria-modal="true" aria-labelledby="wagerTitle" hidden><div class="upgrade-panel"><div class="eyebrow">A LITTLE RISK, A NEW POSSIBILITY</div><h2 id="wagerTitle">和星空打个赌？</h2><p>时间已暂停。成功获得额外一次二选一强化，失败不扣分。<br>选择或跳过后，准备好再继续；恢复享有 1.5 秒无敌。</p><div class="choices"><button id="wager0" class="choice"></button><button id="wager1" class="choice"></button></div><button id="wagerSkip" class="skip">这次跳过 →</button><small>键盘 1 / 2 选择 · Esc 跳过</small></div></div>
 <button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
@@ -108,15 +113,16 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <section id="controlSettings"><p class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
 <button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动；抬手可换位置。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>推向任意方向，推得越远飞得越快。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住持续移动，支持八向与斜向。</small></button>
 </div><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
-<section id="gameRules" hidden><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。穿左门更安全，右门星光 ×1.4、陨石略增。</p></div></article></section>
+<section id="gameRules" hidden><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。第 24 秒选择货运港或引力遗迹，第 54 秒选择星鲸带或矿场。左路更安全，右路星光 ×1.4、陨石略增；忽略航门自动走左路。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>星光货运</h3><p>靠近方箱装货，飞到金色空间站交付。最多 3 件，满载奖励更高，键盘／触控最多减速 24%；鼠标保持跟手；到期未交货不扣分。</p></div></article><article><span class="symbol mint">↗</span><div><h3>反射护盾</h3><p>加速起手 0.18 秒内（守望者 0.26 秒）接触陨石，可沿来路反弹；绿色弹体能碎星、破巨陨外壳。普通陨石每次加速反射一次，紫色核心弹在加速护盾期间均可反射。</p></div></article></section>
 <section class="guide"><article><span class="symbol mint">◉</span><div><h3>引力弹弓</h3><p>靠近紫环，点加速入轨，再点沿切线弹射；蓄力 1.3 秒也会自动弹出。沿预览轨迹连穿三枚星环，移动可接管弹射。</p></div></article><article><span class="symbol gold">≈</span><div><h3>追逐星鲸</h3><p>蓝色尾流内免受伤害并可收集星光，累计同行 5 秒获得奖励。提前显示航线，跟随尾流可安全穿越激光闸门；星鲸离开时有短暂保护。</p></div></article><article><span class="symbol coral">ϟ</span><div><h3>激光闸门</h3><p>虚线预警 1.8 秒后开启；绿色缺口始终安全，也可用加速护盾穿越。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol coral">✺</span><div><h3>终局 · 星空风暴</h3><p>最后 20 秒依次迎来碎星环、缺口冲击波和核心攻击，每轮预警 1.8 秒，中间留有间歇。风暴期间暂停生成普通陨石。</p></div></article><article><span class="symbol gold">◇</span><div><h3>选择你的终局</h3><p>朝绿色缺口移动，或加速反射紫色核心弹。生还获得 200 分，击破三层核心获得 600 分；两项奖励不叠加。</p></div></article></section>
+<section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>货运港与陨石矿场</h3><p>货运港交齐三箱，额外补一层护甲。矿场用加速或反弹击破矿核，每颗获得 60 基础分、2 星屑并充能 1.5 秒；三颗全破额外 +120 分。</p></div></article><article><span class="symbol coral">◉</span><div><h3>新障碍 · 脉冲水雷</h3><p>虚线蓄能 1.6 秒后，红圈放电 0.7 秒，随后休眠。可加速撞核心或用反弹排雷，获得 40 分。风暴开始时停止放电，矿场结束后清除。</p></div></article></section>
 <details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V11.2</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V12.0</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -166,6 +172,29 @@ const cargoSpeed=()=>1-cargoLoad()*.08;
 const cargoValue=n=>n*70+n*(n-1)*25;
 const adventureSchedule=[{at:6,kind:'rings',duration:10},{at:18,kind:'cargo',duration:12},{at:33,kind:'sling',duration:12},{at:47,kind:'escort',duration:12},{at:62,kind:'whale',duration:12},{at:76,kind:'cargo',duration:12}];
 const routeSchedule=[24,54];
+const sectors={
+ port:{name:'货运港',kind:'cargo',note:'交齐三箱补护甲',color:'#a6efdc'},
+ relic:{name:'引力遗迹',kind:'sling',note:'弹射连环 · 星光 ×1.4',color:'#d3b6ff'},
+ whale:{name:'星鲸迁徙带',kind:'whale',note:'尾流护航穿激光',color:'#9cdeff'},
+ mine:{name:'陨石矿场',kind:'mining',note:'开采矿核 · 小心脉冲',color:'#ffd199'}
+};
+const sectorPairs=[['port','relic'],['whale','mine']];
+let routePlan=[null,null],mapSignature='',oreCount=0,minesCleared=0;
+const forkStage=()=>fork?.stage??(elapsed>=54?1:0);
+function scheduledAdventure(spec,index){
+ if(!spec)return null;
+ const chapter=index===2?0:index===4?1:-1;
+ if(chapter<0)return spec;
+ const sector=routePlan[chapter]||sectorPairs[chapter][0];
+ return {...spec,kind:sectors[sector].kind,sector,port:sector==='port'};
+}
+function mapHud(){
+ const stages=[elapsed<33?'planned':elapsed<45?'active':'passed',elapsed<62?'planned':elapsed<74?'active':'passed'];
+ const signature=[...routePlan,...stages,objective?.sector,!!fork,state].join('|');if(signature===mapSignature)return;mapSignature=signature;
+ sectorPairs.forEach((pair,i)=>pair.forEach(id=>{const selected=routePlan[i]===id,status=selected?(objective?.sector===id?'active':stages[i]):routePlan[i]?'skipped':'pending';$('map-'+id).setAttribute('data-state',status);$('map-'+id).setAttribute('aria-current',status==='active'?'step':'false')}));
+ $('routeMap').setAttribute('aria-label','本局星图：起航 → '+(routePlan[0]?sectors[routePlan[0]].name:'货运港或引力遗迹')+' → '+(routePlan[1]?sectors[routePlan[1]].name:'星鲸迁徙带或陨石矿场')+' → 星空风暴');
+}
+
 const shipRadius=()=>moonPhase==='dark'?10:16;
 const pickupRadius=()=>moonPhase==='dark'?16:24;
 const starAttraction=()=>(activeShip==='collector'?1.2:1)*(moonPhase==='bright'?(powers.magnet===2?185:powers.magnet?130:65):(powers.magnet===2?110:powers.magnet?75:0));
@@ -181,7 +210,7 @@ function enterOrbit(){
 function releaseOrbit(){
  if(!orbit)return;
  const tangent=orbit.angle+orbit.direction*Math.PI/2,speed=Math.min(W,H)*1.6;
- launch={vx:Math.cos(tangent)*speed,vy:Math.sin(tangent)*speed,left:.32};orbit=null;objective={kind:'rings',linked:true,deadline:elapsed+8,index:0,points:slingRingRoute(tangent)};slingWins++;score+=80;
+ launch={vx:Math.cos(tangent)*speed,vy:Math.sin(tangent)*speed,left:.32};orbit=null;objective={kind:'rings',linked:true,sector:objective?.sector,deadline:elapsed+8,index:0,points:slingRingRoute(tangent)};slingWins++;score+=80;
  resumeShield=Math.max(resumeShield,.65);boostCooldown=Math.max(0,boostCooldown-1);ship.target=ship.x;ship.targetY=ship.y;
  adventureResult='引力弹射 · +80 分，沿虚线连穿星环';tone(1100,.13);
 }
@@ -201,7 +230,7 @@ function segmentHit(ax,ay,bx,by,cx,cy,dx,dy,r){
 }
 function stepLaser(dt,oldX,oldY,protectedByBoost){
  if(!laser&&laserSlot<laserSchedule.length&&elapsed>=laserSchedule[laserSlot]){
-  const at=laserSchedule[laserSlot++];if(elapsed<at+3){
+  const at=laserSchedule[laserSlot++];if(elapsed<at+3&&objective?.kind!=='mining'&&!(at===65&&routePlan[1]==='mine')){
    const withWhale=objective?.kind==='whale';
    laser={vertical:withWhale||laserSlot%2===0,at:withWhale?.5:.56,gap:withWhale?.39:.3+Math.random()*.4,width:.38,warningEnd:elapsed+1.8,end:elapsed+3};
   }
@@ -228,7 +257,7 @@ function drawSpecialSpace(t){
 }
 
 function canUpgrade(){return (bonusCredits>0||(upgradeCount<upgradeAt.length&&dust>=upgradeAt[upgradeCount]))&&availablePowers().filter(p=>(powers[p.id]||0)<2).length>=2}
-function resetAdventure(){storm=null;stormRewarded=false;routeMirror=Math.random()<.5;orbit=launch=laser=null;whaleSafe=false;slingWins=whaleWins=laserSlot=0;reflections=[];reflectCount=cargoDelivered=0;adventureSignature='';moonPhase='bright';moonCooldown=0;objective=fork=activeRoute=null;adventureSlot=routeSlot=ringWins=escortWins=0;adventureResult='追逐星环、护送月灵 · 都可自由略过';wagerInviteUntil=0}
+function resetAdventure(){routePlan=[null,null];mapSignature='';oreCount=minesCleared=0;storm=null;stormRewarded=false;routeMirror=Math.random()<.5;orbit=launch=laser=null;whaleSafe=false;slingWins=whaleWins=laserSlot=0;reflections=[];reflectCount=cargoDelivered=0;adventureSignature='';moonPhase='bright';moonCooldown=0;objective=fork=activeRoute=null;adventureSlot=routeSlot=ringWins=escortWins=0;adventureResult='追逐星环、护送月灵 · 都可自由略过';wagerInviteUntil=0}
 function switchMoon(refocus=true){if(state!=='playing'||panelOpen||moonCooldown>0)return;moonPhase=moonPhase==='bright'?'dark':'bright';moonCooldown=.35;tone(moonPhase==='bright'?780:420,.08);hud();if(refocus)focusGame()}
 
 const upgradeAt=[3,8,15,24];
@@ -323,6 +352,7 @@ function resize(){
  if(orbit){const cx=orbit.cx*W,cy=orbit.cy*H;orbit.radius=Math.hypot(ship.x-cx,ship.y-cy);orbit.angle=Math.atan2(ship.y-cy,ship.x-cx)}
  if(launch){launch.vx*=W/ow;launch.vy*=H/oh}
  if(objective?.kind==='escort'){objective.x*=W/ow;objective.y*=H/oh}
+ if(objective?.kind==='mining')for(const o of [...objective.ores,...objective.mines]){o.x*=W/ow;o.y*=H/oh}
  // Event text and browser chrome can resize the arena while a finger stays down.
  // Preserve driver state and pointer capture; only explicit pause/menu transitions release them.
  for(const p of flight.trail){p.x*=W/ow;p.y*=H/oh;p.x2*=W/ow;p.y2*=H/oh}
@@ -337,7 +367,7 @@ function hud(){
   $('touchControls').setAttribute('aria-disabled',String(state!=='playing'||panelOpen));
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
- fleetHud();adventureHud();
+ fleetHud();mapHud();adventureHud();
  const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,Math.ceil(resumeShield*10),!!orbit,canSling()].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
  $('skillTip').textContent=`${hull().name} · 加速 ${boostDuration()} 秒 / 冷却 ${boostLimit()} 秒 · ${hull().trait}`;
@@ -391,7 +421,7 @@ function finish(){
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem('mooncatch-best-v6',String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 风暴生还 +200":""} · 抵达「${phases[phase].name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
- $('hint').textContent=`弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件 · 反射 ${reflectCount} 次 · 穿环 ${ringWins} 次 · 护送 ${escortWins} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜 · 完美碎星 ${perfectCount} 次${boss?.hp===0?" · 巨陨已击破":""}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
+ $('hint').textContent=`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件 · 反射 ${reflectCount} 次 · 穿环 ${ringWins} 次 · 护送 ${escortWins} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜 · 完美碎星 ${perfectCount} 次${boss?.hp===0?" · 巨陨已击破":""}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
 }
 function boost(){
  if(state!=='playing')return;
@@ -615,11 +645,12 @@ function updateReflections(dt){
   let target=null,first=Infinity;
   const targets=items.filter(o=>o.rock&&!o.dead);
   if(boss&&boss.hp>0&&boss.warning<=0)targets.push(boss);
+  if(objective?.kind==='mining')targets.push(...objective.ores.filter(o=>!o.dead),...objective.mines.filter(o=>!o.dead));
   for(const o of targets){
    const t=impactTime(oldX-(o.prevX??o.x),oldY-(o.prevY??o.y),shot.x-o.x,shot.y-o.y,shot.r+o.r);
    if(t!==null&&t<first){target=o;first=t}
   }
-  if(target){if(target===boss)breakBossShell(false);else shatter(target,false);shot.life=0}
+  if(target){if(target===boss)breakBossShell(false);else if(target.ore)breakOre(target);else if(target.mine)disarmMine(target);else shatter(target,false);shot.life=0}
   if(shot.x<-60||shot.x>W+60||shot.y<-60||shot.y>H+60)shot.life=0;
  }
  reflections=reflections.filter(s=>s.life>0);items=items.filter(o=>!o.dead);
@@ -726,10 +757,10 @@ function update(dt){
  if(inputMode==='pointer'&&!length){ship.x=clamp(ship.target);ship.y=clampY(ship.targetY)}
  else{moveToward(ship,ship.target,ship.targetY,moveStep/(dt||1),dt);ship.x=clamp(ship.x);ship.y=clampY(ship.y)}
  }
- updateFlight(dt,oldX,oldY);updateAdventure(dt,oldX,oldY);stepFleet(dt,oldX,oldY);
+ updateFlight(dt,oldX,oldY);updateAdventure(dt,oldX,oldY);if(state==='over')return;stepFleet(dt,oldX,oldY);
  const protectedByBoost=boostTime>0||!!launch;boostTime=Math.max(0,boostTime-dt);
  spawn-=dt;if(spawn<=0){starWave();spawn=phases[phase].interval}
- hazardClock-=dt;if(storm&&boss?.hp>0)hazardClock=Math.max(hazardClock,1.5);if(hazardClock<=0){warnWave();hazardClock=difficulty().interval*(laser?1.3:1)}
+ hazardClock-=dt;if(storm&&boss?.hp>0)hazardClock=Math.max(hazardClock,1.5);if(hazardClock<=0){warnWave();hazardClock=difficulty().interval*(objective?.kind==='mining'?1.5:laser?1.3:1)}
  for(let i=warnings.length-1;i>=0;i--){const w=warnings[i];w.remaining-=dt;if(w.remaining<=0){spawnMeteor(w);warnings.splice(i,1)}}
  for(let i=pending.length-1;i>=0;i--){const p=pending[i];p.delay-=dt;if(p.delay<=0){spawnItem(p.x,p.rock);pending.splice(i,1)}}
  const y=shipY();
@@ -774,29 +805,39 @@ function beginObjective(spec){
  else if(spec.kind==='cargo')objective={kind:'cargo',deadline:elapsed+spec.duration,load:0,station:{x:mirrored?.18:.82,y:.76},crates:[{x:.2,y:.42},{x:.44,y:.64},{x:.66,y:.4}].map(p=>({...p,x:mirrored?1-p.x:p.x,taken:false}))};
  else if(spec.kind==='sling')objective={kind:'sling',deadline:elapsed+spec.duration,cx:.5,cy:.56};
  else if(spec.kind==='whale')objective={kind:'whale',deadline:elapsed+spec.duration,born:elapsed,duration:spec.duration,mirror:mirrored,trail:[],follow:0,rewarded:false,drop:0,x:mirrored?.88:.12,y:.5};
+ else if(spec.kind==='mining')objective={kind:'mining',deadline:elapsed+spec.duration,born:elapsed,ores:[{x:.24,y:.4},{x:.5,y:.72},{x:.77,y:.42}].map(p=>({x:p.x*W,y:p.y*H,r:14,ore:true,dead:false})),mines:[{x:.4,y:.49,offset:0},{x:.67,y:.65,offset:2}].map(p=>({...p,x:p.x*W,y:p.y*H,r:11,mine:true,dead:false,born:elapsed}))};
  else objective={kind:'escort',deadline:elapsed+spec.duration,x:W*(mirrored?.8:.2),y:H*.65,home:{x:mirrored?.2:.8,y:.4},following:false,met:false};
+ if(spec.sector)objective.sector=spec.sector;if(spec.port)objective.port=true;
 }
 function chooseRoute(id){
- if(!fork)return;
- activeRoute={id,until:elapsed+20};fork=null;
- adventureResult=id==='rich'?'丰收星域：星光 ×1.4，陨石略增':'平静星海：陨石更慢、更稀疏';
- tone(id==='rich'?880:520,.12);
+ if(!fork||!['calm','rich'].includes(id))return;
+ const stage=forkStage(),sector=sectorPairs[stage][id==='rich'?1:0];routePlan[stage]=sector;
+ activeRoute={id,sector,until:elapsed+20};fork=null;
+ adventureResult=`航线已锁定：${sectors[sector].name} · ${sectors[sector].note}`;
+ tone(id==='rich'?880:520,.12);mapHud();
 }
 function updateAdventure(dt,oldX,oldY){
  const wasSafe=whaleSafe;whaleSafe=false;
  if(activeRoute&&elapsed>=activeRoute.until)activeRoute=null;
  if(!objective&&adventureSlot<adventureSchedule.length&&elapsed>=adventureSchedule[adventureSlot].at){
-  const spec=adventureSchedule[adventureSlot++];if(elapsed<spec.at+spec.duration)beginObjective({...spec,duration:spec.at+spec.duration-elapsed});
+  const index=adventureSlot++,spec=scheduledAdventure(adventureSchedule[index],index);
+  if(elapsed<spec.at+spec.duration){if(spec.sector)routePlan[index===2?0:1]=spec.sector;beginObjective({...spec,duration:spec.at+spec.duration-elapsed})}
  }
  if(!fork&&routeSlot<routeSchedule.length&&elapsed>=routeSchedule[routeSlot]){
-  const at=routeSchedule[routeSlot++];if(elapsed<at+7)fork={deadline:at+7,armed:elapsed+1};
+  const at=routeSchedule[routeSlot++];if(elapsed<at+7)fork={stage:routeSlot-1,deadline:at+7,armed:elapsed+1,blocked:[false,false]};
  }
  if(fork){
   if(elapsed>=fork.deadline)chooseRoute('calm');
-  else if(elapsed>=fork.armed){for(const [id,x] of [['calm',.25],['rich',.75]])if(segmentDistance(W*x,H*.48,oldX,oldY,ship.x,ship.y)<30){chooseRoute(id);break}}
+  else for(const [i,id,x] of [[0,'calm',.25],[1,'rich',.75]]){
+   const inside=Math.hypot(ship.x-W*x,ship.y-H*.48)<30;
+   if(elapsed<fork.armed){if(fork.blocked)fork.blocked[i]=inside;continue}
+   // A gate appearing under the ship is not an intentional entry. Leave it before choosing.
+   if(fork.blocked?.[i]){if(!inside)fork.blocked[i]=false;continue}
+   if(segmentDistance(W*x,H*.48,oldX,oldY,ship.x,ship.y)<30){chooseRoute(id);break}
+  }
  }
  const o=objective;if(!o)return;
- if(elapsed>=o.deadline){if(orbit){releaseOrbit();return}if(wasSafe)resumeShield=Math.max(resumeShield,.8);adventureResult=o.kind==='rings'?'星环已远去 · 错过不扣分':o.kind==='cargo'?'货运窗口结束 · 未交货物回收，无扣分':o.kind==='whale'?'星鲸游向远方 · 感谢同行':o.kind==='sling'?'引力环已消散 · 可自由略过':'月灵自行返航 · 错过不扣分';objective=null;return}
+ if(elapsed>=o.deadline){if(orbit){releaseOrbit();return}if(wasSafe)resumeShield=Math.max(resumeShield,.8);adventureResult=o.kind==='rings'?'星环已远去 · 错过不扣分':o.kind==='cargo'?'货运窗口结束 · 未交货物回收，无扣分':o.kind==='mining'?'矿场关闭 · 已有奖励保留':o.kind==='whale'?'星鲸游向远方 · 感谢同行':o.kind==='sling'?'引力环已消散 · 可自由略过':'月灵自行返航 · 错过不扣分';objective=null;return}
  if(o.kind==='rings'){
   let lastContact=-1;
   while(o.index<o.points.length){
@@ -806,6 +847,8 @@ function updateAdventure(dt,oldX,oldY){
    if(o.index===o.points.length){ringWins++;score+=ringReward(150);for(let i=0;i<3;i++)collectDust();adventureResult=`星环连穿完成 · +${ringReward(150)} 分、3 颗星屑`;objective=null;break}
    if(!o.linked)break;
   }
+ }else if(o.kind==='mining'){
+  updateMining(dt,oldX,oldY);
  }else if(o.kind==='sling'){
   // Entering the field requires the player's existing boost control.
  }else if(o.kind==='whale'){
@@ -819,7 +862,7 @@ function updateAdventure(dt,oldX,oldY){
   for(const c of o.crates)if(!c.taken&&o.load<3&&segmentDistance(c.x*W,c.y*H,oldX,oldY,ship.x,ship.y)<20){c.taken=true;o.load++;tone(500+o.load*100,.08)}
   if(o.load>0&&segmentDistance(o.station.x*W,o.station.y*H,oldX,oldY,ship.x,ship.y)<30){
    const reward=cargoReward(o.load);cargoDelivered+=o.load;score+=reward;o.load=0;boostCooldown=Math.max(0,boostCooldown-1);burst(o.station.x*W,o.station.y*H,'#ffdca0');adventureResult=`货物已交付 · +${reward} 分，加速充能 1 秒`;
-   if(o.crates.every(c=>c.taken))objective=null;
+   if(o.crates.every(c=>c.taken)){if(o.port){guard++;adventureResult+=' · 港口补给：护甲 +1'}objective=null;}
   }
  }else{
   const separation=Math.hypot(ship.x-o.x,ship.y-o.y);
@@ -838,7 +881,7 @@ function updateChoiceDock(){
 let adventureSignature='';
 function adventureHud(){
  const o=objective,ready=canUpgrade(),invite=wagerInviteUntil>elapsed;
- const signature=[state,inputMode,mouseX!==null,resumeShield>0,moonPhase,moonCooldown>0,o?.kind,o?.index,o?.following,o?.load,Math.floor(o?.follow||0),whaleSafe,!!orbit,Math.ceil(laser?(laser.warningEnd-elapsed)*10:0),!!laser,Math.ceil((o?.deadline||0)-elapsed),fork?.deadline,Math.ceil((fork?.deadline||0)-elapsed),activeRoute?.id,adventureResult,ready,invite,Math.ceil(wagerInviteUntil-elapsed),bonusCredits].join('|');
+ const signature=[state,inputMode,mouseX!==null,resumeShield>0,moonPhase,moonCooldown>0,o?.kind,o?.sector,o?.index,oreCount,minesCleared,o?.following,o?.load,Math.floor(o?.follow||0),whaleSafe,!!orbit,Math.ceil(laser?(laser.warningEnd-elapsed)*10:0),!!laser,Math.ceil((o?.deadline||0)-elapsed),fork?.deadline,Math.ceil((fork?.deadline||0)-elapsed),activeRoute?.id,adventureResult,ready,invite,Math.ceil(wagerInviteUntil-elapsed),bonusCredits].join('|');
  if(signature===adventureSignature)return;adventureSignature=signature;
  $('moonToggle').disabled=state!=='playing'||moonCooldown>0;$('moonToggle').setAttribute('aria-pressed',String(moonPhase==='dark'));
  $('moonToggle').textContent=moonPhase==='bright'?'☀ 明月 · 吸星  ⇄':'☾ 暗月 · 小巧  ⇄';
@@ -852,11 +895,12 @@ function adventureHud(){
  if(o?.kind==='escort')text=`月灵 · ${o.following?'送往蓝色归航圈':o.met?'月灵掉队了，靠近接回':'靠近蓝色月灵接应'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
  if(o?.kind==='cargo')text=`货舱 ${o.load}/3 · ${o.load?(inputMode==='pointer'&&mouseX!==null?'鼠标跟随':'移速 '+Math.round(cargoSpeed()*100)+'%')+' · 交货 +'+cargoReward(o.load)+'分':'靠近金色方箱装货 → 空间站交付'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
  if(o?.kind==='sling')text=orbit?'环绕蓄力中 · 再点加速沿切线弹射':'靠近紫色引力环 · 点加速入轨，再点弹射';
+ if(o?.kind==='mining')text=`矿核 ${o.ores.filter(c=>c.dead).length}/3 · 加速或反弹开采 · 脉冲 ${elapsed<70?'亮起时避开':'已停机'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
  if(o?.kind==='whale')text=`追逐星鲸 · ${whaleSafe?'尾流保护中':'进入蓝色尾流可安全跟随'} · 同行 ${Math.min(5,Math.floor(o.follow))}/5s`;
  $('obstacleStatus').hidden=!laser;$('obstacleStatus').textContent=laser?(elapsed<laser.warningEnd?`激光预警 ${Math.max(0,laser.warningEnd-elapsed).toFixed(1)}s · 走绿色缺口`:'激光开启 · 走绿色缺口 / 加速穿越'):'';
- if(fork)text=`航线分岔 · 穿左门更安全 / 右门高收益 · ${Math.max(0,Math.ceil(fork.deadline-elapsed))}s（忽略走左路）`;
+ if(fork){const [left,right]=sectorPairs[forkStage()];text=`左门 ${sectors[left].name} / 右门 ${sectors[right].name} · ${Math.max(0,Math.ceil(fork.deadline-elapsed))}s（默认左路）`;}
  $('flightStatus').textContent=text||'追逐星环、护送月灵 · 都可自由略过';
- $('routeStatus').textContent=(cargoLoad()?`货舱 ${cargoLoad()}/3 · `:'')+(activeRoute?(activeRoute.id==='calm'?'平静星海 · 危险降低':'丰收星域 · 星光 ×1.4'):'自由航行');
+ $('routeStatus').textContent=(cargoLoad()?`货舱 ${cargoLoad()}/3 · `:'')+(activeRoute?.sector?sectors[activeRoute.sector].name:activeRoute?(activeRoute.id==='calm'?'平静星海':'丰收星域'):'自由航行');
 }
 function drawAdventure(t){
  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='11px sans-serif';
@@ -879,9 +923,11 @@ function drawAdventure(t){
   for(let i=0;i<o.load;i++){ctx.fillStyle='#ffdca0';ctx.fillRect(ship.x-11+i*8,ship.y+22,6,6)}
  }
  if(fork){
-  for(const [x,color,label] of [[.25,'#a6efdc','平静'],[.75,'#f3d694','丰收']]){
-   ctx.globalAlpha=elapsed<fork.armed?.4:.9;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x*W,H*.48,28,37,0,0,Math.PI*2);ctx.stroke();ctx.fillText(label,x*W,H*.48);
-  }
+  sectorPairs[forkStage()].forEach((id,i)=>{
+   const x=i?.75:.25,sector=sectors[id];ctx.globalAlpha=elapsed<fork.armed?.4:.9;ctx.strokeStyle=sector.color;ctx.fillStyle=sector.color;ctx.lineWidth=3;
+   ctx.setLineDash([4,6]);ctx.beginPath();ctx.moveTo(W*.5,H*.77);ctx.lineTo(x*W,H*.55);ctx.stroke();ctx.setLineDash([]);
+   ctx.beginPath();ctx.ellipse(x*W,H*.48,28,37,0,0,Math.PI*2);ctx.stroke();ctx.fillText(i?'右':'左',x*W,H*.48);ctx.fillText(sector.name,x*W,H*.48-49);ctx.font='9px sans-serif';ctx.fillText(sector.note,x*W,H*.48+51);ctx.font='11px sans-serif';
+  });
  }
  ctx.restore();
 }
@@ -938,7 +984,7 @@ function draw(t){ctx.clearRect(0,0,W,H);const bg=ctx.createRadialGradient(W*.55,
 for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillStyle='#dde8ec';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
 ctx.fillStyle='#b8cec617';ctx.beginPath();ctx.arc(W*.83,H*.25,30,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17283c';ctx.beginPath();ctx.arc(W*.83+12,H*.25-7,27,0,Math.PI*2);ctx.fill();
-drawAdventure(t);drawSpecialSpace(t);drawFleet();drawStorm();drawNavigation();
+drawAdventure(t);drawSpecialSpace(t);drawMining(t);drawFleet();drawStorm();drawNavigation();
 for(const r of reflections){ctx.save();ctx.strokeStyle='#9cffe6';ctx.lineWidth=4;ctx.shadowColor='#9cffe6';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(r.x-r.dx*24,r.y-r.dy*24);ctx.lineTo(r.x,r.y);ctx.stroke();ctx.fillStyle='#e1fff2';star(r.x,r.y,r.r,t*5);ctx.restore()}
 for(const w of warnings){
  const v=warningVector(w),x=Math.max(7,Math.min(W-7,v.x)),y=Math.max(7,Math.min(H-7,v.y));
@@ -1077,11 +1123,13 @@ function drawNavigation(){
   ctx.beginPath();ctx.moveTo(ship.x,ship.y);for(const p of pts)ctx.lineTo(p.x*W,p.y*H);ctx.stroke();
   if(orbit)for(const p of pts){ctx.beginPath();ctx.arc(p.x*W,p.y*H,22,0,Math.PI*2);ctx.stroke()}
  }
- const next=adventureSchedule[adventureSlot];
+ const next=scheduledAdventure(adventureSchedule[adventureSlot],adventureSlot);
  if(!objective&&next&&next.at-elapsed>0&&next.at-elapsed<=2.5){
   ctx.textAlign='center';ctx.font='12px sans-serif';ctx.globalAlpha=.75;
   if(next.kind==='whale'){
    ctx.strokeStyle='#99e9ff';ctx.beginPath();for(let i=0;i<=40;i++){const u=i/40,x=(routeMirror?.88-u*.76:.12+u*.76)*W,y=(.53+Math.sin(u*Math.PI*3)*.14)*H;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke();ctx.fillText('星鲸航线即将开启 · 尾流可穿越闸门',W/2,H*.78);
+  }else if(next.kind==='mining'||next.sector==='port'){
+   ctx.fillText(`${sectors[next.sector].name}即将抵达 · ${sectors[next.sector].note}`,W/2,H*.8);
   }else if(next.kind==='sling'){
    ctx.beginPath();ctx.arc(W*.5,H*.56,Math.min(W,H)*.18,0,Math.PI*2);ctx.stroke();ctx.fillText('引力环即将开启 · 弹射后连穿星环',W/2,H*.82);
   }
@@ -1192,6 +1240,48 @@ document.addEventListener('fullscreenchange',()=>{
  if(document.fullscreenElement===$('playShell')){nativeScreen=true;setFocused(true)}
  else if(nativeScreen){nativeScreen=false;prepareLayoutChange();setFocused(false)}
 });
+
+
+function minePhase(m,at=elapsed){
+ if(m.dead||at>=70||at<m.born+m.offset)return 'idle';
+ const t=(at-m.born-m.offset)%4;return t<1.6?'warning':t<2.3?'active':'idle';
+}
+const mineRadius=()=>Math.max(28,Math.min(42,Math.min(W,H)*.105));
+function breakOre(ore){
+ const o=objective;if(o?.kind!=='mining'||ore.dead||!o.ores.includes(ore))return;
+ ore.dead=true;oreCount++;score+=Math.round(60*routeReward());collectDust();collectDust();boostCooldown=Math.max(0,boostCooldown-1.5);burst(ore.x,ore.y,'#ffd199');
+ adventureResult='矿核已开采 · +60 基础分、2 星屑，充能 1.5 秒';
+ if(o.ores.every(c=>c.dead)){score+=120;adventureResult='矿场开采完成 · 额外 +120 分';objective=null}
+}
+function disarmMine(m){
+ if(objective?.kind!=='mining'||m.dead||!objective.mines.includes(m))return;
+ m.dead=true;minesCleared++;score+=40;burst(m.x,m.y,'#a6efdc');tone(700,.08);
+}
+function updateMining(dt,oldX,oldY){
+ const o=objective;if(o?.kind!=='mining')return;
+ const protectedByBoost=boostTime>0||!!launch;
+ for(const m of o.mines){
+  if(m.dead)continue;
+  if(protectedByBoost&&segmentDistance(m.x,m.y,oldX,oldY,ship.x,ship.y)<=m.r+shipRadius()){disarmMine(m);continue}
+  if(minePhase(m)!=='active'||protectedByBoost)continue;
+  const newlyActive=minePhase(m,elapsed-dt)!=='active';
+  if(segmentDistance(m.x,m.y,newlyActive?ship.x:oldX,newlyActive?ship.y:oldY,ship.x,ship.y)<=mineRadius()+shipRadius()){damage();if(state==='over')return}
+ }
+ if(protectedByBoost)for(const ore of o.ores)if(!ore.dead&&segmentDistance(ore.x,ore.y,oldX,oldY,ship.x,ship.y)<=ore.r+shipRadius())breakOre(ore);
+}
+function drawMining(t){
+ const o=objective;if(o?.kind!=='mining')return;
+ ctx.save();ctx.textAlign='center';ctx.font='10px sans-serif';
+ for(const ore of o.ores)if(!ore.dead){ctx.fillStyle='#665232';ctx.strokeStyle='#ffd199';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.lineTo(ore.x+Math.cos(a)*16,ore.y+Math.sin(a)*16)}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#ffe3a4';star(ore.x,ore.y,8,t*.5);ctx.fillText('矿核',ore.x,ore.y+30)}
+ for(const m of o.mines)if(!m.dead){
+  const state=minePhase(m),radius=mineRadius(),active=state==='active';
+  ctx.strokeStyle=active?'#ff8f9f':state==='warning'?'#ffcd8a':'#768a96';ctx.fillStyle=active?'#ff718c38':'#ffcd8a0a';ctx.lineWidth=active?3:1.5;ctx.setLineDash(state==='warning'?[4,5]:[]);
+  ctx.beginPath();ctx.arc(m.x,m.y,radius,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=active?'#ff8f9f':'#a794a4';ctx.beginPath();ctx.arc(m.x,m.y,9,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=active?'#ffb8c1':state==='warning'?'#ffdda8':'#879ba4';ctx.fillText(active?'脉冲':state==='warning'?'蓄能':'休眠',m.x,m.y+radius+12);
+ }
+ ctx.restore();
+}
 
 function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();hud();requestAnimationFrame(frame);
 </script>

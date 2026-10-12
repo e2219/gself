@@ -331,7 +331,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  els.restart.onclick();assert.equal(run('objective'),null);assert.equal(run('fork'),null);assert.equal(run('activeRoute'),null);assert.equal(run('moonPhase'),'bright');assert.equal(run('ringWins+escortWins+adventureSlot+routeSlot'),0);
  // A complete unattended journey never opens an automatic modal, even with upgrades ready.
  run(`start();invincible=1000;dust=3;let seen=new Set(),peak=0;for(let n=0;n<5500&&state==='playing';n++){update(1/60);if(objective)seen.add(objective.kind);if(fork)seen.add('fork');if(wagerInviteUntil)seen.add('invite');peak=Math.max(peak,items.length)};globalThis.journey={seen:[...seen],peak}`);
- assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),6);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("cargo")&&journey.seen.includes("sling")&&journey.seen.includes("whale")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
+ assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),6);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("cargo")&&journey.seen.includes("whale")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
  console.log('V7 PASS: ring order/rewards/expiry, escort reconnect/delivery, phase hitboxes/attraction, gate grace/default/reward/expiry, opt-in choices, resize/pause/reset, full 90-second run without forced modals');
 }
 
@@ -581,6 +581,67 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('moonCooldown=0');elementEvents['moonToggle:pointerdown'](pe(114,20,20,els.moonToggle));assert.equal(run('moonPhase'),'dark');run('moonCooldown=0');els.moonToggle.onclick({detail:1});assert.equal(run('moonPhase'),'dark');
  run('start();selectControlMode("drag")');
  console.log('V11.2 PASS: second-finger phase switch during all three drivers, pointer capture/focus retained, ongoing movement, cooldown, late-click deduplication, pause guards and keyboard activation');
+}
+
+// V12: gate decisions choose different upcoming content, not just score multipliers.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ const branch=(stage,id)=>run(`fork={stage:${stage},deadline:elapsed+7,armed:elapsed+1};chooseRoute("${id}")`);
+ branch(0,'calm');assert.equal(run('routePlan[0]'),'port');assert.equal(run('scheduledAdventure(adventureSchedule[2],2).kind'),'cargo');
+ branch(1,'rich');assert.equal(run('routePlan[1]'),'mine');assert.equal(run('scheduledAdventure(adventureSchedule[4],4).kind'),'mining');
+ // Expiry of a temporary route modifier cannot erase the destination choice.
+ run('elapsed=50;updateAdventure(0,ship.x,ship.y)');assert.equal(run('activeRoute'),null);assert.equal(run('routePlan.join()'),'port,mine');
+ run('start()');isolate();branch(0,'rich');branch(1,'calm');assert.equal(run('routePlan.join()'),'relic,whale');assert.equal(run('scheduledAdventure(adventureSchedule[2],2).kind'),'sling');
+ run('beginObjective(scheduledAdventure(adventureSchedule[2],2));ship.x=W*.5+Math.min(W,H)*.18;ship.y=H*.56;enterOrbit();releaseOrbit()');assert.equal(run('objective.sector'),'relic');assert(run('objective.linked'));
+ run('start()');isolate();run('elapsed=33;routePlan[0]="port";beginObjective(scheduledAdventure(adventureSchedule[2],2));objective.crates.forEach(c=>c.taken=true);objective.load=3;ship.x=objective.station.x*W;ship.y=objective.station.y*H;updateAdventure(0,ship.x,ship.y)');assert.equal(run('guard'),1);assert.equal(run('objective'),null);run('updateAdventure(0,ship.x,ship.y)');assert.equal(run('guard'),1);
+ run('start()');isolate();run('fork={stage:1,deadline:55,armed:54};elapsed=55;updateAdventure(0,ship.x,ship.y)');assert.equal(run('routePlan[1]'),'whale');
+ run('routePlan=["relic","mine"];elapsed=63;mapHud()');assert.equal(els['map-mine'].attributes['data-state'],'active');assert.equal(els['map-whale'].attributes['data-state'],'skipped');assert(els.routeMap.attributes['aria-label'].includes('引力遗迹 → 陨石矿场'));
+ run('start()');assert.equal(run('routePlan.join()'),',');assert.equal(run('oreCount+minesCleared'),0);
+ run('start()');isolate();run('routeSlot=0;elapsed=24;ship.x=W*.25;ship.y=H*.48;updateAdventure(0,ship.x,ship.y);elapsed=25.1;updateAdventure(0,ship.x,ship.y)');assert.equal(run('routePlan[0]'),null);
+ run('ship.x=W*.5;updateAdventure(0,ship.x,ship.y);ship.x=W*.25;updateAdventure(0,W*.5,ship.y)');assert.equal(run('routePlan[0]'),'port');run('start()');
+ console.log('V12 map PASS: destination schedules, permanent route plan, optional default, linked relic rings, one-time port resupply, map states and restart');
+}
+
+// V12: pulse mines have a visible grace period, safe rest, swept hits and optional counters.
+{
+ const mineStart=()=>{run('start()');isolate();run('elapsed=62;phase=2;routePlan[1]="mine";activeRoute={id:"rich",sector:"mine",until:74};beginObjective(scheduledAdventure(adventureSchedule[4],4))')};
+ width=960;height=510;run('resize()');mineStart();
+ run('ship.x=objective.mines[0].x+100;ship.y=objective.mines[0].y;elapsed=63.59;updateMining(.01,objective.mines[0].x-100,ship.y)');assert.equal(run('hp'),3);assert.equal(run('minePhase(objective.mines[0])'),'warning');
+ run('elapsed=63.7;updateMining(.01,objective.mines[0].x-100,ship.y)');assert.equal(run('hp'),2);assert.equal(run('minePhase(objective.mines[0])'),'active');
+ run('elapsed=64.31;invincible=0;hp=3;updateMining(.01,objective.mines[0].x-100,ship.y)');assert.equal(run('hp'),3);assert.equal(run('minePhase(objective.mines[0])'),'idle');
+ run('elapsed=65.7;ship.x=objective.mines[1].x+100;ship.y=objective.mines[1].y;resumeShield=1;updateMining(.01,objective.mines[1].x-100,ship.y)');assert.equal(run('hp'),3);
+ run('resumeShield=0;guard=1;updateMining(.01,objective.mines[1].x-100,ship.y)');assert.equal(run('guard'),0);assert.equal(run('hp'),3);
+ mineStart();run('boost();ship.x=objective.mines[0].x+50;ship.y=objective.mines[0].y;elapsed=63.7;updateMining(.01,objective.mines[0].x-50,ship.y)');assert.equal(run('minesCleared'),1);assert.equal(run('score'),40);assert.equal(run('hp'),3);run('updateMining(.01,objective.mines[0].x-50,ship.y)');assert.equal(run('score'),40);
+ // Warning-stage rocks cannot harm the player, and crossing with no boost cannot collect ore.
+ mineStart();run('ship.x=objective.ores[0].x;ship.y=objective.ores[0].y;updateMining(0,ship.x,ship.y)');assert.equal(run('oreCount'),0);
+ run('boostCooldown=5;for(const ore of [...objective.ores])breakOre(ore)');assert.equal(run('oreCount'),3);assert.equal(run('dust'),6);assert.equal(run('score'),792);assert.equal(run('boostCooldown'),.5);assert.equal(run('objective'),null);run('updateMining(0,ship.x,ship.y)');assert.equal(run('score'),792);
+ // Reflections hit the nearest mine first, then can open a mineral node on a later shot.
+ mineStart();run('objective.mines[0].x=200;objective.mines[0].y=200;objective.mines[1].dead=true;objective.ores[0].x=400;objective.ores[0].y=200;objective.ores[1].y=400;objective.ores[2].y=400;reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.6)');assert.equal(run('minesCleared'),1);assert.equal(run('oreCount'),0);
+ run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.6)');assert.equal(run('oreCount'),1);assert.equal(run('dust'),2);
+ const normalized=run('[objective.mines[0].x/W,objective.ores[0].y/H]');width=360;height=400;run('resize();draw(1)');assert(Math.abs(run('objective.mines[0].x/W')-normalized[0])<1e-9);assert(Math.abs(run('objective.ores[0].y/H')-normalized[1])<1e-9);
+ run('pause()');const frozen=run('JSON.stringify([objective,elapsed,oreCount,minesCleared])');run('update(3)');assert.equal(run('JSON.stringify([objective,elapsed,oreCount,minesCleared])'),frozen);run('pause()');
+ run('elapsed=65;laserSlot=2;objective=null;stepLaser(0,ship.x,ship.y,false)');assert.equal(run('laser'),null);assert.equal(run('laserSlot'),3);
+ mineStart();run('elapsed=70;invincible=0;ship.x=objective.mines[0].x;ship.y=objective.mines[0].y;updateMining(.01,ship.x,ship.y)');assert.equal(run('minePhase(objective.mines[0])'),'idle');assert.equal(run('hp'),3);
+ run('elapsed=74;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('objective'),null);assert.equal(run('score'),0);assert.equal(run('hp'),3);
+ mineStart();run('hp=1;elapsed=63.7;ship.x=objective.mines[0].x;ship.y=objective.mines[0].y;update(.01)');assert.equal(run('state'),'over');
+ run('start()');assert.equal(run('objective'),null);assert.equal(run('oreCount+minesCleared'),0);
+ console.log('V12 mining PASS: warning/rest/swept damage, shield protection, boost disarm, one-shot rewards, nearest projectile impacts, resize/pause/expiry, laser suppression and storm shutdown');
+}
+
+// All four itineraries must finish without modal interruptions or control resets.
+{
+ for(const first of ['calm','rich'])for(const second of ['calm','rich']){
+  width=360;height=400;run('resize();start();invincible=1000');
+  run(`globalThis.trip={seen:[],peak:0};for(let i=0;i<5500&&state==='playing';i++){
+   if(fork){ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.85;inputMode='pointer';if(elapsed>=fork.armed){ship.target=W*(fork.stage===0?('${first}'==='calm'?.25:.75):('${second}'==='calm'?.25:.75));ship.targetY=H*.48;}}
+   update(1/60);if(objective?.sector&&!trip.seen.includes(objective.sector))trip.seen.push(objective.sector);trip.peak=Math.max(trip.peak,items.length);if(i%90===0)draw(i/60);
+  }`);
+  assert.equal(run('state'),'over');assert.equal(run('trip.seen.join()'),(first==='calm'?'port':'relic')+','+(second==='calm'?'whale':'mine'));assert.equal(run('routePlan.join()'),run('trip.seen.join()'));assert(run('trip.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
+ }
+ run('start()');isolate();run('selectControlMode("stick")');
+ elementEvents['joystick:pointerdown']({pointerId:121,clientX:112,clientY:546,pointerType:'touch',currentTarget:els.joystick,preventDefault:noop});
+ run('fork={stage:0,deadline:31,armed:25};chooseRoute("rich");hud()');height-=5;resizeCallback();assert.equal(run('stickPointer'),121);assert.equal(run('inputMode'),'virtual');const x=run('ship.x');run('update(.03)');assert(run('ship.x')>x);run('selectControlMode("drag");start()');
+ console.log('V12 journey PASS: all four 90-second branch combinations, real gate crossings, correct exclusive sectors, bounded hazards, no forced modals and uninterrupted held joystick');
 }
 
 (async()=>{
