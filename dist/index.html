@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=7.1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=8"></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 07.1</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 08</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <div id="synergyBar" class="synergybar">技能两两搭配，可自动激活星座合成</div>
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
 <canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机在下方独立触控板拖动，旁边的按钮加速。"></canvas>
-<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">穿星环、护月灵，自己选择航线。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">触控板 / WASD 移动 · 空格加速 · Q 月相 · E 强化 / R 赌约</small></div></div>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">运送星光货物，精准反射陨石。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">触控板 / WASD 移动 · 空格加速 · Q 月相 · E 强化 / R 赌约</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
 <div id="wager" class="upgrade wager" role="dialog" aria-modal="true" aria-labelledby="wagerTitle" hidden><div class="upgrade-panel"><div class="eyebrow">A LITTLE RISK, A NEW POSSIBILITY</div><h2 id="wagerTitle">和星空打个赌？</h2><p>时间已暂停。成功获得额外一次二选一强化，失败不扣分。<br>选择或跳过后，准备好再继续；恢复享有 1.5 秒无敌。</p><div class="choices"><button id="wager0" class="choice"></button><button id="wager1" class="choice"></button></div><button id="wagerSkip" class="skip">这次跳过 →</button><small>键盘 1 / 2 选择 · Esc 跳过</small></div></div>
 <button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
@@ -26,11 +26,12 @@
 </div>
 <div class="flight-status"><span id="flightStatus" role="status">追逐星环、护送月灵 · 都可自由略过</span><small id="routeStatus">自由航行</small></div>
 <div class="choice-dock"><span id="choiceHint">强化 E / 赌约 R · 可选时按键打开</span><button id="upgradeReady" aria-keyshortcuts="E" title="有强化可选时按 E 打开" hidden>✧ 强化可选 · E</button><button id="wagerReady" aria-keyshortcuts="R" title="有赌约可选时按 R 打开" hidden>赌约可选 · R</button></div>
-<div class="skillbar"><span id="skillTip">加速 1.2 秒 · 双倍移速＋护盾 · 冷却 5 秒</span><button id="moonToggle" title="Q 切换：明月吸星更远，暗月船身更小但吸星较弱" aria-pressed="false" disabled>☀ 明月 · 吸星 ⇄</button><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div>
+<div class="skillbar"><span id="skillTip">加速 1.2 秒 · 起手可精准反射 · 冷却 5 秒</span><button id="moonToggle" title="Q 切换：明月吸星更远，暗月船身更小但吸星较弱" aria-pressed="false" disabled>☀ 明月 · 吸星 ⇄</button><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div>
 <div id="wagerStatus" class="wager-status" role="status">赌约到来时可主动查看，忽略即可继续飞行</div>
 <div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
 <section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。穿左门更安全，右门星光 ×1.4、陨石略增。</p></div></article></section>
+<section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>星光货运</h3><p>靠近方箱装货，飞到金色空间站交付。最多 3 件，满载奖励更高、移速降低 24%；到期未交货不扣分。</p></div></article><article><span class="symbol mint">↗</span><div><h3>反射护盾</h3><p>加速起手 0.18 秒内接触陨石，可沿来路反弹；绿色弹体能碎星、破巨陨外壳。每次加速触发一次。</p></div></article></section>
 <details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V7.1</span></footer>
-</main><script src="game.js?v=7.1"></script>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V8.0</span></footer>
+</main><script src="game.js?v=8"></script>
 </body></html>

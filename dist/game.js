@@ -16,14 +16,18 @@ const newFlight=()=>({angle:-Math.PI/2,bank:0,throttle:0,trail:[]});
 let flight=newFlight();
 let moonPhase='bright',moonCooldown=0,objective=null,adventureSlot=0,fork=null,routeSlot=0,activeRoute=null,adventureResult='',ringWins=0,escortWins=0;
 let wagerInviteUntil=0;
-const adventureSchedule=[{at:6,kind:'rings',duration:12},{at:33,kind:'escort',duration:16},{at:64,kind:'rings',duration:12}];
+let reflections=[],reflectCount=0,cargoDelivered=0;
+const cargoLoad=()=>objective?.kind==='cargo'?objective.load:0;
+const cargoSpeed=()=>1-cargoLoad()*.08;
+const cargoValue=n=>n*70+n*(n-1)*25;
+const adventureSchedule=[{at:6,kind:'rings',duration:12},{at:18,kind:'cargo',duration:14},{at:33,kind:'escort',duration:16},{at:49,kind:'cargo',duration:14},{at:64,kind:'rings',duration:12}];
 const routeSchedule=[24,54];
 const shipRadius=()=>moonPhase==='dark'?10:16;
 const pickupRadius=()=>moonPhase==='dark'?16:24;
 const starAttraction=()=>moonPhase==='bright'?(powers.magnet===2?185:powers.magnet?130:65):(powers.magnet===2?110:powers.magnet?75:0);
 const routeReward=()=>activeRoute?.id==='rich'?1.4:1;
 function canUpgrade(){return (bonusCredits>0||(upgradeCount<upgradeAt.length&&dust>=upgradeAt[upgradeCount]))&&powersList.filter(p=>powers[p.id]<2).length>=2}
-function resetAdventure(){adventureSignature='';moonPhase='bright';moonCooldown=0;objective=fork=activeRoute=null;adventureSlot=routeSlot=ringWins=escortWins=0;adventureResult='追逐星环、护送月灵 · 都可自由略过';wagerInviteUntil=0}
+function resetAdventure(){reflections=[];reflectCount=cargoDelivered=0;adventureSignature='';moonPhase='bright';moonCooldown=0;objective=fork=activeRoute=null;adventureSlot=routeSlot=ringWins=escortWins=0;adventureResult='追逐星环、护送月灵 · 都可自由略过';wagerInviteUntil=0}
 function switchMoon(){if(state!=='playing'||moonCooldown>0)return;moonPhase=moonPhase==='bright'?'dark':'bright';moonCooldown=.35;tone(moonPhase==='bright'?780:420,.08);hud();focusGame()}
 
 const upgradeAt=[3,8,15,24];
@@ -99,6 +103,7 @@ function resize(){
  for(const s of shards){s.x*=W/ow;s.y*=H/oh}
  for(const e of echoes){e.x*=W/ow;e.y*=H/oh}
  for(const r of rings){r.x*=W/ow;r.y*=H/oh}
+ for(const r of reflections){r.x*=W/ow;r.y*=H/oh}
  if(boss){boss.x*=W/ow;boss.y*=H/oh}
  if(objective?.kind==='escort'){objective.x*=W/ow;objective.y*=H/oh}
  clearInput();
@@ -153,7 +158,7 @@ function finish(){
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem('mooncatch-best-v6',String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分 · 抵达「${phases[phase].name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
- $('hint').textContent=`穿环 ${ringWins} 次 · 护送 ${escortWins} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜 · 完美碎星 ${perfectCount} 次${boss?.hp===0?" · 巨陨已击破":""}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
+ $('hint').textContent=`交货 ${cargoDelivered} 件 · 反射 ${reflectCount} 次 · 穿环 ${ringWins} 次 · 护送 ${escortWins} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜 · 完美碎星 ${perfectCount} 次${boss?.hp===0?" · 巨陨已击破":""}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
 }
 function boost(){
  if(state!=='playing'||boostCooldown>0)return;
@@ -190,8 +195,8 @@ window.addEventListener('blur',()=>{clearInput();if(state==='playing')pause()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause()});
 function pointer(e){
  if(state!=='playing')return;
- const p=eventPoint(e),x=clamp(p.x),y=clampY(p.y),gain=boostTime>0?BOOST_SPEED:1;
- if(inputMode!=='pointer'||mouseX===null){ship.target=x;ship.targetY=y}
+ const p=eventPoint(e),x=clamp(p.x),y=clampY(p.y),gain=(boostTime>0?BOOST_SPEED:1)*cargoSpeed();
+ if(inputMode!=='pointer'||mouseX===null){ship.target=clamp(ship.x+(x-ship.x)*cargoSpeed());ship.targetY=clampY(ship.y+(y-ship.y)*cargoSpeed())}
  else{ship.target=clamp(ship.target+(x-mouseX)*gain);ship.targetY=clampY(ship.targetY+(y-mouseY)*gain)}
  mouseX=x;mouseY=y;inputMode='pointer';
 }
@@ -211,7 +216,7 @@ function touchMove(e){
  if(!touches.has(e.pointerId))return;
  e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
  inputMode='pointer';mouseX=mouseY=null;
- const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1);lastTouchX=p.x;lastTouchY=p.y;
+ const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1)*cargoSpeed();lastTouchX=p.x;lastTouchY=p.y;
  ship.target=clamp(ship.target+dx*gain);ship.targetY=clampY(ship.targetY+dy*gain);
 }
 function touchEnd(e){
@@ -311,9 +316,9 @@ function shieldNova(){
  const radius=powers.chain===2?150:110;rings.push({x:ship.x,y:shipY(),radius,life:.4});
  for(const rock of items)if(rock.rock&&!rock.dead&&Math.hypot(rock.x-ship.x,rock.y-shipY())<=radius)shatter(rock);
 }
-function shatter(rock){
+function shatter(rock,allowPerfect=true){
  if(rock.dead)return;
- const perfect=claimPerfect(rock.x,rock.y);
+ const perfect=allowPerfect&&claimPerfect(rock.x,rock.y);
  if(perfect)for(let i=0;i<2;i++)shards.push({x:rock.x+(i?12:-12),y:rock.y-20,life:5,age:0,locked:false});
  const queue=[rock];let count=0;
  while(queue.length&&count<24){
@@ -325,6 +330,40 @@ function shatter(rock){
  }
  tone(250+count*70,.1);
 }
+// One precise reflection per boost; the existing perfect-hit reward remains one-shot.
+function reflectMeteor(rock){
+ if(rock.dead||!perfectReady||perfectWindow<=0||boostTime<=0)return false;
+ let dx=-(rock.dx||0),dy=rock.dy===undefined?-1:-rock.dy;
+ const length=Math.hypot(dx,dy)||1;dx/=length;dy/=length;
+ shatter(rock);reflectCount++;
+ reflections.push({x:rock.x,y:rock.y,dx,dy,r:8,life:2});
+ if(reflections.length>8)reflections.shift();
+ announce('精准反射 · 陨石沿来路反击');return true;
+}
+// Earliest relative circle contact keeps fast reflected shots from tunnelling or hitting out of order.
+function impactTime(ax,ay,bx,by,r){
+ const vx=bx-ax,vy=by-ay,c=ax*ax+ay*ay-r*r;if(c<=0)return 0;
+ const a=vx*vx+vy*vy;if(!a)return null;
+ const b=2*(ax*vx+ay*vy),disc=b*b-4*a*c;if(disc<0)return null;
+ const t=(-b-Math.sqrt(disc))/(2*a);return t>=0&&t<=1?t:null;
+}
+function updateReflections(dt){
+ for(const shot of reflections){
+  const oldX=shot.x,oldY=shot.y,step=Math.max(400,Math.min(W,H)*1.6)*Math.min(dt,shot.life);
+  shot.x+=shot.dx*step;shot.y+=shot.dy*step;shot.life-=dt;
+  let target=null,first=Infinity;
+  const targets=items.filter(o=>o.rock&&!o.dead);
+  if(boss&&boss.hp>0&&boss.warning<=0)targets.push(boss);
+  for(const o of targets){
+   const t=impactTime(oldX-(o.prevX??o.x),oldY-(o.prevY??o.y),shot.x-o.x,shot.y-o.y,shot.r+o.r);
+   if(t!==null&&t<first){target=o;first=t}
+  }
+  if(target){if(target===boss)breakBossShell(false);else shatter(target,false);shot.life=0}
+  if(shot.x<-60||shot.x>W+60||shot.y<-60||shot.y>H+60)shot.life=0;
+ }
+ reflections=reflections.filter(s=>s.life>0);items=items.filter(o=>!o.dead);
+}
+
 function collectDust(){dust++;score+=Math.round(25*phases[phase].multiplier*routeReward());if(powers.capacitor)boostCooldown=Math.max(0,boostCooldown-(powers.capacitor===2?.45:.25));tone(980,.07)}
 function claimPerfect(x,y){
  if(!perfectReady||perfectWindow<=0||boostTime<=0)return false;
@@ -351,12 +390,16 @@ function updateBoss(dt,worldDt,oldX,protectedByBoost,oldY=ship.y){
  if(!touchesPath(boss,oldX,oldY,boss.r+shipRadius()))return;
  if(protectedByBoost){
   if(boss.lastBoost===boostSerial)return;
-  boss.lastBoost=boostSerial;boss.hp--;const perfect=claimPerfect(boss.x,boss.y);burst(boss.x,boss.y,'#f3d694');
+  boss.lastBoost=boostSerial;breakBossShell(true);
+ }else damage();
+}
+function breakBossShell(allowPerfect=false){
+ if(!boss||boss.hp<=0||boss.warning>0)return;
+ boss.hp--;const perfect=allowPerfect&&claimPerfect(boss.x,boss.y);burst(boss.x,boss.y,'#f3d694');
   if(perfect)for(let i=0;i<2;i++)shards.push({x:boss.x+(i?12:-12),y:boss.y,age:0,life:5,locked:true});
   shards.push({x:boss.x,y:boss.y,age:0,life:5,locked:true});
   announce(boss.hp?`${perfect?'完美破壳':'巨陨破壳'} · 剩余 ${boss.hp} 层`:'月蚀消散 · +600 分');
   if(boss.hp===0){score+=600;for(let i=0;i<6;i++)shards.push({x:boss.x+(i-2.5)*12,y:boss.y,age:0,life:5,locked:true});rings.push({x:boss.x,y:boss.y,radius:170,life:.4})}
- }else damage();
 }
 function burst(x,y,color){for(let i=0;i<10&&particles.length<220;i++)particles.push({x,y,vx:(Math.random()-.5)*150,vy:(Math.random()-.5)*150,life:.5,color})}
 // Queue a readable trail, with enough time between stars to follow it on any screen.
@@ -412,7 +455,7 @@ function update(dt){
  const oldX=ship.x,oldY=ship.y;
  const dx=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
  const dy=Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w'));
- const length=Math.hypot(dx,dy),moveStep=Math.min(W,H)*.9*(boostTime>0?BOOST_SPEED:1)*dt;
+ const length=Math.hypot(dx,dy),moveStep=Math.min(W,H)*.9*(boostTime>0?BOOST_SPEED:1)*cargoSpeed()*dt;
  if(length){ship.target=clamp(ship.x+dx/length*moveStep);ship.targetY=clampY(ship.y+dy/length*moveStep)}
  if(inputMode==='pointer'&&!length){ship.x=clamp(ship.target);ship.y=clampY(ship.targetY)}
  else{moveToward(ship,ship.target,ship.targetY,moveStep/(dt||1),dt);ship.x=clamp(ship.x);ship.y=clampY(ship.y)}
@@ -434,7 +477,7 @@ function update(dt){
   const hit=touchesPath(o,oldX,oldY,o.r+(o.rock?shipRadius():pickupRadius()));
   const echoHit=!o.rock&&echoes.some(e=>segmentDistance(e.x,e.y,o.prevX,o.prevY,o.x,o.y)<o.r+22);
   if(hit||echoHit){
-   if(o.rock){if(protectedByBoost)shatter(o);else{o.dead=true;damage();if(state==='over')return}}
+   if(o.rock){if(protectedByBoost){if(!reflectMeteor(o))shatter(o)}else{o.dead=true;damage();if(state==='over')return}}
    else{o.dead=true;collectStar(o)}
   }else if((!o.rock&&o.y>H+20)||o.x<-60||o.x>W+60||o.y<-60||o.y>H+60||o.age>18){o.dead=true;if(!o.rock)missStar()}
  }
@@ -449,6 +492,7 @@ function update(dt){
   else if(s.life<=0)shards.splice(i,1);
  }
  updateBoss(dt,worldDt,oldX,protectedByBoost,oldY);if(state==='over')return;
+ updateReflections(dt);
  perfectWindow=Math.max(0,perfectWindow-dt);
  for(const e of echoes)e.life-=dt;echoes=echoes.filter(e=>e.life>0);
  for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);
@@ -460,6 +504,7 @@ function update(dt){
 function beginObjective(spec){
  const mirrored=Math.random()<.5;
  if(spec.kind==='rings')objective={kind:'rings',deadline:elapsed+spec.duration,index:0,points:[{x:.2,y:.48},{x:.4,y:.7},{x:.62,y:.42},{x:.8,y:.64}].map(p=>({x:mirrored?1-p.x:p.x,y:p.y}))};
+ else if(spec.kind==='cargo')objective={kind:'cargo',deadline:elapsed+spec.duration,load:0,station:{x:mirrored?.18:.82,y:.76},crates:[{x:.2,y:.42},{x:.44,y:.64},{x:.66,y:.4}].map(p=>({...p,x:mirrored?1-p.x:p.x,taken:false}))};
  else objective={kind:'escort',deadline:elapsed+spec.duration,x:W*(mirrored?.8:.2),y:H*.65,home:{x:mirrored?.2:.8,y:.4},following:false,met:false};
 }
 function chooseRoute(id){
@@ -481,12 +526,18 @@ function updateAdventure(dt,oldX,oldY){
   else if(elapsed>=fork.armed){for(const [id,x] of [['calm',.25],['rich',.75]])if(segmentDistance(W*x,H*.48,oldX,oldY,ship.x,ship.y)<30){chooseRoute(id);break}}
  }
  const o=objective;if(!o)return;
- if(elapsed>=o.deadline){adventureResult=o.kind==='rings'?'星环已远去 · 错过不扣分':'月灵自行返航 · 错过不扣分';objective=null;return}
+ if(elapsed>=o.deadline){adventureResult=o.kind==='rings'?'星环已远去 · 错过不扣分':o.kind==='cargo'?'货运窗口结束 · 未交货物回收，无扣分':'月灵自行返航 · 错过不扣分';objective=null;return}
  if(o.kind==='rings'){
   const p=o.points[o.index];
   if(segmentDistance(p.x*W,p.y*H,oldX,oldY,ship.x,ship.y)<=27){
    o.index++;score+=25;burst(p.x*W,p.y*H,'#e4c9ff');tone(600+o.index*120,.09);
    if(o.index===o.points.length){ringWins++;score+=150;for(let i=0;i<3;i++)collectDust();adventureResult='星环连穿完成 · +150 分、3 颗星屑';objective=null}
+  }
+ }else if(o.kind==='cargo'){
+  for(const c of o.crates)if(!c.taken&&o.load<3&&segmentDistance(c.x*W,c.y*H,oldX,oldY,ship.x,ship.y)<20){c.taken=true;o.load++;tone(500+o.load*100,.08)}
+  if(o.load>0&&segmentDistance(o.station.x*W,o.station.y*H,oldX,oldY,ship.x,ship.y)<30){
+   const reward=Math.round(cargoValue(o.load)*routeReward());cargoDelivered+=o.load;score+=reward;o.load=0;boostCooldown=Math.max(0,boostCooldown-1);burst(o.station.x*W,o.station.y*H,'#ffdca0');adventureResult=`货物已交付 · +${reward} 分，加速充能 1 秒`;
+   if(o.crates.every(c=>c.taken))objective=null;
   }
  }else{
   const separation=Math.hypot(ship.x-o.x,ship.y-o.y);
@@ -505,7 +556,7 @@ function updateChoiceDock(){
 let adventureSignature='';
 function adventureHud(){
  const o=objective,ready=canUpgrade(),invite=wagerInviteUntil>elapsed;
- const signature=[state,resumeShield>0,moonPhase,moonCooldown>0,o?.kind,o?.index,o?.following,Math.ceil((o?.deadline||0)-elapsed),fork?.deadline,Math.ceil((fork?.deadline||0)-elapsed),activeRoute?.id,adventureResult,ready,invite,Math.ceil(wagerInviteUntil-elapsed),bonusCredits].join('|');
+ const signature=[state,resumeShield>0,moonPhase,moonCooldown>0,o?.kind,o?.index,o?.following,o?.load,Math.ceil((o?.deadline||0)-elapsed),fork?.deadline,Math.ceil((fork?.deadline||0)-elapsed),activeRoute?.id,adventureResult,ready,invite,Math.ceil(wagerInviteUntil-elapsed),bonusCredits].join('|');
  if(signature===adventureSignature)return;adventureSignature=signature;
  $('moonToggle').disabled=state!=='playing'||moonCooldown>0;$('moonToggle').setAttribute('aria-pressed',String(moonPhase==='dark'));
  $('moonToggle').textContent=moonPhase==='bright'?'☀ 明月 · 吸星  ⇄':'☾ 暗月 · 小巧  ⇄';
@@ -517,9 +568,10 @@ function adventureHud(){
  let text=adventureResult;
  if(o?.kind==='rings')text=`星环 ${o.index}/4 · 按亮起顺序穿过 · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
  if(o?.kind==='escort')text=`月灵 · ${o.following?'送往蓝色归航圈':o.met?'月灵掉队了，靠近接回':'靠近蓝色月灵接应'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
+ if(o?.kind==='cargo')text=`货舱 ${o.load}/3 · ${o.load?'移速 '+Math.round(cargoSpeed()*100)+'% · 交货 +'+Math.round(cargoValue(o.load)*routeReward())+'分':'靠近金色方箱装货 → 空间站交付'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
  if(fork)text=`航线分岔 · 穿左门更安全 / 右门高收益 · ${Math.max(0,Math.ceil(fork.deadline-elapsed))}s（忽略走左路）`;
  $('flightStatus').textContent=text||'追逐星环、护送月灵 · 都可自由略过';
- $('routeStatus').textContent=activeRoute?(activeRoute.id==='calm'?'平静星海 · 危险降低':'丰收星域 · 星光 ×1.4'):'自由航行';
+ $('routeStatus').textContent=(cargoLoad()?`货舱 ${cargoLoad()}/3 · `:'')+(activeRoute?(activeRoute.id==='calm'?'平静星海 · 危险降低':'丰收星域 · 星光 ×1.4'):'自由航行');
 }
 function drawAdventure(t){
  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='11px sans-serif';
@@ -534,6 +586,12 @@ function drawAdventure(t){
   ctx.globalAlpha=.85;ctx.strokeStyle='#a9daff';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(o.home.x*W,o.home.y*H,32,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#c6eaff';ctx.fillText('归航',o.home.x*W,o.home.y*H);
   if(o.following){ctx.globalAlpha=.3;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(ship.x,ship.y);ctx.stroke()}
   ctx.globalAlpha=1;ctx.shadowColor='#b6deff';ctx.shadowBlur=13;ctx.fillStyle='#c6eaff';ctx.beginPath();ctx.arc(o.x,o.y,9,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#16384c';ctx.beginPath();ctx.arc(o.x-3,o.y-1,1.3,0,7);ctx.arc(o.x+3,o.y-1,1.3,0,7);ctx.fill();
+ }
+ if(o?.kind==='cargo'){
+  ctx.globalAlpha=.9;ctx.strokeStyle='#ffdca0';ctx.fillStyle='#ffdca0';ctx.lineWidth=2;
+  const x=o.station.x*W,y=o.station.y*H;ctx.beginPath();ctx.arc(x,y,28,0,Math.PI*2);ctx.stroke();ctx.strokeRect(x-19,y-19,38,38);ctx.fillText('交货',x,y);
+  for(const c of o.crates)if(!c.taken){const cx=c.x*W,cy=c.y*H;ctx.fillStyle='#705333';ctx.fillRect(cx-9,cy-9,18,18);ctx.strokeRect(cx-9,cy-9,18,18);ctx.beginPath();ctx.moveTo(cx,cy-8);ctx.lineTo(cx,cy+8);ctx.stroke()}
+  for(let i=0;i<o.load;i++){ctx.fillStyle='#ffdca0';ctx.fillRect(ship.x-11+i*8,ship.y+22,6,6)}
  }
  if(fork){
   for(const [x,color,label] of [[.25,'#a6efdc','平静'],[.75,'#f3d694','丰收']]){
@@ -591,6 +649,7 @@ for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillSty
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
 ctx.fillStyle='#b8cec617';ctx.beginPath();ctx.arc(W*.83,H*.25,30,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17283c';ctx.beginPath();ctx.arc(W*.83+12,H*.25-7,27,0,Math.PI*2);ctx.fill();
 drawAdventure(t);
+for(const r of reflections){ctx.save();ctx.strokeStyle='#9cffe6';ctx.lineWidth=4;ctx.shadowColor='#9cffe6';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(r.x-r.dx*24,r.y-r.dy*24);ctx.lineTo(r.x,r.y);ctx.stroke();ctx.fillStyle='#e1fff2';star(r.x,r.y,r.r,t*5);ctx.restore()}
 for(const w of warnings){
  const v=warningVector(w),x=Math.max(7,Math.min(W-7,v.x)),y=Math.max(7,Math.min(H-7,v.y));
  ctx.save();ctx.globalAlpha=.2+(Math.sin(t*14)+1)*.1;ctx.strokeStyle='#f08c79';ctx.lineWidth=1;ctx.setLineDash([5,9]);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+v.dx*Math.hypot(W,H),y+v.dy*Math.hypot(W,H));ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle='#ff9f83';ctx.beginPath();ctx.arc(x,y,5+3*(1-w.remaining/w.total),0,Math.PI*2);ctx.fill();ctx.restore();

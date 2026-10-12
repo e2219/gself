@@ -330,7 +330,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  els.restart.onclick();assert.equal(run('objective'),null);assert.equal(run('fork'),null);assert.equal(run('activeRoute'),null);assert.equal(run('moonPhase'),'bright');assert.equal(run('ringWins+escortWins+adventureSlot+routeSlot'),0);
  // A complete unattended journey never opens an automatic modal, even with upgrades ready.
  run(`start();invincible=1000;dust=3;let seen=new Set(),peak=0;for(let n=0;n<5500&&state==='playing';n++){update(1/60);if(objective)seen.add(objective.kind);if(fork)seen.add('fork');if(wagerInviteUntil)seen.add('invite');peak=Math.max(peak,items.length)};globalThis.journey={seen:[...seen],peak}`);
- assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),3);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
+ assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),5);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("cargo")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
  console.log('V7 PASS: ring order/rewards/expiry, escort reconnect/delivery, phase hitboxes/attraction, gate grace/default/reward/expiry, opt-in choices, resize/pause/reset, full 90-second run without forced modals');
 }
 
@@ -346,4 +346,35 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  for(const modifier of ['ctrlKey','metaKey','altKey']){let prevented=false;key('r',{[modifier]:true,preventDefault:()=>{prevented=true}});assert(!prevented);assert.equal(run('state'),'playing')}
  key('R',{target:{tagName:'BUTTON'}});assert.equal(run('state'),'menuIntro');assert.equal(run('menuIntro.kind'),'wager');run('update(.8)');key('2');assert.equal(run('state'),'paused');assert(run('activeWager'));
  console.log('V7.1 PASS: E/R eligibility, uppercase/repeat/menu guards, existing number selection, editable/composition guard and browser modifier shortcuts');
+}
+
+// V8: optional delivery decisions and friendly reflected projectiles, without adding input buttons.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ const beginCargo=()=>run('beginObjective({kind:"cargo",duration:14})');
+ const crate=i=>run(`ship.x=objective.crates[${i}].x*W;ship.y=objective.crates[${i}].y*H;updateAdventure(0,ship.x,ship.y)`);
+ const deliver=()=>run('ship.x=objective.station.x*W;ship.y=objective.station.y*H;updateAdventure(0,ship.x,ship.y)');
+ beginCargo();for(let i=0;i<3;i++)crate(i);assert.equal(run('cargoLoad()'),3);assert.equal(run('cargoSpeed()'),.76);assert.equal(run('score'),0);
+ run('boostCooldown=4');deliver();assert.equal(run('score'),360);assert.equal(run('cargoDelivered'),3);assert.equal(run('cargoSpeed()'),1);assert.equal(run('objective'),null);assert.equal(run('boostCooldown'),3);run('updateAdventure(.01,ship.x,ship.y)');assert.equal(run('score'),360);
+ run('start()');isolate();beginCargo();crate(0);deliver();assert.equal(run('score'),70);assert.equal(run('cargoLoad()'),0);assert(run('objective.crates[0].taken'));crate(0);assert.equal(run('cargoLoad()'),0);crate(1);crate(2);deliver();assert.equal(run('score'),260);assert.equal(run('cargoDelivered'),3);
+ run('start()');isolate();beginCargo();crate(0);run('score=90;combo=6;elapsed=15;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('cargoLoad()'),0);assert.equal(run('score'),90);assert.equal(run('hp'),3);assert.equal(run('combo'),6);
+ // Load scales keyboard and pad motion, including the initial mouse anchor, without input backlog.
+ run('start()');isolate();beginCargo();run('objective.load=3;keys.add("d");update(.1)');assert(Math.abs(run('ship.x-W/2')-height*.9*.1*.76)<1e-8);
+ run('start()');isolate();beginCargo();run('objective.load=3;pointer({clientX:W/2+100,clientY:ship.y});update(.01)');assert.equal(run('ship.x'),width/2+76);
+ run('start()');isolate();beginCargo();run('objective.load=3');const pad=els.touchPad;
+ const e=(x,y)=>({pointerId:80,currentTarget:pad,pointerType:'touch',clientX:x,clientY:y,preventDefault:noop});elementEvents['touchPad:pointerdown'](e(100,600));elementEvents['touchPad:pointermove'](e(110,590));run('update(.01)');assert(Math.abs(run('ship.x-W/2')-16.5*.76)<1e-8);
+ // A precise hit reverses incoming direction once, preserving the established perfect reward.
+ run('start()');isolate();run('boost();items=[{x:ship.x,y:ship.y,dx:1,dy:0,speedScale:1,r:12,a:0,rock:true}];update(.01)');assert.equal(run('reflectCount'),1);assert.equal(run('reflections.length'),1);assert.equal(run('reflections[0].dx'),-1);assert.equal(run('perfectCount'),1);assert.equal(run('score'),50);assert.equal(run('shards.length'),3);assert.equal(run('hp'),3);
+ hit(true);assert.equal(run('reflectCount'),1);assert.equal(run('perfectCount'),1);
+ run('start()');isolate();run('boost();update(.2)');hit(true);assert.equal(run('reflectCount'),0);
+ // Fast projectiles hit the nearest target despite reverse array order, then disappear.
+ run('start()');isolate();run('items=[{x:300,y:200,r:12,rock:true},{x:200,y:200,r:12,rock:true}];reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.4)');assert.equal(run('items.length'),1);assert.equal(run('items[0].x'),300);assert.equal(run('reflections.length'),0);assert.equal(run('shards.length'),1);assert.equal(run('score'),0);
+ assert.equal(run('impactTime(-100,0,100,0,20)'),.4);assert.equal(run('impactTime(-100,30,100,30,20)'),null);
+ // Reflections can break three boss shells; warning-stage bosses and the player's ship are never hit.
+ run('start()');isolate();run('boss={x:200,y:200,r:40,hp:3,warning:1,lastBoost:-1};reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.2)');assert.equal(run('boss.hp'),3);
+ run('boss.warning=0');for(let i=0;i<3;i++)run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.2)');assert.equal(run('boss.hp'),0);assert.equal(run('score'),600);assert.equal(run('hp'),3);run('updateReflections(.2)');assert.equal(run('score'),600);
+ // Pausing freezes cargo and shots; resize/reset cannot retain weight, cargo rewards or projectiles.
+ run('start()');isolate();beginCargo();crate(0);run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];pause()');const frozen=run('JSON.stringify([objective,reflections,elapsed])');run('update(5)');assert.equal(run('JSON.stringify([objective,reflections,elapsed])'),frozen);
+ width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(reflections[0].x)'));els.restart.onclick();assert.equal(run('cargoSpeed()'),1);assert.equal(run('reflectCount+cargoDelivered+reflections.length'),0);
+ console.log('V8 PASS: full/partial delivery, cargo expiry/cap/reward, loaded keyboard/mouse/touch, perfect reflection one-shot/direction/timing, nearest swept hits, boss shells/reward, pause/resize/reset');
 }
