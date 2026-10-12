@@ -19,17 +19,24 @@
 .upgrade{align-items:safe center}.upgrade-panel{margin:auto}
 
 .game canvas{height:clamp(440px,65vh,670px)}.hud{inset:15px 18px auto}.hud strong{font-size:23px}.pressure{position:absolute;left:18px;top:77px;color:#f3b49c;font-size:9px;letter-spacing:1px;pointer-events:none}.phase-track{pointer-events:none;opacity:.75}.bossbar{top:100px}.combo{top:78px;font-size:10px}.announcement{pointer-events:none}.game #boost{opacity:.9}@media(max-width:650px){.game canvas{height:clamp(400px,65svh,600px)}.hud strong{font-size:20px}.hud .health strong{font-size:12px}.pressure{top:68px;font-size:8px;left:14px}.combo{top:88px}.bossbar{top:110px}.dialog small{max-width:280px;font-size:9px}.dialog p{font-size:11px}.intro{margin:12px 0}}
+
+/* Keep the mobile driving surface physically outside the arena. */
+.touch-controls{display:none;gap:10px;margin-top:10px;grid-template-columns:minmax(0,1fr) 80px;height:132px}
+.touch-pad{border:1px solid #a6d9c940;border-radius:14px;background:radial-gradient(ellipse at center,#1f3a48,#152733);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:contain;color:var(--mint)}
+.touch-pad>*{pointer-events:none}.pad-mark{font-size:25px;line-height:1}.touch-pad strong{font-size:12px;font-weight:500}.touch-pad span:not(.pad-mark){font-size:10px}.touch-pad small{font-size:9px;color:var(--muted)}.touch-pad[data-active="true"]{border-color:#a6efdc;background:#203f4b;box-shadow:inset 0 0 25px #a6d9c914}.touch-pad[aria-disabled="true"]{opacity:.5}
+.pad-boost{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1px solid #a6d9c960;border-radius:14px;background:#21434b;color:var(--mint);font-size:12px;touch-action:none;user-select:none;-webkit-user-select:none}.pad-boost:disabled{color:#82949f;background:#172d39;border-color:#ffffff20}.pad-boost[data-active="true"]{background:#306b66;border-color:#a6ffe0;color:#e5fff3}.pad-boost .boost-icon{font-size:30px}.touch-controls.controls-left{grid-template-columns:80px minmax(0,1fr)}.touch-controls.controls-left .pad-boost{grid-column:1;grid-row:1}.touch-controls.controls-left .touch-pad{grid-column:2;grid-row:1}
+@media(pointer:coarse),(max-width:650px){.touch-controls{display:grid}.game #boost{display:none}.game canvas{height:clamp(270px,48svh,480px)}.intro{margin:10px 0}.intro p{display:none}.skillbar{margin-top:4px}.constellationbar{margin-bottom:6px}.synergybar{padding-bottom:6px}}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 06.1</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 06.2</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <div id="synergyBar" class="synergybar">技能两两搭配，可自动激活星座合成</div>
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
-<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。触屏单指拖动移动，另一指轻触游戏区加速。"></canvas>
-<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">新月穿梭艇已就绪，随你的移动轻盈转向。<br>四边红光预告陨石来向。<br>越接近终点，陨石越快、越密。坚持 90 秒！</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">拖动 / WASD / 方向键全向移动 · 空格 / 双指 / 按钮加速</small></div></div>
+<canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机在下方独立触控板拖动，旁边的按钮加速。"></canvas>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">手机在战场下方的触控板滑动，视野更清楚。<br>任意位置落指，月舟从当前位置出发。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">触控板 / WASD / 方向键移动 · 按钮 / 空格加速</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
 <div id="wager" class="upgrade wager" role="dialog" aria-modal="true" aria-labelledby="wagerTitle" hidden><div class="upgrade-panel"><div class="eyebrow">A LITTLE RISK, A NEW POSSIBILITY</div><h2 id="wagerTitle">和星空打个赌？</h2><p>时间已暂停。成功获得额外一次二选一强化，失败不扣分。<br>选择后继续旅程，也可以直接跳过。</p><div class="choices"><button id="wager0" class="choice"></button><button id="wager1" class="choice"></button></div><button id="wagerSkip" class="skip">这次跳过，继续拾光 →</button><small>键盘 1 / 2 选择 · Esc 跳过</small></div></div>
 <button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
@@ -38,12 +45,16 @@
 <div id="pressure" class="pressure">威胁 Lv.1 · 四面来袭</div>
 <div id="combo" class="combo" aria-live="polite"></div><div class="coordinates">SECTOR 07 · SEA OF TRANQUILITY</div>
 </section>
+<div id="touchControls" class="touch-controls" aria-label="手机驾驶控制区">
+ <div id="touchPad" class="touch-pad" aria-label="相对移动触控板：任意位置落指并滑动，抬手停止" aria-disabled="true" data-active="false"><span class="pad-mark" aria-hidden="true">✥</span><strong>滑动驾驶</strong><span id="padHint">出发后，在这里滑动驾驶</span><small>不必按住飞船 · 可抬手换位置</small></div>
+ <button id="padBoost" class="pad-boost" aria-label="加速：双倍移速和护盾" disabled><span class="boost-icon">↯</span><span id="padBoostLabel">加速</span><span class="charge"><i id="padCharge"></i></span></button>
+</div>
 <div class="skillbar"><span id="skillTip">加速 1.2 秒 · 双倍移速＋护盾 · 冷却 5 秒</span><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div>
 <div id="wagerStatus" class="wager-status" role="status">星光赌约：18 秒 / 46 秒出现，可自由跳过</div>
 <div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
 <section class="guide"><article><span class="symbol gold">✦</span><div><h3>全场移动，四面来袭</h3><p>拖动或 WASD 自由走位，红色虚线预告来袭轨迹。</p></div></article><article><span class="symbol coral">◆</span><div><h3>速度与频率，持续攀升</h3><p>后程约 3 倍弹速，多方向同时来袭。别在角落停留。</p></div></article><article><span class="symbol mint">↔</span><div><h3>月蚀巨陨，最后一搏</h3><p>最后 20 秒，三次加速破壳得 600 分，也可绕开。</p></div></article></section>
 <details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V6.1</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V6.2</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -92,8 +103,14 @@ let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rin
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
 function focusGame(){canvas.focus({preventScroll:true})}
-function clearInput(){keys.clear();touches.clear();movePointer=null;ship.target=ship.x;ship.targetY=ship.y;inputMode='keyboard';mouseX=mouseY=null;flight.throttle=0;flight.trail=[]}
-function applyHand(){document.querySelector('.game').classList.toggle('controls-left',leftHand);$('hand').textContent='加速键：'+(leftHand?'左侧':'右侧')+' ⇄';$('hand').setAttribute('aria-pressed',String(leftHand))}
+function clearInput(){
+ const held=[...touches];touches.clear();movePointer=null;lastTouchX=lastTouchY=0;
+ keys.clear();ship.target=ship.x;ship.targetY=ship.y;inputMode='keyboard';mouseX=mouseY=null;flight.throttle=0;flight.trail=[];
+ $('touchPad').setAttribute('data-active','false');
+ // Release before menus take focus; stale moves from a held finger cannot steer after resume.
+ for(const [id,p] of held){try{p.surface?.releasePointerCapture?.(id)}catch{}}
+}
+function applyHand(){document.querySelector('.game').classList.toggle('controls-left',leftHand);$('touchControls').classList.toggle('controls-left',leftHand);$('hand').textContent='加速键：'+(leftHand?'左侧':'右侧')+' ⇄';$('hand').setAttribute('aria-pressed',String(leftHand))}
 
 try{best=Number(localStorage.getItem('mooncatch-best-v6'))||0}catch{}
 $('best').textContent=String(best).padStart(3,'0');
@@ -137,8 +154,14 @@ function hud(){
  $('combo').textContent=combo>=5?`${combo} 连击 · 星光 ×${Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier}`:'';
  $('pressure').textContent=`威胁 Lv.${difficulty().level} · 四面来袭`;
  $('boost').disabled=state!=='playing'||boostCooldown>0;
+ $('padBoost').disabled=$('boost').disabled;
+ $('padBoost').setAttribute('data-active',String(boostTime>0));
+ $('touchPad').setAttribute('aria-disabled',String(state!=='playing'));
+ $('padHint').textContent=state==='playing'?'任意落指 · 滑动驾驶 · 抬手停':state==='ready'?'出发后，在这里滑动驾驶':state==='over'?'本次航行已结束 · 等待再出发':'游戏已暂停 · 继续后重新落指';
  $('boost').setAttribute('data-active',String(boostTime>0));
  $('boostLabel').textContent=boostTime>0?'加速中':boostCooldown>0?`${boostCooldown.toFixed(1)}s`:'加速';
+ $('padBoostLabel').textContent=$('boostLabel').textContent;
+ $('padCharge').style.transform=`scaleX(${1-boostCooldown/COOLDOWN})`;
  $('dustMeter').textContent=upgradeCount<upgradeAt.length?`✧ 星屑 ${dust} / ${upgradeAt[upgradeCount]}`:`✧ 星屑 ${dust} · 星座已满`;
  $('powers').textContent=powersList.filter(p=>powers[p.id]).map(p=>`${p.name} ${powers[p.id]===2?'Ⅱ':'Ⅰ'}`).join(' · ')||'击碎陨石，点亮你的星座';
  const activeSynergies=synergyList.filter(s=>s.needs.every(p=>powers[p]>0));
@@ -159,14 +182,14 @@ function start(){
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
-function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus()}
+function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus({preventScroll:true})}
 function pause(){
  if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。加速充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
  else if(state==='paused'){state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phases[phase].subtitle;focusGame()}
  hud();
 }
 function finish(){
- state='over';activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem('mooncatch-best-v6',String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
+ state='over';clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem('mooncatch-best-v6',String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分 · 抵达「${phases[phase].name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  $('hint').textContent=`收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜 · 完美碎星 ${perfectCount} 次${boss?.hp===0?" · 巨陨已击破":""}`;$('status').textContent=hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp?660:180,.25);
@@ -179,8 +202,11 @@ function boost(){
  boostTime=BOOST_TIME;boostCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
 $('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('boost').onclick=()=>{boost()};
-$('boost').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
-$('hand').onclick=()=>{leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
+for(const id of ['boost','padBoost']){
+ $(id).onclick=boost;
+ $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
+}
+$('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
 $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade(1);
 $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$('wagerSkip').onclick=skipWager;
 $('sound').onclick=()=>{sound=!sound;$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
@@ -204,27 +230,33 @@ function pointer(e){
 }
 function touchDown(e){
  if(state!=='playing')return;
- if(e.pointerType!=='touch'){pointer(e);canvas.setPointerCapture(e.pointerId);return}
- e.preventDefault();const p=eventPoint(e);touches.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId);
+ const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
+ if(e.pointerType!=='touch'&&!isPad){pointer(e);canvas.setPointerCapture(e.pointerId);return}
+ e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
+ if(isPad)$('touchPad').setAttribute('data-active','true');
  if(movePointer===null){inputMode='pointer';mouseX=mouseY=null;movePointer=e.pointerId;lastTouchX=p.x;lastTouchY=p.y;ship.target=ship.x;ship.targetY=ship.y}
  else boost();
 }
 function touchMove(e){
  if(state!=='playing')return;
- if(e.pointerType!=='touch'){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
+ const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
+ if(e.pointerType!=='touch'&&!isPad){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
  if(!touches.has(e.pointerId))return;
- const p=eventPoint(e);touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
+ e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
  inputMode='pointer';mouseX=mouseY=null;
- const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=boostTime>0?BOOST_SPEED:1;lastTouchX=p.x;lastTouchY=p.y;
+ const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1);lastTouchX=p.x;lastTouchY=p.y;
  ship.target=clamp(ship.target+dx*gain);ship.targetY=clampY(ship.targetY+dy*gain);
 }
 function touchEnd(e){
  touches.delete(e.pointerId);
+ $('touchPad').setAttribute('data-active',String([...touches.values()].some(p=>p.surface===$('touchPad'))));
  if(movePointer===e.pointerId){const next=touches.entries().next();movePointer=next.done?null:next.value[0];if(!next.done){lastTouchX=next.value[1].x;lastTouchY=next.value[1].y}}
 }
-canvas.addEventListener('pointerdown',touchDown);
-canvas.addEventListener('pointermove',touchMove);
-for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,touchEnd);
+for(const surface of [canvas,$('touchPad')]){
+ surface.addEventListener('pointerdown',touchDown);
+ surface.addEventListener('pointermove',touchMove);
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])surface.addEventListener(type,touchEnd);
+}
 function offerUpgrade(){
  if(state!=='playing')return;
  const bonus=bonusCredits>0;
@@ -249,7 +281,7 @@ function chooseUpgrade(i){
  if(power.id==='streak')grace=powers.streak===2?4:2;offers=[];$('upgrade').hidden=true;
  // Resume through an explicit button, avoiding movement when returning from a hidden tab.
  state='paused';$('pause').disabled=false;clearInput();
- show('星座已点亮',`${power.name}已生效。${unlocked.length?"合成「"+unlocked.map(s=>s.name).join("、")+"」！":""}准备好后继续旅程。`,'继续旅程 →');
+ show('星座已点亮',`${power.name}已生效。${unlocked.length?"合成「"+unlocked.map(s=>s.name).join("、")+"」！":""}继续后，在触控板任意位置重新落指即可。`,'继续旅程 →');
  $('tag').textContent='CONSTELLATION AWAKENED';$('pause').textContent='继续';$('status').textContent='强化已获得 · 等待继续';hud();
 }
 function maybeOfferWager(){

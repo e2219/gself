@@ -2,7 +2,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const els={},events={},elementEvents={},storage={},noop=()=>{};
 const ctx=new Proxy({createRadialGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
 let width=960,height=510;
-function el(id){return els[id]??={style:{},textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:noop,focus:noop,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:noop,getContext:()=>ctx,getBoundingClientRect:()=>({width,height,left:0})}}
+function el(id){return els[id]??={style:{},classList:{toggle:noop},attributes:{},captures:new Set(),textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:function(k,v){this.attributes[k]=v},focus:noop,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:function(id){this.captures.add(id)},releasePointerCapture:function(id){this.captures.delete(id)},getContext:()=>ctx,getBoundingClientRect:()=>({width,height,left:0})}}
 const sandbox={document:{getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:noop},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
@@ -238,4 +238,30 @@ console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY an
  for(let i=0;i<200;i++)run('updateFlight(.001,ship.x-1,ship.y)');assert(run('flight.trail.length<=32'));
  run('draw(3);pause()');assert.equal(run('flight.trail.length'),0);run('start()');assert.equal(run('flight.angle'),-Math.PI/2);assert.equal(run('flight.throttle'),0);
  console.log('V6.1 PASS: frame-rate-independent pose, shortest rotation, immediate 2D position/stop, fading bounded trails, echo orientation and reset');
+}
+
+// V6.2: use the actual independent pad handlers, including a held finger across an upgrade.
+{
+ width=360;height=380;run('resize();start()');isolate();
+ const pad=els.touchPad;
+ const event=(id,x,y,type='touch')=>({pointerId:id,clientX:x,clientY:y,pointerType:type,currentTarget:pad,preventDefault:noop});
+ const down=e=>elementEvents['touchPad:pointerdown'](e),move=e=>elementEvents['touchPad:pointermove'](e),up=e=>elementEvents['touchPad:pointerup'](e);
+ const original=run('[ship.x,ship.y].join()');
+ down(event(30,50,600));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),original);assert(pad.captures.has(30));
+ move(event(30,70,590));run('update(.01)');assert.equal(run('ship.x'),213);assert(Math.abs(run('ship.y')-(height*.68-16.5))<1e-8);
+ up(event(30,70,590));const stoppedAt=run('[ship.x,ship.y].join()');down(event(31,140,680));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
+ // Upgrade releases capture. Moving the old finger, even after resume, is ignored.
+ run('dust=3;offerUpgrade()');assert.equal(run('state'),'upgrade');assert(!pad.captures.has(31));assert.equal(run('touches.size'),0);assert.equal(pad.attributes['data-active'],'false');assert(els.padBoost.disabled);
+ run('chooseUpgrade(0);pause()');move(event(31,20,510));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
+ down(event(32,10,700));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
+ move(event(32,20,690));run('update(.01)');assert.equal(run('ship.x'),229.5);
+ // Separate boost button leaves steering attached to the pad and doubles pad movement.
+ elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('movePointer'),32);assert(run('boostTime>0'));assert.equal(els.padBoostLabel.textContent,'加速中');assert(els.padBoost.disabled);
+ move(event(32,25,685));run('update(.01)');assert.equal(run('ship.x'),246);
+ run('pause()');assert.equal(run('touches.size'),0);assert(!pad.captures.has(32));assert.equal(pad.attributes['aria-disabled'],'true');
+ // A mouse on a narrow-screen pad uses the same relative control, never absolute arena coordinates.
+ run('start()');isolate();const mouseOrigin=run('ship.x');down(event(40,80,600,'mouse'));run('update(.01)');assert.equal(run('ship.x'),mouseOrigin);move(event(40,90,610,'mouse'));run('update(.01)');assert.equal(run('ship.x'),mouseOrigin+16.5);
+ elementEvents['touchPad:lostpointercapture'](event(40,90,610,'mouse'));move(event(40,200,800,'mouse'));const cancelled=run('ship.x');run('update(.01)');assert.equal(run('ship.x'),cancelled);
+ run('start()');isolate();down(event(50,80,600));down(event(51,160,600));assert(run('boostTime>0'));assert.equal(run('movePointer'),50);
+ console.log('V6.2 PASS: independent relative pad, lift/re-anchor, upgrade capture release/stale input rejection/resume, separate boost, pause/cancel, pad mouse and second-finger boost');
 }
