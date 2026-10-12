@@ -6,7 +6,7 @@ function el(id){return els[id]??={style:{},classList:{toggle:noop},attributes:{}
 const sandbox={document:{getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:noop},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
-const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length');
+const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length');
 const hit=rock=>run(`items=[{x:ship.x,y:shipY(),r:9,v:0,rock:${rock},a:0}];update(.01)`);
 run('start()');isolate();for(let i=0;i<10;i++)hit(false);assert.equal(run('score'),170);
 run('items=[{x:0,y:H+21,r:9,v:0,rock:false,a:0}];update(.01)');assert.equal(run('combo'),0);
@@ -330,7 +330,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  els.restart.onclick();assert.equal(run('objective'),null);assert.equal(run('fork'),null);assert.equal(run('activeRoute'),null);assert.equal(run('moonPhase'),'bright');assert.equal(run('ringWins+escortWins+adventureSlot+routeSlot'),0);
  // A complete unattended journey never opens an automatic modal, even with upgrades ready.
  run(`start();invincible=1000;dust=3;let seen=new Set(),peak=0;for(let n=0;n<5500&&state==='playing';n++){update(1/60);if(objective)seen.add(objective.kind);if(fork)seen.add('fork');if(wagerInviteUntil)seen.add('invite');peak=Math.max(peak,items.length)};globalThis.journey={seen:[...seen],peak}`);
- assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),5);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("cargo")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
+ assert.equal(run('state'),'over');assert.equal(run('time'),0);assert.equal(run('adventureSlot'),6);assert.equal(run('routeSlot'),2);assert(run('journey.seen.includes("rings")&&journey.seen.includes("escort")&&journey.seen.includes("cargo")&&journey.seen.includes("sling")&&journey.seen.includes("whale")&&journey.seen.includes("fork")&&journey.seen.includes("invite")'));assert(run('journey.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
  console.log('V7 PASS: ring order/rewards/expiry, escort reconnect/delivery, phase hitboxes/attraction, gate grace/default/reward/expiry, opt-in choices, resize/pause/reset, full 90-second run without forced modals');
 }
 
@@ -377,4 +377,33 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('start()');isolate();beginCargo();crate(0);run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];pause()');const frozen=run('JSON.stringify([objective,reflections,elapsed])');run('update(5)');assert.equal(run('JSON.stringify([objective,reflections,elapsed])'),frozen);
  width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(reflections[0].x)'));els.restart.onclick();assert.equal(run('cargoSpeed()'),1);assert.equal(run('reflectCount+cargoDelivered+reflections.length'),0);
  console.log('V8 PASS: full/partial delivery, cargo expiry/cap/reward, loaded keyboard/mouse/touch, perfect reflection one-shot/direction/timing, nearest swept hits, boss shells/reward, pause/resize/reset');
+}
+
+// V9: optional orbit/launch, whale corridor protection and telegraphed gap lasers.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ const well=()=>run('beginObjective({kind:"sling",duration:12});ship.x=ship.target=objective.cx*W+Math.min(W,H)*.18;ship.y=ship.targetY=objective.cy*H');
+ well();assert(run('canSling()'));run('boostCooldown=4;hud()');assert(!els.padBoost.disabled);
+ elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('orbit'));els.padBoost.onclick({detail:1});assert(run('orbit'));assert.equal(run('slingWins'),0);
+ const angle=run('orbit.angle');run('update(.1)');assert.notEqual(run('orbit.angle'),angle);const radial=run('[Math.cos(orbit.angle),Math.sin(orbit.angle)]');
+ elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('orbit'),null);assert(run('launch'));assert.equal(run('slingWins'),1);assert.equal(run('score'),80);assert(Math.abs(run('launch.vx')*radial[0]+run('launch.vy')*radial[1])<1e-8);
+ run('releaseOrbit()');assert.equal(run('score'),80);events.keydown({key:'d',target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});assert.equal(run('launch'),null);
+ run('start()');isolate();well();run('boost();pause()');const orbitFreeze=run('JSON.stringify([orbit,ship,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([orbit,ship,elapsed])'),orbitFreeze);run('pause()');for(let i=0;i<30;i++)run('update(.05)');assert.equal(run('orbit'),null);assert.equal(run('slingWins'),1);
+ // Five seconds in the whale wake pays once; the corridor protects health/armor and grants exit grace.
+ run('start()');isolate();run('beginObjective({kind:"whale",duration:12})');
+ run(`for(let i=0;i<52;i++){elapsed+=.1;const u=elapsed/12;ship.x=(objective.mirror?.88-u*.76:.12+u*.76)*W;ship.y=(.53+Math.sin(u*Math.PI*3)*.14)*H;updateAdventure(.1,ship.x,ship.y)}`);
+ assert(run('whaleSafe'));assert.equal(run('whaleWins'),1);assert.equal(run('score'),150);run('guard=2;damage()');assert.equal(run('hp'),3);assert.equal(run('guard'),2);assert(run('items.length>0'));
+ run('elapsed=12.1;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('objective'),null);assert(!run('whaleSafe'));assert(run('resumeShield>=.8'));assert.equal(run('score'),150);
+ // Wake lifetime remains ~2.4 seconds on high-refresh devices; no unbounded trail accumulation.
+ run('start()');isolate();run('beginObjective({kind:"whale",duration:12});for(let i=0;i<360;i++){elapsed+=1/120;updateAdventure(1/120,ship.x,ship.y)}');assert(run('objective.trail.length<=90'));assert(run('elapsed-objective.trail[0].at>2.3'));run('draw(1);pause()');const wakeFreeze=run('JSON.stringify([objective,elapsed])');run('update(1)');assert.equal(run('JSON.stringify([objective,elapsed])'),wakeFreeze);
+ // Laser warning is harmless, active rays catch fast crossings, and green gaps/boost remain safe.
+ run('start()');isolate();run('laser={vertical:false,at:.56,gap:.6,width:.38,warningEnd:2,end:3.2};ship.x=W*.1;ship.y=H*.7;elapsed=1.9;stepLaser(.1,ship.x,H*.4,false)');assert.equal(run('hp'),3);
+ run('elapsed=2.2;stepLaser(.1,ship.x,H*.4,false)');assert.equal(run('hp'),2);
+ run('hp=3;invincible=0;ship.x=W*.6;stepLaser(.1,ship.x,H*.4,false)');assert.equal(run('hp'),3);
+ run('ship.x=W*.1;stepLaser(.1,ship.x,H*.4,true)');assert.equal(run('hp'),3);
+ run('laser.vertical=true;ship.x=W*.8;ship.y=H*.6;stepLaser(.1,W*.3,ship.y,false)');assert.equal(run('hp'),3);
+ run('ship.y=H*.1;stepLaser(.1,W*.3,ship.y,false)');assert.equal(run('hp'),2);
+ run('elapsed=3.3;stepLaser(.1,ship.x,ship.y,false)');assert.equal(run('laser'),null);
+ run('start()');isolate();well();run('boost()');width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(orbit.radius)'));els.restart.onclick();assert.equal(run('orbit'),null);assert.equal(run('launch'),null);assert.equal(run('laser'),null);assert(!run('whaleSafe'));assert.equal(run('slingWins+whaleWins+laserSlot'),0);
+ console.log('V9 PASS: opt-in orbit, tangent/manual/automatic launch, pointer click deduplication, steering takeover, whale protection/reward/expiry/120Hz wake, laser warning/swept hit/gap/boost, pause/resize/reset');
 }

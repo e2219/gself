@@ -34,3 +34,5 @@
 .pad-actions{display:grid;grid-template-rows:1fr 45px;gap:7px;min-height:0}.pad-actions .pad-boost{gap:4px}.pad-actions .boost-icon{font-size:22px}#padMoon{border:1px solid #bca7f560;border-radius:12px;color:#dccbf5;background:#292c44;font-size:11px;touch-action:manipulation}#padMoon:disabled{opacity:.5}#padMoon[aria-pressed="true"]{background:#443853}.touch-controls.controls-left .pad-actions{grid-column:1;grid-row:1}@media(pointer:coarse),(max-width:650px){#moonToggle{display:none}.skillbar>span{min-width:100px}.skillbar #hand{flex:0 0 auto}}
 
 .cargo-guide{margin-top:18px;grid-template-columns:repeat(2,1fr)}@media(max-width:650px){.cargo-guide{grid-template-columns:1fr}}
+
+.obstacle-status{position:absolute;bottom:45px;left:12px;right:12px;text-align:center;color:#ffc4a6;font-size:10px;pointer-events:none;text-shadow:0 1px 5px #000}.obstacle-status[hidden]{display:none}
