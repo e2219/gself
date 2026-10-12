@@ -19,17 +19,17 @@ run('boostCooldown=0;ship.x=ship.target=200;ship.direction=1;boost();ship.target
 run('pause()');assert.equal(run('state'),'paused');assert(els.boost.disabled);run('pause()');assert.equal(run('state'),'playing');
 run('elapsed=29.99;update(.02)');assert.equal(run('phase'),1);run('elapsed=59.99;update(.02)');assert.equal(run('phase'),2);
 run('boostTime=0;combo=0;score=0');hit(false);assert.equal(run('score'),20);
-// Warning precedes hazards and always leaves at least one full lane safe.
+// Warning precedes hazards before they enter the arena.
 isolate();run('warnWave()');assert.equal(run('warnings.length'),2);assert.equal(run('items.length'),0);for(let i=0;i<27;i++)run('update(.05)');assert.equal(run('warnings.length'),0);assert(run('items.filter(o=>o.rock).length')>0);
 run('start()');isolate();run('starWave()');assert.equal(run('pending.length'),6);assert(run('pending.every(p=>p.x>=.1&&p.x<=.9)'));
 // Terminal states and records reset cleanly.
-run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v5'],'234');
+run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v6'],'234');
 run('start()');assert.equal(run('phase'),0);assert.equal(run('boostCooldown'),0);assert.equal(run('warnings.length'),0);assert.equal(run('score'),0);
 run('elapsed=89.99;update(.02)');assert.equal(run('state'),'over');assert.equal(run('time'),0);
 width=340;height=330;run('resize();start();starWave();warnWave();draw(1)');assert(run('ship.x>=24&&ship.x<=W-24'));
 events.keydown({key:' ',target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});assert(run('boostTime')>0);
 events.keydown({key:'p',target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});assert.equal(run('state'),'paused');
-console.log('V2 regression PASS: combo, miss, boost immunity/no-auto-movement/cooldown/swept collision, damage cooldown, pause, phases, double score, hazard telegraph/safe lanes, patterns, loss/record/restart/time limit, mobile draw and keyboard controls');
+console.log('V2 regression PASS: combo, miss, boost immunity/no-auto-movement/cooldown/swept collision, damage cooldown, pause, phases, double score, hazard telegraph, patterns, loss/record/restart/time limit, mobile draw and keyboard controls');
 
 // Mobile: touch-down does not teleport, a second finger boostes without steering.
 width=360;height=420;run('resize();start()');isolate();
@@ -152,11 +152,11 @@ run('start()');isolate();accept('stars');run('elapsed=10;tickWager()');assert.eq
 // A bonus and a dust upgrade ready together never stack dialogs or consume each other.
 run('start();dust=3;bonusCredits=1;offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0);pause();offerUpgrade()');assert.equal(run('upgradeSource'),'dust');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);assert.equal(run('bonusUpgradeCount'),1);
 // Gravity twin catches from below and above; expired echo targets fall back to the real ship.
-width=960;height=510;run('resize();start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,life:2}];items=[{x:200,y:shipY()+55,v:220,a:0,r:9,rock:false}];shards=[{x:230,y:shipY()-55,age:0,life:5,locked:false}]');
+width=960;height=510;run('resize();start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY()+55,v:220,a:0,r:9,rock:false}];shards=[{x:230,y:shipY()-55,age:0,life:5,locked:false}]');
 for(let i=0;i<60;i++)run('update(1/60)');assert.equal(run('items.length'),0);assert.equal(run('shards.length'),0);assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('score'),35);
-run('start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=350;echoes=[{x:200,life:.02}];items=[{x:200,y:shipY()+75,v:220,a:0,r:9,rock:false}]');for(let i=0;i<90;i++)run('update(1/60)');assert.equal(run('items.length'),0);assert.equal(run('score'),10);
+run('start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=350;echoes=[{x:200,y:shipY(),life:.02}];items=[{x:200,y:shipY()+75,v:220,a:0,r:9,rock:false}]');for(let i=0;i<90;i++)run('update(1/60)');assert.equal(run('items.length'),0);assert.equal(run('score'),10);
 // Without magnet, an echo does not attract remote objects.
-run('start()');isolate();run('powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,life:2}];items=[{x:200,y:shipY()-80,v:0,a:0,r:9,rock:false}];update(.05)');assert.equal(run('items[0].captured'),undefined);
+run('start()');isolate();run('powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY()-80,v:0,a:0,r:9,rock:false}];update(.05)');assert.equal(run('items[0].captured'),undefined);
 // Shield nova destroys nearby rocks once, retains combo, and cannot remove boss shells.
 run('start()');isolate();run('powers.aegis=1;powers.chain=1;guard=1;combo=9;boss={hp:3};items=[{x:ship.x+45,y:shipY(),rock:true},{x:ship.x-40,y:shipY(),rock:true},{x:ship.x+300,y:shipY(),rock:true}];damage()');assert.equal(run('hp'),3);assert.equal(run('combo'),9);assert.equal(run('shards.length'),2);assert.equal(run('boss.hp'),3);assert(!run('items[2].dead'));run('damage()');assert.equal(run('shards.length'),2);
 // Flow: exactly once per five gold stars, cooldown and grace stay bounded.
@@ -167,7 +167,53 @@ run('start();powers.magnet=1;state="upgrade";offers=[powersList.find(p=>p.id==="
 run('start()');assert.equal(run('wagerSlot'),0);assert.equal(run('activeWager'),null);assert.equal(run('bonusCredits'),0);assert.equal(run('bonusUpgradeCount'),0);assert.equal(run('flowProgress'),0);assert(els.wager.hidden);
 console.log('V5 PASS: wager schedule/skip/freeze/success/failure/bonus separation, gravity pickup and expiry fallback, shield nova, five-star flow, synergy hints/reset');
 // Real echo pickup advances the gold wager; timed offers cannot cover an upgrade dialog.
-run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
+run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
 run('start();elapsed=18;dust=3;offerUpgrade();maybeOfferWager()');assert.equal(run('state'),'upgrade');assert.equal(run('wagerSlot'),0);assert(els.wager.hidden);
 run('chooseUpgrade(0);pause();maybeOfferWager()');assert.equal(run('state'),'wager');assert(els.upgrade.hidden);assert(els.overlay.hidden);
 console.log('PASS: actual echo wager progress and automatic menu priority');
+
+{
+// V6: real keyboard events move vertically, diagonals normalize, and release stops movement.
+width=960;height=510;run('resize();start()');isolate();
+const key=(type,k)=>events[type]({key:k,target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});
+const origin=run('[ship.x,ship.y]');key('keydown','w');run('update(.1)');
+const cardinal=origin[1]-run('ship.y');assert(cardinal>40);assert.equal(run('ship.x'),origin[0]);
+key('keyup','w');const stopped=run('ship.y');run('update(.1)');assert.equal(run('ship.y'),stopped);
+run('start()');isolate();key('keydown','ArrowUp');key('keydown','ArrowRight');run('update(.1)');
+assert(Math.abs(run('Math.hypot(ship.x-W/2,ship.y-H*.68)')-cardinal)<1e-8);
+run('start()');isolate();key('keydown','s');run('boost();update(.1)');assert(Math.abs(run('ship.y-H*.68')-cardinal*2)<1e-8);
+run('ship.y=ship.targetY=H-29;update(.1)');assert.equal(run('ship.y'),height-28);
+// Two-finger control preserves both coordinates through boost and pointer handoff.
+width=360;height=480;run('resize();start()');isolate();
+const touchXY=(id,x,y)=>({...touch(id,x),clientY:y});
+const mobileY=run('ship.y');elementEvents['sky:pointerdown'](touchXY(1,40,80));run('update(.01)');assert.equal(run('ship.y'),mobileY);
+elementEvents['sky:pointermove'](touchXY(1,60,50));run('update(.01)');assert.equal(run('ship.x'),200);assert.equal(run('ship.y'),mobileY-30);
+elementEvents['sky:pointerdown'](touchXY(2,310,420));elementEvents['sky:pointermove'](touchXY(2,320,400));run('update(.01)');assert.equal(run('ship.y'),mobileY-30);
+elementEvents['sky:pointermove'](touchXY(1,65,40));run('update(.01)');assert.equal(run('ship.x'),210);assert.equal(run('ship.y'),mobileY-50);
+elementEvents['sky:pointerup'](touchXY(1,65,40));elementEvents['sky:pointermove'](touchXY(2,310,390));run('update(.01)');assert.equal(run('ship.x'),190);assert.equal(run('ship.y'),mobileY-70);
+elementEvents['sky:pointercancel'](touchXY(2,310,390));const released=run('[ship.x,ship.y].join()');run('update(.05)');assert.equal(run('[ship.x,ship.y].join()'),released);
+// Relative swept circles handle crossing movement but reject diagonal near misses.
+width=960;height=510;run('resize();start()');isolate();
+run('ship.x=ship.target=200;ship.y=ship.targetY=100;inputMode="pointer";ship.targetY=400;items=[{x:200,y:250,r:12,v:0,rock:true,a:0}];update(.01)');assert.equal(run('hp'),2);
+run('ship.x=300;ship.y=300');assert(!run('touchesPath({x:100,y:300},100,100,28)'));
+assert(run('touchesPath({prevX:300,prevY:100,x:100,y:300},100,100,28)'));
+run('start()');isolate();run('ship.x=ship.target=200;ship.y=ship.targetY=250;items=[{x:100,y:250,dx:1,dy:0,speedScale:30,r:12,rock:true,a:0}];update(.05)');assert.equal(run('hp'),2);
+// All four edges warn first, launch inward, and hold their launch direction after the player moves.
+run('start()');isolate();run('warnWave();warnWave();warnWave();warnWave()');assert.equal(run('new Set(warnings.map(w=>w.edge)).size'),4);assert.equal(run('items.length'),0);
+assert(run('warnings.every(w=>w.remaining>=.75)'));
+run('warnings.forEach(spawnMeteor)');assert(run('items.every(o=>o.dx*(W/2-o.x)+o.dy*(H/2-o.y)>0)'));
+const direction=run('JSON.stringify(items.map(o=>[o.dx,o.dy]))');run('warnings=[];ship.x=ship.target=24;ship.y=ship.targetY=28;update(.01)');assert.equal(run('JSON.stringify(items.map(o=>[o.dx,o.dy]))'),direction);
+for(let t=1;t<=90;t++)assert(run(`difficulty(${t}).speed>difficulty(${t-1}).speed && difficulty(${t}).interval<difficulty(${t-1}).interval && difficulty(${t}).count>=difficulty(${t-1}).count`));
+assert(run('difficulty(90).speed/difficulty(0).speed>3'));assert.equal(run('difficulty(90).count'),3);
+run('start()');isolate();run('ship.x=ship.target=24;ship.y=ship.targetY=28;items=[{x:500,y:250,dx:1,dy:0,speedScale:1,r:12,rock:true,a:0}];update(.01)');const earlySpeed=run('items[0].x-500');run('items[0].x=500;elapsed=85;bossStarted=true;update(.01)');assert(run('items[0].x-500')>earlySpeed*3);
+// Echo remains at the 2D departure point; attraction and expiry use the correct Y coordinate.
+run('start()');isolate();run('powers.echo=1;powers.magnet=1;ship.x=ship.target=200;ship.y=ship.targetY=100;boost();ship.x=ship.target=700;ship.y=ship.targetY=400;items=[{x:200,y:165,v:220,a:0,r:9,rock:false}]');
+for(let i=0;i<30;i++)run('update(1/60)');assert.equal(run('echoes[0].y'),100);assert.equal(run('score'),10);
+run('items=[{x:700,y:340,v:220,a:0,r:9,rock:false,captured:true,echoTarget:echoes[0]}];echoes=[]');for(let i=0;i<30;i++)run('update(1/60)');assert.equal(run('score'),20);
+// Resize, pause and restart do not leave stale input or invalid moving objects.
+run('warnWave();warnings.forEach(spawnMeteor);draw(1)');width=360;height=480;run('resize();draw(2)');assert(run('items.every(o=>Number.isFinite(o.x)&&Number.isFinite(o.y)&&(!("v" in o)||Number.isFinite(o.v)))'));
+run('pause()');const freeze=run('JSON.stringify([ship,items,warnings,elapsed])');run('update(.5)');assert.equal(run('JSON.stringify([ship,items,warnings,elapsed])'),freeze);
+run('start()');assert.equal(run('hazardWave'),0);assert.equal(run('ship.targetY'),run('ship.y'));
+console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY and handoff, swept crossings and near misses, four-edge telegraphs, fixed trajectories, continuous difficulty, 2D echo attraction/expiry, resize/pause/reset');
+
+}
