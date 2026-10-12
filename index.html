@@ -26,10 +26,12 @@
 .touch-pad>*{pointer-events:none}.pad-mark{font-size:25px;line-height:1}.touch-pad strong{font-size:12px;font-weight:500}.touch-pad span:not(.pad-mark){font-size:10px}.touch-pad small{font-size:9px;color:var(--muted)}.touch-pad[data-active="true"]{border-color:#a6efdc;background:#203f4b;box-shadow:inset 0 0 25px #a6d9c914}.touch-pad[aria-disabled="true"]{opacity:.5}
 .pad-boost{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:1px solid #a6d9c960;border-radius:14px;background:#21434b;color:var(--mint);font-size:12px;touch-action:none;user-select:none;-webkit-user-select:none}.pad-boost:disabled{color:#82949f;background:#172d39;border-color:#ffffff20}.pad-boost[data-active="true"]{background:#306b66;border-color:#a6ffe0;color:#e5fff3}.pad-boost .boost-icon{font-size:30px}.touch-controls.controls-left{grid-template-columns:80px minmax(0,1fr)}.touch-controls.controls-left .pad-boost{grid-column:1;grid-row:1}.touch-controls.controls-left .touch-pad{grid-column:2;grid-row:1}
 @media(pointer:coarse),(max-width:650px){.touch-controls{display:grid}.game #boost{display:none}.game canvas{height:clamp(270px,48svh,480px)}.intro{margin:10px 0}.intro p{display:none}.skillbar{margin-top:4px}.constellationbar{margin-bottom:6px}.synergybar{padding-bottom:6px}}
+
+.toolbar{flex-wrap:wrap;row-gap:8px}.toolbar>div{display:flex;flex-wrap:wrap;gap:4px}#restart{color:var(--mint);border:1px solid #a6d9c930;border-radius:6px;touch-action:manipulation}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 06.2</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 06.3</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <div id="synergyBar" class="synergybar">技能两两搭配，可自动激活星座合成</div>
@@ -51,10 +53,10 @@
 </div>
 <div class="skillbar"><span id="skillTip">加速 1.2 秒 · 双倍移速＋护盾 · 冷却 5 秒</span><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div>
 <div id="wagerStatus" class="wager-status" role="status">星光赌约：18 秒 / 46 秒出现，可自由跳过</div>
-<div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
-<section class="guide"><article><span class="symbol gold">✦</span><div><h3>全场移动，四面来袭</h3><p>拖动或 WASD 自由走位，红色虚线预告来袭轨迹。</p></div></article><article><span class="symbol coral">◆</span><div><h3>速度与频率，持续攀升</h3><p>后程约 3 倍弹速，多方向同时来袭。别在角落停留。</p></div></article><article><span class="symbol mint">↔</span><div><h3>月蚀巨陨，最后一搏</h3><p>最后 20 秒，三次加速破壳得 600 分，也可绕开。</p></div></article></section>
+<div class="toolbar"><span><i class="dot"></i><span id="status">月舟已就绪，等待出发</span></span><div><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="pause" disabled>暂停 <kbd>P</kbd></button></div></div>
+<section class="guide"><article><span class="symbol gold">✦</span><div><h3>全场移动，四面来袭</h3><p>拖动或 WASD 自由走位，红色虚线预告来袭轨迹。</p></div></article><article><span class="symbol coral">◆</span><div><h3>循序渐进，留出余地</h3><p>前 60 秒每波 1 颗，末段最多 2 颗；红线提前预警。</p></div></article><article><span class="symbol mint">↔</span><div><h3>月蚀巨陨，最后一搏</h3><p>最后 20 秒，三次加速破壳得 600 分，也可绕开。</p></div></article></section>
 <details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V6.2</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V6.3</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -121,7 +123,7 @@ const clampY=y=>Math.max(28,Math.min(H-28,y));
 const moveKeys=['arrowleft','arrowright','arrowup','arrowdown','a','d','w','s'];
 function difficulty(t=elapsed){
  const p=Math.max(0,Math.min(1,t/90));
- return {speed:Math.min(W,H)*(.28+.62*p),interval:1.5-1.08*p,warning:1.15-.4*p,count:1+(p>=.4?1:0)+(p>=.78?1:0),level:1+Math.min(5,Math.floor(p*6))};
+ return {speed:Math.min(W,H)*(.24+.32*p),interval:2.1-p,warning:1.65-.4*p,count:1+(p>=2/3?1:0),level:1+Math.min(5,Math.floor(p*6))};
 }
 function segmentDistance(px,py,ax,ay,bx,by){
  const dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
@@ -178,7 +180,7 @@ function hud(){
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
- state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=2;hazardWave=0;
+ state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
@@ -201,7 +203,7 @@ function boost(){
  boostSerial++;perfectWindow=.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
  boostTime=BOOST_TIME;boostCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
-$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('boost').onclick=()=>{boost()};
+$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('restart').onclick=start;$('boost').onclick=()=>{boost()};
 for(const id of ['boost','padBoost']){
  $(id).onclick=boost;
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
@@ -358,7 +360,7 @@ function damage(){
  if(invincible>0)return;
  if(guard>0){guard--;invincible=1.1;announce('月辉护甲 · 抵挡成功');burst(ship.x,shipY(),'#bca7f5');if(hasSynergy('nova'))shieldNova();return}
  if(activeWager?.id==='safe')resolveWager(false);
- hp--;combo=0;invincible=1.3;burst(ship.x,shipY(),'#f08c79');tone(130,.18);if(hp<=0)finish();
+ hp--;combo=0;invincible=1.7;burst(ship.x,shipY(),'#f08c79');tone(130,.18);if(hp<=0)finish();
 }
 function missStar(){if(powers.streak&&grace>0)grace--;else combo=0}
 function moveToward(o,x,y,speed,dt){
@@ -406,7 +408,7 @@ function warnWave(){
  const d=difficulty(),first=hazardWave++%4;
  for(let j=0;j<d.count;j++){
   // Aimed at the position when warned, never homing after launch.
-  const aimed=Math.random()<.65;
+  const aimed=Math.random()<.4;
   const tx=aimed?ship.x/W+(Math.random()-.5)*.22:.15+Math.random()*.7;
   const ty=aimed?ship.y/H+(Math.random()-.5)*.22:.15+Math.random()*.7;
   warnings.push({edge:(first+j)%4,at:.08+Math.random()*.84,tx:Math.max(.08,Math.min(.92,tx)),ty:Math.max(.08,Math.min(.92,ty)),remaining:d.warning,total:d.warning});

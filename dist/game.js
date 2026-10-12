@@ -64,7 +64,7 @@ const clampY=y=>Math.max(28,Math.min(H-28,y));
 const moveKeys=['arrowleft','arrowright','arrowup','arrowdown','a','d','w','s'];
 function difficulty(t=elapsed){
  const p=Math.max(0,Math.min(1,t/90));
- return {speed:Math.min(W,H)*(.28+.62*p),interval:1.5-1.08*p,warning:1.15-.4*p,count:1+(p>=.4?1:0)+(p>=.78?1:0),level:1+Math.min(5,Math.floor(p*6))};
+ return {speed:Math.min(W,H)*(.24+.32*p),interval:2.1-p,warning:1.65-.4*p,count:1+(p>=2/3?1:0),level:1+Math.min(5,Math.floor(p*6))};
 }
 function segmentDistance(px,py,ax,ay,bx,by){
  const dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
@@ -121,7 +121,7 @@ function hud(){
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
- state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=2;hazardWave=0;
+ state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
@@ -144,7 +144,7 @@ function boost(){
  boostSerial++;perfectWindow=.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
  boostTime=BOOST_TIME;boostCooldown=COOLDOWN;burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
-$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('boost').onclick=()=>{boost()};
+$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('restart').onclick=start;$('boost').onclick=()=>{boost()};
 for(const id of ['boost','padBoost']){
  $(id).onclick=boost;
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
@@ -301,7 +301,7 @@ function damage(){
  if(invincible>0)return;
  if(guard>0){guard--;invincible=1.1;announce('月辉护甲 · 抵挡成功');burst(ship.x,shipY(),'#bca7f5');if(hasSynergy('nova'))shieldNova();return}
  if(activeWager?.id==='safe')resolveWager(false);
- hp--;combo=0;invincible=1.3;burst(ship.x,shipY(),'#f08c79');tone(130,.18);if(hp<=0)finish();
+ hp--;combo=0;invincible=1.7;burst(ship.x,shipY(),'#f08c79');tone(130,.18);if(hp<=0)finish();
 }
 function missStar(){if(powers.streak&&grace>0)grace--;else combo=0}
 function moveToward(o,x,y,speed,dt){
@@ -349,7 +349,7 @@ function warnWave(){
  const d=difficulty(),first=hazardWave++%4;
  for(let j=0;j<d.count;j++){
   // Aimed at the position when warned, never homing after launch.
-  const aimed=Math.random()<.65;
+  const aimed=Math.random()<.4;
   const tx=aimed?ship.x/W+(Math.random()-.5)*.22:.15+Math.random()*.7;
   const ty=aimed?ship.y/H+(Math.random()-.5)*.22:.15+Math.random()*.7;
   warnings.push({edge:(first+j)%4,at:.08+Math.random()*.84,tx:Math.max(.08,Math.min(.92,tx)),ty:Math.max(.08,Math.min(.92,ty)),remaining:d.warning,total:d.warning});

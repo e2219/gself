@@ -20,7 +20,7 @@ run('pause()');assert.equal(run('state'),'paused');assert(els.boost.disabled);ru
 run('elapsed=29.99;update(.02)');assert.equal(run('phase'),1);run('elapsed=59.99;update(.02)');assert.equal(run('phase'),2);
 run('boostTime=0;combo=0;score=0');hit(false);assert.equal(run('score'),20);
 // Warning precedes hazards before they enter the arena.
-isolate();run('warnWave()');assert.equal(run('warnings.length'),2);assert.equal(run('items.length'),0);for(let i=0;i<27;i++)run('update(.05)');assert.equal(run('warnings.length'),0);assert(run('items.filter(o=>o.rock).length')>0);
+isolate();run('warnWave()');assert.equal(run('warnings.length'),2);assert.equal(run('items.length'),0);for(let i=0;i<40;i++)run('update(.05)');assert.equal(run('warnings.length'),0);assert(run('items.filter(o=>o.rock).length')>0);
 run('start()');isolate();run('starWave()');assert.equal(run('pending.length'),6);assert(run('pending.every(p=>p.x>=.1&&p.x<=.9)'));
 // Terminal states and records reset cleanly.
 run('score=234;hp=1;invincible=boostTime=0');hit(true);assert.equal(run('state'),'over');assert.equal(storage['mooncatch-best-v6'],'234');
@@ -200,12 +200,12 @@ assert(run('touchesPath({prevX:300,prevY:100,x:100,y:300},100,100,28)'));
 run('start()');isolate();run('ship.x=ship.target=200;ship.y=ship.targetY=250;items=[{x:100,y:250,dx:1,dy:0,speedScale:30,r:12,rock:true,a:0}];update(.05)');assert.equal(run('hp'),2);
 // All four edges warn first, launch inward, and hold their launch direction after the player moves.
 run('start()');isolate();run('warnWave();warnWave();warnWave();warnWave()');assert.equal(run('new Set(warnings.map(w=>w.edge)).size'),4);assert.equal(run('items.length'),0);
-assert(run('warnings.every(w=>w.remaining>=.75)'));
+assert(run('warnings.every(w=>w.remaining>=1.25)'));
 run('warnings.forEach(spawnMeteor)');assert(run('items.every(o=>o.dx*(W/2-o.x)+o.dy*(H/2-o.y)>0)'));
 const direction=run('JSON.stringify(items.map(o=>[o.dx,o.dy]))');run('warnings=[];ship.x=ship.target=24;ship.y=ship.targetY=28;update(.01)');assert.equal(run('JSON.stringify(items.map(o=>[o.dx,o.dy]))'),direction);
 for(let t=1;t<=90;t++)assert(run(`difficulty(${t}).speed>difficulty(${t-1}).speed && difficulty(${t}).interval<difficulty(${t-1}).interval && difficulty(${t}).count>=difficulty(${t-1}).count`));
-assert(run('difficulty(90).speed/difficulty(0).speed>3'));assert.equal(run('difficulty(90).count'),3);
-run('start()');isolate();run('ship.x=ship.target=24;ship.y=ship.targetY=28;items=[{x:500,y:250,dx:1,dy:0,speedScale:1,r:12,rock:true,a:0}];update(.01)');const earlySpeed=run('items[0].x-500');run('items[0].x=500;elapsed=85;bossStarted=true;update(.01)');assert(run('items[0].x-500')>earlySpeed*3);
+assert(run('difficulty(90).speed/difficulty(0).speed>2 && difficulty(90).speed/difficulty(0).speed<2.4'));assert.equal(run('difficulty(59).count'),1);assert.equal(run('difficulty(90).count'),2);assert(run('difficulty(90).interval>=1.1'));
+run('start()');isolate();run('ship.x=ship.target=24;ship.y=ship.targetY=28;items=[{x:500,y:250,dx:1,dy:0,speedScale:1,r:12,rock:true,a:0}];update(.01)');const earlySpeed=run('items[0].x-500');run('items[0].x=500;elapsed=85;bossStarted=true;update(.01)');assert(run('items[0].x-500')>earlySpeed*2);assert(run('items[0].x-500')<earlySpeed*2.4);
 // Echo remains at the 2D departure point; attraction and expiry use the correct Y coordinate.
 run('start()');isolate();run('powers.echo=1;powers.magnet=1;ship.x=ship.target=200;ship.y=ship.targetY=100;boost();ship.x=ship.target=700;ship.y=ship.targetY=400;items=[{x:200,y:165,v:220,a:0,r:9,rock:false}]');
 for(let i=0;i<30;i++)run('update(1/60)');assert.equal(run('echoes[0].y'),100);assert.equal(run('score'),10);
@@ -265,3 +265,12 @@ console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY an
  run('start()');isolate();down(event(50,80,600));down(event(51,160,600));assert(run('boostTime>0'));assert.equal(run('movePointer'),50);
  console.log('V6.2 PASS: independent relative pad, lift/re-anchor, upgrade capture release/stale input rejection/resume, separate boost, pause/cancel, pad mouse and second-finger boost');
 }
+
+// Restart button works from play, pause, upgrade and results, without carrying old inputs or rewards.
+for(const previous of ['playing','paused','upgrade','wager','over']){
+ run('start()');isolate();
+ run(`state="${previous}";score=500;elapsed=65;time=25;hp=1;dust=8;powers.magnet=2;boostCooldown=4;bonusCredits=1;keys.add("w");ship.target=24;items=[{x:30,y:40}];warnings=[{remaining:1}]`);
+ els.restart.onclick();
+ assert.equal(run('state'),'playing');assert.equal(run('score'),0);assert.equal(run('time'),90);assert.equal(run('hp'),3);assert.equal(run('dust'),0);assert.equal(run('powers.magnet'),0);assert.equal(run('boostCooldown'),0);assert.equal(run('bonusCredits'),0);assert.equal(run('keys.size'),0);assert.equal(run('items.length+warnings.length'),0);assert.equal(run('ship.target'),run('ship.x'));assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);
+}
+console.log('V6.3 PASS: gentler escalating difficulty and restart button from every game state');
