@@ -105,9 +105,9 @@ for(const level of [1,2])for(const [dx,dy] of [[0,70],[0,-70],[-70,0],[70,0]]){
 // No pointer speed backlog: a fast swipe reaches the target on the next frame.
 width=360;height=420;run('resize();start()');isolate();elementEvents['sky:pointerdown'](touch(21,30));elementEvents['sky:pointermove'](touch(21,160));run('update(1/120)');assert.equal(run('ship.x'),310);
 elementEvents['sky:pointerup'](touch(21,160));run('update(1/120)');assert.equal(run('ship.x'),310);
-// Mouse boost changes sensitivity without forcing motion or snapping on expiry.
-run('start()');isolate();run('pointer({clientX:100});update(.01);boost();pointer({clientX:120});update(.01)');assert.equal(run('ship.x'),140);
-run('boostTime=0;pointer({clientX:130});update(.01)');assert.equal(run('ship.x'),150);
+// Mouse stays aligned during boost and after expiry.
+run('start()');isolate();run('pointer({clientX:100});update(.01);boost();pointer({clientX:120});update(.01)');assert.equal(run('ship.x'),120);
+run('boostTime=0;pointer({clientX:130});update(.01)');assert.equal(run('ship.x'),130);
 // Perfect reward once per activation, even when several rocks break together.
 run('start()');isolate();run('boost();items=[{x:ship.x,y:shipY(),r:12,v:0,a:0,rock:true},{x:ship.x+5,y:shipY(),r:12,v:0,a:0,rock:true}];update(.01)');assert.equal(run('perfectCount'),1);assert.equal(run('score'),50);assert.equal(run('shards.length'),4);assert(run('slowTime')>0);
 run('start()');isolate();run('boost();update(.2);items=[{x:ship.x,y:shipY(),r:12,v:0,a:0,rock:true}];update(.01)');assert.equal(run('perfectCount'),0);
@@ -358,9 +358,9 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('boostCooldown=4');deliver();assert.equal(run('score'),360);assert.equal(run('cargoDelivered'),3);assert.equal(run('cargoSpeed()'),1);assert.equal(run('objective'),null);assert.equal(run('boostCooldown'),3);run('updateAdventure(.01,ship.x,ship.y)');assert.equal(run('score'),360);
  run('start()');isolate();beginCargo();crate(0);deliver();assert.equal(run('score'),70);assert.equal(run('cargoLoad()'),0);assert(run('objective.crates[0].taken'));crate(0);assert.equal(run('cargoLoad()'),0);crate(1);crate(2);deliver();assert.equal(run('score'),260);assert.equal(run('cargoDelivered'),3);
  run('start()');isolate();beginCargo();crate(0);run('score=90;combo=6;elapsed=15;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('cargoLoad()'),0);assert.equal(run('score'),90);assert.equal(run('hp'),3);assert.equal(run('combo'),6);
- // Load scales keyboard and pad motion, including the initial mouse anchor, without input backlog.
+ // Load scales keyboard and pad motion, while the mouse remains absolute, without input backlog.
  run('start()');isolate();beginCargo();run('objective.load=3;keys.add("d");update(.1)');assert(Math.abs(run('ship.x-W/2')-height*.9*.1*.76)<1e-8);
- run('start()');isolate();beginCargo();run('objective.load=3;pointer({clientX:W/2+100,clientY:ship.y});update(.01)');assert.equal(run('ship.x'),width/2+76);
+ run('start()');isolate();beginCargo();run('objective.load=3;pointer({clientX:W/2+100,clientY:ship.y});update(.01)');assert.equal(run('ship.x'),width/2+100);
  run('start()');isolate();beginCargo();run('objective.load=3');const pad=els.touchPad;
  const e=(x,y)=>({pointerId:80,currentTarget:pad,pointerType:'touch',clientX:x,clientY:y,preventDefault:noop});elementEvents['touchPad:pointerdown'](e(100,600));elementEvents['touchPad:pointermove'](e(110,590));run('update(.01)');assert(Math.abs(run('ship.x-W/2')-16.5*.76)<1e-8);
  // A precise hit reverses incoming direction once, preserving the established perfect reward.
@@ -406,4 +406,15 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('elapsed=3.3;stepLaser(.1,ship.x,ship.y,false)');assert.equal(run('laser'),null);
  run('start()');isolate();well();run('boost()');width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(orbit.radius)'));els.restart.onclick();assert.equal(run('orbit'),null);assert.equal(run('launch'),null);assert.equal(run('laser'),null);assert(!run('whaleSafe'));assert.equal(run('slingWins+whaleWins+laserSlot'),0);
  console.log('V9 PASS: opt-in orbit, tangent/manual/automatic launch, pointer click deduplication, steering takeover, whale protection/reward/expiry/120Hz wake, laser warning/swept hit/gap/boost, pause/resize/reset');
+}
+
+// V9.1: fast mouse reversal, borders, boost/weight changes and resume never retain relative offsets.
+{
+ width=960;height=510;run('resize();start()');isolate();
+ const move=(x,y)=>{elementEvents['sky:pointermove']({pointerType:'mouse',clientX:x,clientY:y,currentTarget:els.sky});run('update(1/120)');assert.equal(run('ship.x'),Math.max(24,Math.min(width-24,x)));assert.equal(run('ship.y'),Math.max(28,Math.min(height-28,y)))};
+ move(80,90);run('boost()');move(800,420);move(60,50);move(1000,550);move(920,460);move(-100,-80);move(40,45);
+ run('beginObjective({kind:"cargo",duration:14});objective.load=3');move(650,250);move(200,200);run('boostTime=0');move(700,100);
+ run('pause()');const frozen=run('[ship.x,ship.y].join()');elementEvents['sky:pointermove']({pointerType:'mouse',clientX:300,clientY:300});assert.equal(run('[ship.x,ship.y].join()'),frozen);run('pause()');move(320,250);
+ run('objective=null;ship.x=ship.target=100;ship.y=ship.targetY=200;boostTime=0;invincible=resumeShield=0;items=[{x:400,y:200,r:12,v:0,a:0,rock:true}]');move(700,200);assert.equal(run('hp'),2);
+ console.log('V9.1 PASS: absolute mouse alignment across fast reversals, clamped borders, boost/cargo/resume; swept collisions retained');
 }
