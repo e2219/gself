@@ -182,7 +182,7 @@ function drawWorld(t){
   for(let k=0;k<3;k++){ctx.strokeStyle=['#7effd21b','#7ccaff18','#c49bff1a'][k];ctx.lineWidth=14;ctx.beginPath();for(let i=0;i<=30;i++){const x=W*i/30,y=H*(.2+k*.2)+Math.sin(i*.25+t*.25+k)*H*.09;i?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
   const e=worldEvent;if(e){const g=auroraGeometry(e,elapsed),warning=elapsed<e.at+2,y=warning?H*.24:g.y;
    ctx.strokeStyle=warning?'#ffe1a3':'#f3a5cb';ctx.lineWidth=warning?2:12;ctx.setLineDash(warning?[7,7]:[]);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(g.x-g.half,y);ctx.moveTo(g.x+g.half,y);ctx.lineTo(W,y);ctx.stroke();ctx.setLineDash([]);
-   ctx.fillStyle='#8ff5c329';ctx.fillRect(g.x-g.half,Math.max(0,y-30),g.half*2,60);ctx.fillStyle='#b6ffdc';ctx.fillText(warning?'即将扫过 · 绿色缺口安全':'安全通道',g.x,Math.max(100,y-20));
+   ctx.fillStyle='#8ff5c329';ctx.fillRect(g.x-g.half,Math.max(0,y-30),g.half*2,60);
   }
  }else{
   ctx.strokeStyle='#c1a2fa18';ctx.lineWidth=2;for(let i=0;i<4;i++){ctx.beginPath();ctx.ellipse(W*.5,H*.5,W*(.12+i*.11),H*(.1+i*.1),-.4,0,Math.PI*2);ctx.stroke()}
