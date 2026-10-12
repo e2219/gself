@@ -11,6 +11,7 @@ let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
 let ship={x:480,y:350,target:480,targetY:350,direction:1};
 let hazardWave=0;
+let menuIntro=null,resumeShield=0,resumeSafetyPending=false;
 const newFlight=()=>({angle:-Math.PI/2,bank:0,throttle:0,trail:[]});
 let flight=newFlight();
 const upgradeAt=[3,8,15,24];
@@ -90,12 +91,12 @@ function resize(){
 new ResizeObserver(resize).observe(canvas);
 function tone(f=600,d=.09){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
 function hud(){
- const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level].join('|');
+ const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,Math.ceil(resumeShield*10)].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
  $('score').textContent=String(score).padStart(3,'0');$('time').innerHTML=Math.ceil(time)+'<span>s</span>';
  $('health').textContent='● '.repeat(hp)+'○ '.repeat(3-hp)+(guard?` +◇${guard}`:'');$('health').setAttribute('aria-label',hp+'点护盾，'+guard+'层护甲');
  $('combo').textContent=combo>=5?`${combo} 连击 · 星光 ×${Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier}`:'';
- $('pressure').textContent=`威胁 Lv.${difficulty().level} · 四面来袭`;
+ $('pressure').textContent=resumeShield>0?`恢复保护 ${resumeShield.toFixed(1)}s · 可安全调整位置`:`威胁 Lv.${difficulty().level} · 四面来袭`;
  $('boost').disabled=state!=='playing'||boostCooldown>0;
  $('padBoost').disabled=$('boost').disabled;
  $('padBoost').setAttribute('data-active',String(boostTime>0));
@@ -113,7 +114,7 @@ function hud(){
  $('wagerStatus').setAttribute('data-active',String(!!activeWager));
  $('charge').style.transform=`scaleX(${1-boostCooldown/COOLDOWN})`;
  for(let i=0;i<3;i++)$('phase'+i).className=i===phase?'active':i<phase?'done':'';
- $('announcement').style.opacity=announcementTime>0?'1':'0';
+ $('announcement').style.opacity=announcementTime>0&&state!=='menuIntro'?'1':'0';
  $('bossStatus').hidden=!boss||boss.hp<=0;
  if(boss&&boss.hp>0)$('bossStatus').textContent=boss.warning>0?'月蚀预警 · 可绕开，也可加速破壳':`月蚀巨陨 · 外壳 ${boss.hp}/3 · 每次加速击破一层`;
 
@@ -121,6 +122,7 @@ function hud(){
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phases[n].name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phases[n].subtitle;tone(440+n*170,.2)}
 function start(){
+ menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
@@ -128,7 +130,7 @@ function start(){
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus({preventScroll:true})}
 function pause(){
  if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。加速充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
- else if(state==='paused'){state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phases[phase].subtitle;focusGame()}
+ else if(state==='paused'){clearInput();if(resumeSafetyPending){resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false}state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phases[phase].subtitle;focusGame()}
  hud();
 }
 function finish(){
@@ -200,12 +202,18 @@ for(const surface of [canvas,$('touchPad')]){
  surface.addEventListener('pointermove',touchMove);
  for(const type of ['pointerup','pointercancel','lostpointercapture'])surface.addEventListener(type,touchEnd);
 }
-function offerUpgrade(){
+function beginMenuIntro(kind){
+ menuIntro={kind,remaining:.8};state='menuIntro';clearInput();
+ $('menuCue').textContent=kind==='upgrade'?'星座即将点亮 · 准备选择':'星空赌约即将开启';
+ $('menuCue').hidden=false;$('pause').disabled=true;hud();
+}
+function offerUpgrade(defer=false){
  if(state!=='playing')return;
  const bonus=bonusCredits>0;
  if(!bonus&&(upgradeCount>=upgradeAt.length||dust<upgradeAt[upgradeCount]))return;
  const candidates=powersList.filter(p=>(powers[p.id]||0)<2);
  if(candidates.length<2)return;
+ if(defer){if(resumeShield<=0)beginMenuIntro('upgrade');return}
  state='upgrade';upgradeSource=bonus?'wager':'dust';clearInput();
  for(let i=candidates.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]]}
  offers=candidates.slice(0,2);
@@ -223,14 +231,15 @@ function chooseUpgrade(i){
  if(power.id==='aegis')guard+=powers.aegis===2?2:1;
  if(power.id==='streak')grace=powers.streak===2?4:2;offers=[];$('upgrade').hidden=true;
  // Resume through an explicit button, avoiding movement when returning from a hidden tab.
- state='paused';$('pause').disabled=false;clearInput();
- show('星座已点亮',`${power.name}已生效。${unlocked.length?"合成「"+unlocked.map(s=>s.name).join("、")+"」！":""}继续后，在触控板任意位置重新落指即可。`,'继续旅程 →');
+ state='paused';resumeSafetyPending=true;$('pause').disabled=false;clearInput();
+ show('星座已点亮',`${power.name}已生效。${unlocked.length?"合成「"+unlocked.map(s=>s.name).join("、")+"」！":""}继续后有 1.5 秒无敌保护，可重新落指调整位置。`,'继续旅程 →');
  $('tag').textContent='CONSTELLATION AWAKENED';$('pause').textContent='继续';$('status').textContent='强化已获得 · 等待继续';hud();
 }
-function maybeOfferWager(){
+function maybeOfferWager(defer=false){
  if(state!=='playing'||activeWager||bonusCredits||boostTime>0||wagerSlot>=wagerSchedule.length)return;
  if(elapsed>65){wagerSlot=wagerSchedule.length;return}
  if(elapsed<wagerSchedule[wagerSlot])return;
+ if(defer){if(resumeShield<=0)beginMenuIntro('wager');return}
  wagerSlot++;state='wager';clearInput();
  const pool=[...wagerTypes];for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
  wagerOffers=pool.slice(0,2);
@@ -238,7 +247,10 @@ function maybeOfferWager(){
  $('wager').hidden=false;$('pause').disabled=true;$('wager0').focus({preventScroll:true});hud();
 }
 function resumeWagerMenu(){
- wagerOffers=[];$('wager').hidden=true;$('pause').disabled=false;clearInput();state='playing';focusGame();hud();
+ wagerOffers=[];$('wager').hidden=true;$('pause').disabled=false;clearInput();state='paused';resumeSafetyPending=true;
+ $('tag').textContent='READY WHEN YOU ARE';
+ show(activeWager?'赌约已接下':'继续自由航行',`${activeWager?activeWager.name+'。':''}准备好再继续，恢复后有 1.5 秒无敌保护。`,'继续旅程 →');
+ $('pause').textContent='继续';$('status').textContent='准备好后继续 · 恢复保护 1.5s';hud();
 }
 function chooseWager(i){
  if(state!=='wager'||!wagerOffers[i])return;
@@ -298,7 +310,7 @@ function claimPerfect(x,y){
  announce('完美碎星 · 额外奖励');rings.push({x,y,radius:100,life:.4});tone(1200,.12);return true;
 }
 function damage(){
- if(invincible>0)return;
+ if(invincible>0||resumeShield>0)return;
  if(guard>0){guard--;invincible=1.1;announce('月辉护甲 · 抵挡成功');burst(ship.x,shipY(),'#bca7f5');if(hasSynergy('nova'))shieldNova();return}
  if(activeWager?.id==='safe')resolveWager(false);
  hp--;combo=0;invincible=1.7;burst(ship.x,shipY(),'#f08c79');tone(130,.18);if(hp<=0)finish();
@@ -365,7 +377,13 @@ function spawnItem(x,rock){
 }
 
 function update(dt){
+ if(state==='menuIntro'){
+  menuIntro.remaining-=dt;
+  if(menuIntro.remaining<=0){const kind=menuIntro.kind;menuIntro=null;$('menuCue').hidden=true;state='playing';if(kind==='upgrade')offerUpgrade();else maybeOfferWager()}
+  return;
+ }
  if(state!=='playing')return;
+ resumeShield=Math.max(0,resumeShield-dt);
  elapsed+=dt;tickWager();time=Math.max(0,90-elapsed);const next=Math.min(2,Math.floor(elapsed/30));if(next!==phase)setPhase(next);
  announcementTime=Math.max(0,announcementTime-dt);invincible=Math.max(0,invincible-dt);boostCooldown=Math.max(0,boostCooldown-dt);
  const worldDt=dt*(slowTime>0?.4:1);slowTime=Math.max(0,slowTime-dt);
@@ -414,7 +432,7 @@ function update(dt){
  for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);
 
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)particles.splice(i,1)}
- hud();if(time<=0)finish();else{offerUpgrade();maybeOfferWager()}
+ hud();if(time<=0)finish();else{offerUpgrade(true);maybeOfferWager(true)}
 }
 function star(x,y,r,a){ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.beginPath();for(let i=0;i<8;i++){const t=i*Math.PI/4,rr=i%2?r*.35:r;ctx.lineTo(Math.cos(t)*rr,Math.sin(t)*rr)}ctx.closePath();ctx.fill();ctx.restore()}
 // Position follows input immediately; only the craft's pose and engine ease into motion.
@@ -477,8 +495,9 @@ ctx.save();ctx.lineCap='round';
 for(const p of flight.trail){ctx.globalAlpha=p.life/p.total*(p.boost?.32:.14);ctx.strokeStyle=p.boost?'#b3ffe5':'#a6d9c9';ctx.lineWidth=p.boost?6:3;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x2,p.y2);ctx.stroke()}
 ctx.restore();
 if(boostTime>0){ctx.save();ctx.translate(ship.x,ship.y);ctx.strokeStyle='#a6d9c9a0';ctx.lineWidth=1.5;ctx.fillStyle='#a6d9c912';ctx.beginPath();ctx.arc(0,0,27+Math.sin(t*16),0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}
+if(resumeShield>0){ctx.save();ctx.strokeStyle='#acd9ff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.arc(ship.x,ship.y,28,0,Math.PI*2);ctx.stroke();ctx.restore()}
 ctx.save();if(invincible>0&&boostTime<=0)ctx.globalAlpha=.55+Math.sin(t*30)*.25;
 drawCraft(ship.x,ship.y,flight.angle,flight.bank,flight.throttle,t);ctx.restore()}
 
 
-function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();hud();requestAnimationFrame(frame);
+function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();hud();requestAnimationFrame(frame);

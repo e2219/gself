@@ -26,3 +26,5 @@
 @media(pointer:coarse),(max-width:650px){.touch-controls{display:grid}.game #boost{display:none}.game canvas{height:clamp(270px,48svh,480px)}.intro{margin:10px 0}.intro p{display:none}.skillbar{margin-top:4px}.constellationbar{margin-bottom:6px}.synergybar{padding-bottom:6px}}
 
 .toolbar{flex-wrap:wrap;row-gap:8px}.toolbar>div{display:flex;flex-wrap:wrap;gap:4px}#restart{color:var(--mint);border:1px solid #a6d9c930;border-radius:6px;touch-action:manipulation}
+
+.menu-cue{position:absolute;inset:0;z-index:3;display:grid;place-items:center;pointer-events:none;background:#08142188;color:var(--gold);font-size:18px;letter-spacing:1px;text-align:center;padding:20px;backdrop-filter:blur(2px)}.menu-cue[hidden]{display:none}.game:has(.menu-cue:not([hidden])) #boost{visibility:hidden}

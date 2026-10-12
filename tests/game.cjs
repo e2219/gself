@@ -135,9 +135,9 @@ console.log('V4 PASS: underside magnet equilibrium at 30/60/120fps, radial shard
 // V5: offers pause the world, skipping is free, and the two schedule slots are consumed once.
 run('start()');isolate();run('wagerSlot=0;elapsed=18;maybeOfferWager()');assert.equal(run('state'),'wager');assert.equal(run('wagerOffers.length'),2);assert.notEqual(run('wagerOffers[0].id'),run('wagerOffers[1].id'));
 const offerFreeze=run('[elapsed,time,boostCooldown].join()');run('update(1)');assert.equal(run('[elapsed,time,boostCooldown].join()'),offerFreeze);
-run('score=123;skipWager()');assert.equal(run('state'),'playing');assert.equal(run('score'),123);assert.equal(run('wagerSlot'),1);run('maybeOfferWager()');assert.equal(run('state'),'playing');
-run('elapsed=46;maybeOfferWager()');assert.equal(run('state'),'wager');run('skipWager();maybeOfferWager()');assert.equal(run('state'),'playing');assert.equal(run('wagerSlot'),2);
-function accept(id){run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="'+id+'")];chooseWager(0)')}
+run('score=123;skipWager()');assert.equal(run('state'),'paused');run('pause()');assert.equal(run('state'),'playing');assert.equal(run('score'),123);assert.equal(run('wagerSlot'),1);run('maybeOfferWager()');assert.equal(run('state'),'playing');
+run('elapsed=46;maybeOfferWager()');assert.equal(run('state'),'wager');run('skipWager();pause();maybeOfferWager()');assert.equal(run('state'),'playing');assert.equal(run('wagerSlot'),2);
+function accept(id){run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="'+id+'")];chooseWager(0);pause();resumeShield=0')}
 // Quiet wager: success queues one bonus; boost still works when it forfeits the wager.
 run('start()');isolate();accept('quiet');run('pause()');const contractFreeze=run('activeWager.remaining');run('update(5)');assert.equal(run('activeWager.remaining'),contractFreeze);run('pause();elapsed=10;tickWager()');assert.equal(run('wagersWon'),1);assert.equal(run('bonusCredits'),1);run('tickWager()');assert.equal(run('bonusCredits'),1);
 run('offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),0);assert.equal(run('bonusUpgradeCount'),1);assert.equal(run('bonusCredits'),0);
@@ -167,7 +167,7 @@ run('start();powers.magnet=1;state="upgrade";offers=[powersList.find(p=>p.id==="
 run('start()');assert.equal(run('wagerSlot'),0);assert.equal(run('activeWager'),null);assert.equal(run('bonusCredits'),0);assert.equal(run('bonusUpgradeCount'),0);assert.equal(run('flowProgress'),0);assert(els.wager.hidden);
 console.log('V5 PASS: wager schedule/skip/freeze/success/failure/bonus separation, gravity pickup and expiry fallback, shield nova, five-star flow, synergy hints/reset');
 // Real echo pickup advances the gold wager; timed offers cannot cover an upgrade dialog.
-run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
+run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'menuIntro');run('update(.8)');assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
 run('start();elapsed=18;dust=3;offerUpgrade();maybeOfferWager()');assert.equal(run('state'),'upgrade');assert.equal(run('wagerSlot'),0);assert(els.wager.hidden);
 run('chooseUpgrade(0);pause();maybeOfferWager()');assert.equal(run('state'),'wager');assert(els.upgrade.hidden);assert(els.overlay.hidden);
 console.log('PASS: actual echo wager progress and automatic menu priority');
@@ -274,3 +274,28 @@ for(const previous of ['playing','paused','upgrade','wager','over']){
  assert.equal(run('state'),'playing');assert.equal(run('score'),0);assert.equal(run('time'),90);assert.equal(run('hp'),3);assert.equal(run('dust'),0);assert.equal(run('powers.magnet'),0);assert.equal(run('boostCooldown'),0);assert.equal(run('bonusCredits'),0);assert.equal(run('keys.size'),0);assert.equal(run('items.length+warnings.length'),0);assert.equal(run('ship.target'),run('ship.x'));assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);
 }
 console.log('V6.3 PASS: gentler escalating difficulty and restart button from every game state');
+
+// V6.4: automatic menus have a frozen transition; return shields begin only on explicit continue.
+{
+ run('start()');isolate();run('dust=3;items=[{x:100,y:100,v:200,r:12,rock:true,a:0}];offerUpgrade(true)');
+ assert.equal(run('state'),'menuIntro');assert(!els.menuCue.hidden);assert(els.pause.disabled&&els.padBoost.disabled);
+ const frozen=run('JSON.stringify([elapsed,time,boostCooldown,items,hazardClock])');run('update(.4)');assert.equal(run('state'),'menuIntro');assert.equal(run('JSON.stringify([elapsed,time,boostCooldown,items,hazardClock])'),frozen);
+ run('update(.4)');assert.equal(run('state'),'upgrade');assert(els.menuCue.hidden);assert.equal(run('JSON.stringify([elapsed,time,boostCooldown,items,hazardClock])'),frozen);
+ // Both accepting and skipping a wager now wait; each menu exit grants a full 1.5s.
+ for(const choice of ['upgrade','accept','skip']){
+  run('start()');isolate();
+  if(choice==='upgrade')run('dust=3;offerUpgrade();chooseUpgrade(0)');
+  else {run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="safe")]');run(choice==='accept'?'chooseWager(0)':'skipWager()')}
+  assert.equal(run('state'),'paused');assert.equal(run('resumeShield'),0);const waiting=run('elapsed');run('update(5)');assert.equal(run('elapsed'),waiting);
+  run('pause()');assert.equal(run('resumeShield'),1.5);assert.equal(run('resumeSafetyPending'),false);
+  run('guard=2;combo=9;invincible=0');hit(true);assert.equal(run('hp'),3);assert.equal(run('guard'),2);assert.equal(run('combo'),9);assert.equal(run('shards.length'),0);
+  run('boss={x:ship.x,y:ship.y,r:40,hp:3,warning:0,lastBoost:-1};updateBoss(0,0,ship.x,false,ship.y)');assert.equal(run('hp'),3);assert.equal(run('boss.hp'),3);assert.equal(run('guard'),2);run('boss=null');
+  const remaining=run('resumeShield');run('pause();update(10);pause()');assert.equal(run('resumeShield'),remaining);
+  run('guard=0;update(1.48);damage()');assert.equal(run('hp'),3);run('update(.02)');hit(true);assert.equal(run('hp'),2);
+ }
+ // Scheduled wager introduction freezes its clock, and upgrades do not immediately cover a return shield.
+ run('start()');isolate();run('wagerSlot=0;elapsed=17.99;update(.02)');assert.equal(run('state'),'menuIntro');const t=run('elapsed');run('update(.8)');assert.equal(run('state'),'wager');assert.equal(run('elapsed'),t);
+ run('start()');isolate();run('dust=3;bonusCredits=1;offerUpgrade();chooseUpgrade(0);pause();offerUpgrade(true)');assert.equal(run('state'),'playing');run('update(1.51)');assert.equal(run('state'),'menuIntro');
+ els.restart.onclick();assert.equal(run('menuIntro'),null);assert.equal(run('resumeShield'),0);assert.equal(run('resumeSafetyPending'),false);assert(els.menuCue.hidden);
+ console.log('V6.4 PASS: frozen intro, explicit continue after wager/skip/upgrade, full return shield against rocks/boss, no armor/combo loss or free rewards, pause cannot replenish shield, delayed next menu and restart reset');
+}
