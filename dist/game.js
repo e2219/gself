@@ -187,8 +187,11 @@ function touchesPath(o,oldX,oldY,radius){
 function eventPoint(e){const rect=canvas.getBoundingClientRect();return {x:e.clientX-rect.left,y:e.clientY===undefined?ship.y:e.clientY-(rect.top||0)}}
 
 function resize(){
- const b=canvas.getBoundingClientRect(),ow=W,oh=H;W=b.width;H=b.height;
- const d=Math.min(devicePixelRatio||1,2);canvas.width=W*d;canvas.height=H*d;ctx.setTransform(d,0,0,d,0,0);
+ const b=canvas.getBoundingClientRect(),ow=W,oh=H,d=Math.min(devicePixelRatio||1,2);
+ if(b.width<=0||b.height<=0)return;
+ const pixelsX=Math.round(b.width*d),pixelsY=Math.round(b.height*d);
+ if(b.width===W&&b.height===H&&canvas.width===pixelsX&&canvas.height===pixelsY)return;
+ W=b.width;H=b.height;canvas.width=pixelsX;canvas.height=pixelsY;ctx.setTransform(d,0,0,d,0,0);
  ship.x=clamp(ship.x*W/ow);ship.target=clamp(ship.target*W/ow);ship.y=clampY(ship.y*H/oh);ship.targetY=clampY(ship.targetY*H/oh);
  for(const o of items){o.x*=W/ow;o.y*=H/oh;if(Number.isFinite(o.v))o.v*=H/oh}
  for(const s of shards){s.x*=W/ow;s.y*=H/oh}
@@ -201,7 +204,9 @@ function resize(){
  if(orbit){const cx=orbit.cx*W,cy=orbit.cy*H;orbit.radius=Math.hypot(ship.x-cx,ship.y-cy);orbit.angle=Math.atan2(ship.y-cy,ship.x-cx)}
  if(launch){launch.vx*=W/ow;launch.vy*=H/oh}
  if(objective?.kind==='escort'){objective.x*=W/ow;objective.y*=H/oh}
- clearInput();
+ // Event text and browser chrome can resize the arena while a finger stays down.
+ // Preserve driver state and pointer capture; only explicit pause/menu transitions release them.
+ for(const p of flight.trail){p.x*=W/ow;p.y*=H/oh;p.x2*=W/ow;p.y2*=H/oh}
 }
 new ResizeObserver(resize).observe(canvas);
 function tone(f=600,d=.09){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
@@ -333,7 +338,7 @@ function touchDown(e){
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
  if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
  if(e.pointerType!=='touch'&&!isPad){pointer(e);canvas.setPointerCapture(e.pointerId);return}
- e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
+ e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
  if(isPad)$('touchPad').setAttribute('data-active','true');
  if(movePointer===null){inputMode='pointer';mouseX=mouseY=null;movePointer=e.pointerId;lastTouchX=p.x;lastTouchY=p.y;ship.target=ship.x;ship.targetY=ship.y}
  else boost();
@@ -344,7 +349,7 @@ function touchMove(e){
  if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
  if(e.pointerType!=='touch'&&!isPad){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
  if(!touches.has(e.pointerId))return;
- e.preventDefault();const p={...eventPoint(e),surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
+ e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
  inputMode='pointer';mouseX=mouseY=null;launch=null;
  const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1)*cargoSpeed();lastTouchX=p.x;lastTouchY=p.y;
  ship.target=clamp(ship.target+dx*gain);ship.targetY=clampY(ship.targetY+dy*gain);

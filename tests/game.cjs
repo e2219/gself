@@ -2,9 +2,9 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const els={},events={},docEvents={},elementEvents={},storage={},noop=()=>{};
 const classList=()=>({values:new Set(),toggle(k,v){if(v)this.values.add(k);else this.values.delete(k)},contains(k){return this.values.has(k)}});
 const ctx=new Proxy({createRadialGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
-let width=960,height=510;
+let width=960,height=510,resizeCallback;
 function el(id){return els[id]??={style:{},classList:classList(),attributes:{},captures:new Set(),textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:function(k,v){this.attributes[k]=v},focus:function(){sandbox.document.activeElement=this},closest:()=>null,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:function(id){this.captures.add(id)},releasePointerCapture:function(id){this.captures.delete(id)},getContext:()=>ctx,getBoundingClientRect:function(){return this.bounds||{width,height,left:0,top:0}}}}
-const sandbox={document:{body:{classList:classList()},getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:(n,f)=>docEvents[n]=f},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
+const sandbox={document:{body:{classList:classList()},getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:(n,f)=>docEvents[n]=f},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{constructor(callback){resizeCallback=callback}observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
 const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length');
@@ -534,6 +534,28 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  els.controlsOpen.onclick();els.restart.onclick();assert.equal(run('state'),'playing');assert(!run('panelOpen'));assert(!els.playContent.inert);assert.equal(run('elapsed'),0);assert.equal(run('controlMode'),'stick');assert.equal(run('stickPointer'),null);
  els.helpOpen.onclick();els.gamePanel.querySelectorAll=()=>[els.panelClose,els.restart];sandbox.document.activeElement=els.panelClose;events.keydown({key:'Tab',shiftKey:true,target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.restart);events.keydown({key:'Tab',target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.panelClose);els.panelClose.onclick();run('selectControlMode("drag")');
  console.log('V11 panels PASS: rules/settings access, input isolation, focus loop, frozen intro/upgrade/gameplay, safe explicit return, paused-state preservation and restart');
+}
+
+// V11.1: field-event HUD changes may resize the canvas but must never release a held driver.
+{
+ width=360;height=400;run('resize();start()');isolate();run('selectControlMode("stick")');
+ const pe=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop,stopPropagation:noop});
+ elementEvents['joystick:pointerdown'](pe(101,112,546,els.joystick));assert.equal(run('stickPointer'),101);
+ const vector=run('JSON.stringify(stickVector)');
+ for(const event of ['beginObjective({kind:"sling",duration:12})','fork={deadline:100,armed:100}','chooseRoute("rich")','fork={deadline:100,armed:100};chooseRoute("calm")','bonusCredits=1']){
+  run(event+';hud();ship.x=ship.target=100');height-=6;resizeCallback();
+  assert.equal(run('stickPointer'),101);assert(els.joystick.captures.has(101));assert.equal(run('JSON.stringify(stickVector)'),vector);assert.equal(run('inputMode'),'virtual');
+  const x=run('ship.x');run('update(.04)');assert(run('ship.x')>x);
+ }
+ resizeCallback();assert.equal(run('stickPointer'),101);sandbox.devicePixelRatio=2;resizeCallback();assert.equal(run('stickPointer'),101);assert.equal(els.sky.width,720);sandbox.devicePixelRatio=1;
+ run('selectControlMode("dpad");ship.x=ship.target=100');elementEvents['dir-r:pointerdown'](pe(102,120,570,els['dir-r']));height+=15;resizeCallback();assert(els['dir-r'].captures.has(102));assert.equal(run('directionPointers.size'),1);run('update(.04)');assert(run('ship.x')>100);
+ run('clearInput();keys.add("d");ship.x=ship.target=100');height+=5;resizeCallback();assert(run('keys.has("d")'));run('update(.04)');assert(run('ship.x')>100);
+ run('selectControlMode("drag")');elementEvents['touchPad:pointerdown'](pe(103,60,550,els.touchPad));
+ els.sky.bounds={width,height:height-5,left:12,top:170};resizeCallback();assert.equal(run('movePointer'),103);const y=run('ship.targetY');elementEvents['touchPad:pointermove'](pe(103,60,550,els.touchPad));assert.equal(run('ship.targetY'),y);
+ elementEvents['touchPad:pointermove'](pe(103,60,560,els.touchPad));assert(Math.abs(run('ship.targetY')-Math.min(run('H')-28,y+16.5))<1e-8);
+ run('pause()');assert.equal(run('movePointer'),null);assert(!els.touchPad.captures.has(103));assert.equal(run('touches.size'),0);
+ delete els.sky.bounds;run('resize();start()');
+ console.log('V11.1 PASS: event-driven/no-op/DPR canvas resize preserves stationary joystick, dpad and keys; layout shifts do not inject drag deltas; pause still releases input');
 }
 
 (async()=>{
