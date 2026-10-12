@@ -1,10 +1,15 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=12"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=13"></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 12</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 13</span></header>
 <section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
+<section class="fleet worlds" aria-label="选择本局地图"><div class="fleet-heading"><strong>选择一片新星空</strong><span id="worldHint">每张地图独立玩法与最高分</span></div><div class="fleet-options">
+<button id="world-classic" class="fleet-card" aria-pressed="true"><span>☾ 拾光星海</span><strong>原版 · 分岔探索</strong><small>货运、遗迹、星鲸与矿场，自选下一站。</small><em>探索 / 综合挑战</em></button>
+<button id="world-aurora" class="fleet-card" aria-pressed="false"><span>≋ 极光航道</span><strong>新地图 · 光幕穿梭</strong><small>追踪移动缺口，穿过六道极光幕。</small><em>走位 / 加速突围</em></button>
+<button id="world-warp" class="fleet-card" aria-pressed="false"><span>◎ 折跃回廊</span><strong>新地图 · 信标接力</strong><small>加速入门折跃，按编号点亮信标链。</small><em>路线规划 / 限时寻宝</em></button>
+</div></section>
 <section class="fleet" aria-label="选择本局星舰"><div class="fleet-heading"><strong>选择你的航行方式</strong><span id="fleetHint">出发前选择星舰 · 每局技能重置</span></div><div class="fleet-options">
 <button id="ship-collector" class="fleet-card" aria-pressed="true"><span>◎ 拾光者</span><strong>收集 · 货运</strong><small>吸星范围与货运奖励 +20%</small><em>专属：双生卫星</em></button>
 <button id="ship-falcon" class="fleet-card" aria-pressed="false"><span>➤ 游隼</span><strong>加速 · 穿环</strong><small>1.4s 加速 / 4.3s 冷却 · 穿环分 +20%</small><em>专属：引力尾迹</em></button>
@@ -19,7 +24,7 @@
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
 <canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机可自选拖动、摇杆或方向键，旁边的按钮加速。"></canvas>
-<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">飞入航门，选择自己的下一站。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
+<div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">先选地图与星舰，开始新的航程。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
 <div id="wager" class="upgrade wager" role="dialog" aria-modal="true" aria-labelledby="wagerTitle" hidden><div class="upgrade-panel"><div class="eyebrow">A LITTLE RISK, A NEW POSSIBILITY</div><h2 id="wagerTitle">和星空打个赌？</h2><p>时间已暂停。成功获得额外一次二选一强化，失败不扣分。<br>选择或跳过后，准备好再继续；恢复享有 1.5 秒无敌。</p><div class="choices"><button id="wager0" class="choice"></button><button id="wager1" class="choice"></button></div><button id="wagerSkip" class="skip">这次跳过 →</button><small>键盘 1 / 2 选择 · Esc 跳过</small></div></div>
 <button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
@@ -55,10 +60,10 @@
 <section class="guide"><article><span class="symbol mint">◉</span><div><h3>引力弹弓</h3><p>靠近紫环，点加速入轨，再点沿切线弹射；蓄力 1.3 秒也会自动弹出。沿预览轨迹连穿三枚星环，移动可接管弹射。</p></div></article><article><span class="symbol gold">≈</span><div><h3>追逐星鲸</h3><p>蓝色尾流内免受伤害并可收集星光，累计同行 5 秒获得奖励。提前显示航线，跟随尾流可安全穿越激光闸门；星鲸离开时有短暂保护。</p></div></article><article><span class="symbol coral">ϟ</span><div><h3>激光闸门</h3><p>虚线预警 1.8 秒后开启；绿色缺口始终安全，也可用加速护盾穿越。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol coral">✺</span><div><h3>终局 · 星空风暴</h3><p>最后 20 秒依次迎来碎星环、缺口冲击波和核心攻击，每轮预警 1.8 秒，中间留有间歇。风暴期间暂停生成普通陨石。</p></div></article><article><span class="symbol gold">◇</span><div><h3>选择你的终局</h3><p>朝绿色缺口移动，或加速反射紫色核心弹。生还获得 200 分，击破三层核心获得 600 分；两项奖励不叠加。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>货运港与陨石矿场</h3><p>货运港交齐三箱，额外补一层护甲。矿场用加速或反弹击破矿核，每颗获得 60 基础分、2 星屑并充能 1.5 秒；三颗全破额外 +120 分。</p></div></article><article><span class="symbol coral">◉</span><div><h3>新障碍 · 脉冲水雷</h3><p>虚线蓄能 1.6 秒后，红圈放电 0.7 秒，随后休眠。可加速撞核心或用反弹排雷，获得 40 分。风暴开始时停止放电，矿场结束后清除。</p></div></article></section>
-<details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
+<section class="guide cargo-guide"><article><span class="symbol mint">≋</span><div><h3>极光航道</h3><p>六道光幕先预警 2 秒，再从上往下扫过。绿色缺口会缓慢横移；安全穿越或加速穿幕，每道获得 120 分和 1 星屑。普通陨石更稀疏。</p></div></article><article><span class="symbol gold">◎</span><div><h3>折跃回廊</h3><p>四轮折跃各开放 12 秒。加速进入蓝门，传送至紫门并获得 1.5 秒保护和 40 分。依次点亮三个信标，每个 60 分与 1 星屑，整组额外 120 分。错过不扣分。新地图第 70 秒统一进入风暴，最高分分别保存。</p></div></article></section><details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V12.0</span></footer>
-</main><script src="game.js?v=12"></script>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V13.0</span></footer>
+</main><script src="game.js?v=13"></script>
 </body></html>

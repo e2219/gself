@@ -644,6 +644,66 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V12 journey PASS: all four 90-second branch combinations, real gate crossings, correct exclusive sectors, bounded hazards, no forced modals and uninterrupted held joystick');
 }
 
+// V13: world selection is persistent and locked for a run; scores stay separate.
+{
+ run('state="over";selectWorld("aurora");start()');assert.equal(run('activeWorld'),'aurora');assert.equal(storage['mooncatch-world'],'aurora');assert(els['world-warp'].disabled);
+ run('selectWorld("warp")');assert.equal(run('activeWorld'),'aurora');assert.equal(run('adventureSlot'),run('adventureSchedule.length'));assert.equal(run('laserSlot'),run('laserSchedule.length'));
+ const classic=storage['mooncatch-best-v6'];run('score=1234;finish()');assert.equal(storage['mooncatch-best-aurora-v13'],'1234');assert.equal(storage['mooncatch-best-v6'],classic);
+ run('selectWorld("warp")');assert.equal(run('best'),0);run('selectWorld("aurora")');assert.equal(run('best'),1234);
+ run('start()');isolate();run('elapsed=10;stepWorld(0,ship.x,ship.y);draw(10)');assert(run('worldEvent'));assert.equal(run('hp'),3);
+ // Warning cannot damage even if the ship overlaps its preview. Live curtain does.
+ run('ship.x=ship.target=40;ship.y=ship.targetY=H*.24;elapsed=11.9;stepWorld(.01,ship.x,ship.y)');assert.equal(run('hp'),3);
+ run('elapsed=14;ship.x=40;ship.y=auroraGeometry(worldEvent,elapsed).y;stepWorld(.01,ship.x,ship.y)');assert.equal(run('hp'),2);assert.equal(run('worldWins'),0);
+ run('invincible=0;resumeShield=1;stepWorld(.01,ship.x,ship.y)');assert.equal(run('hp'),2);
+ // A fast crossing through the moving gap earns exactly one reward per curtain.
+ run('resumeShield=0;ship.x=auroraGeometry(worldEvent,elapsed).x;ship.y=auroraGeometry(worldEvent,elapsed).y+50;stepWorld(.01,ship.x,ship.y-100)');assert.equal(run('worldWins'),1);assert.equal(run('score'),145);assert.equal(run('dust'),1);
+ run('stepWorld(.01,ship.x,ship.y-100)');assert.equal(run('score'),145);
+ run('elapsed=20;worldEvent=null;stepWorld(0,ship.x,ship.y);elapsed=24;boostTime=.5;ship.x=40;ship.y=auroraGeometry(worldEvent,elapsed).y;stepWorld(.01,40,ship.y)');assert.equal(run('hp'),2);assert.equal(run('worldWins'),2);
+ const geometry=run('auroraGeometry(worldEvent,elapsed).x/W');width=360;height=350;resizeCallback();assert(Math.abs(run('auroraGeometry(worldEvent,elapsed).x/W')-geometry)<1e-9);run('draw(24);pause()');const saved=run('JSON.stringify([worldEvent,elapsed,worldWins])');run('update(3)');assert.equal(run('JSON.stringify([worldEvent,elapsed,worldWins])'),saved);run('pause();elapsed=70;stepWorld(0,ship.x,ship.y)');assert.equal(run('worldEvent'),null);
+ console.log('V13 aurora PASS: selection locks/persistence, independent records, readable warning, moving swept gap, damage/shield/boost, single reward, resize, pause and storm cleanup');
+}
+{
+ run('state="over";selectWorld("warp");start()');isolate();run('elapsed=8;stepWorld(0,ship.x,ship.y)');assert(run('worldEvent'));
+ run('ship.x=ship.target=W*.22;ship.y=ship.targetY=H*.4;elapsed=9;boostTime=1;stepWorld(.01,ship.x,ship.y)');assert.equal(run('worldJumps'),0);
+ run('elapsed=9.6;boostTime=0;stepWorld(.01,ship.x,ship.y)');assert.equal(run('worldJumps'),0);
+ // Teleport retains the held joystick and does not sweep pickups across the intervening space.
+ run('selectControlMode("stick")');elementEvents['joystick:pointerdown']({pointerId:130,clientX:112,clientY:546,pointerType:'touch',currentTarget:els.joystick,preventDefault:noop});
+ run('boost();items=[{x:W*.5,y:H*.52,r:9,v:0,rock:false,a:0}];update(.01)');assert.equal(run('worldJumps'),1);assert.equal(run('stickPointer'),130);assert.equal(run('inputMode'),'virtual');assert(run('resumeShield>=1.5'));assert.equal(run('score'),40);assert.equal(run('items.length'),1);
+ assert(Math.abs(run('ship.x-W*.78'))<1e-9);assert(Math.abs(run('ship.y-H*.64'))<1e-9);
+ run('stepWorld(.01,W*.22,H*.4)');assert.equal(run('worldJumps'),1);
+ run('items=[];keys.clear();selectControlMode("drag");ship.x=W*.28;ship.y=H*.67;stepWorld(.01,ship.x,ship.y)');assert.equal(run('worldEvent.index'),0);
+ for(let i=0;i<3;i++){run('globalThis.point=warpBeacons(worldEvent)[worldEvent.index];ship.x=point.x*W;ship.y=point.y*H;stepWorld(.01,ship.x,ship.y)')}
+ assert.equal(run('worldWins'),1);assert.equal(run('worldEvent'),null);assert.equal(run('score'),415);assert.equal(run('dust'),3);
+ run('elapsed=24;stepWorld(0,ship.x,ship.y)');assert(run('worldEvent.mirror'));width=700;height=350;resizeCallback();run('elapsed=26;ship.x=W*.78;ship.y=H*.4;boostTime=1;stepWorld(.01,ship.x,ship.y);draw(26)');assert.equal(run('worldJumps'),2);assert(Math.abs(run('ship.x-W*.22'))<1e-9);
+ run('elapsed=36;stepWorld(0,ship.x,ship.y)');assert.equal(run('worldEvent'),null);assert.equal(run('worldWins'),1);
+ run('start()');assert.equal(run('worldWins+worldJumps+worldSlot'),0);assert.equal(run('worldEvent'),null);
+ console.log('V13 warp PASS: arming/boost requirement, teleport destination, no phantom swept pickups, held joystick, exit shield, ordered beacons, one-shot rewards, mirrored layout, expiry and restart');
+}
+// Full runs on both new maps at phone and desktop sizes, including the shared storm.
+{
+ for(const map of ['aurora','warp'])for(const size of [[360,400],[960,510]]){
+  [width,height]=size;run(`state='over';selectWorld('${map}');resize();start();invincible=1000`);
+  run(`globalThis.worldTrip={seen:new Set(),peak:0};for(let i=0;i<5500&&state==='playing';i++){update(1/60);if(worldEvent)worldTrip.seen.add(worldEvent.at);worldTrip.peak=Math.max(worldTrip.peak,items.length);if(i%90===0)draw(i/60)}`);
+  assert.equal(run('state'),'over');assert.equal(run('worldTrip.seen.size'),map==='aurora'?6:4);assert(run('bossStarted'));assert.equal(run('objective'),null);assert.equal(run('fork'),null);assert.equal(run('laser'),null);assert.equal(run('worldEvent'),null);assert(run('worldTrip.peak<100'));assert(els.upgrade.hidden&&els.wager.hidden);
+ }
+ run('selectWorld("classic");start()');assert.equal(run('activeWorld'),'classic');assert.equal(run('adventureSlot'),0);assert.equal(els['map-port'].textContent,'货运港');
+ // Drive each route using ordinary bounded movement, rather than teleporting test coordinates.
+ for(const map of ['aurora','warp']){
+  width=360;height=400;run(`state='over';selectWorld('${map}');resize();start();invincible=1000;inputMode='keyboard';
+   for(let i=0;i<5500&&state==='playing';i++){
+    if(worldEvent&&elapsed<70){
+     if(activeWorld==='aurora'){ship.target=auroraGeometry(worldEvent,elapsed).x;ship.targetY=H*.8;}
+     else if(!worldEvent.used){ship.target=W*(worldEvent.mirror?.78:.22);ship.targetY=H*.4;if(elapsed>=worldEvent.at+1.5&&Math.hypot(ship.x-ship.target,ship.y-ship.targetY)<25)boost();}
+     else{const p=warpBeacons(worldEvent)[worldEvent.index];ship.target=p.x*W;ship.targetY=p.y*H;}
+    }
+    update(1/60);
+   }`);
+  assert.equal(run('worldWins'),map==='aurora'?6:4);assert.equal(run('state'),'over');
+ }
+ run('selectWorld("classic");start()');
+ console.log('V13 journeys PASS: both worlds at mobile/desktop size, all encounters, bounded hazards, shared finale, no forced dialogs, classic map restored');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
