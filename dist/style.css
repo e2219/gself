@@ -93,3 +93,10 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .immersive.canvas-only .game #boost{left:auto}
 .immersive.canvas-only:has(.game.controls-left) .canvas-menu,.immersive.canvas-only:has(.game.controls-left) .game #boost,.immersive.canvas-only:has(.game.controls-left) .play-content>.skillbar{right:auto;left:max(12px,env(safe-area-inset-left))}
 .immersive.canvas-only:has(.game.controls-left) .play-content>.choice-dock{left:auto;right:max(10px,env(safe-area-inset-right));align-items:flex-end}
+
+/* Fullscreen movement controls float over the canvas, leaving its size unchanged. */
+.immersive.canvas-only[data-canvas-controls="stick"] .play-content>.touch-controls,.immersive.canvas-only[data-canvas-controls="dpad"] .play-content>.touch-controls{display:block;position:absolute;z-index:9;left:max(12px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));width:140px;height:140px;padding:0;margin:0;border:0;background:none;pointer-events:none}
+.immersive.canvas-only .touch-controls .move-controls{height:100%;pointer-events:auto}.immersive.canvas-only .touch-controls .pad-actions{display:none}
+.immersive.canvas-only .joystick{background:#13273680;border-color:#a6d9c950}.immersive.canvas-only .joystick small{display:none}.immersive.canvas-only .dpad button{background:#173340aa;min-width:40px;min-height:40px}.immersive.canvas-only .dpad button[data-active="true"]{background:#447369e0}
+.immersive.canvas-only:has(.game.controls-left) .play-content>.touch-controls{left:auto;right:max(12px,env(safe-area-inset-right))}
+.immersive.canvas-only:not([data-canvas-controls="drag"]) .play-content>.choice-dock{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 152px)}

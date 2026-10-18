@@ -1049,6 +1049,20 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V18 pursuits PASS: all four maps × phone/desktop, actual movement/cooldown, no invulnerability, successful two-hit pursuit and clean projectiles');
 }
 
+// Deterministic render-work audit, not a device FPS benchmark.
+{
+ let gradients=0,sprites=0,images=0;const originalGradient=ctx.createRadialGradient,originalImage=ctx.drawImage;
+ ctx.createRadialGradient=()=>{gradients++;return {addColorStop:noop}};ctx.drawImage=()=>images++;
+ sandbox.document.createElement=()=>{sprites++;return {width:0,height:0,getContext:()=>new Proxy({}, {get:()=>noop,set:()=>true})}};
+ run('start();activeWorld="aurora";paintCache.clear();glowCache.clear();items=[{x:100,y:100,r:9,rock:false,a:0}];shards=[{x:150,y:100,life:5}];draw(0)');assert.equal(gradients,4);assert.equal(sprites,2);
+ run('for(let i=0;i<120;i++)draw(i/60)');assert.equal(gradients,4);assert.equal(sprites,2);assert.equal(images,242);
+ run('phase=1;draw(3)');assert.equal(gradients,5);assert.equal(sprites,2);
+ width=390;height=844;resizeCallback();run('draw(4)');assert.equal(gradients,9);assert.equal(sprites,4);
+ ctx.createRadialGradient=originalGradient;ctx.drawImage=originalImage;delete sandbox.document.createElement;run('paintCache.clear();glowCache.clear();state="over";selectWorld("classic");start()');isolate();
+ run('globalThis.difficultyCalls=0;globalThis.savedDifficulty=difficulty;difficulty=function(...args){difficultyCalls++;return savedDifficulty(...args)};items=Array.from({length:100},(_,i)=>({x:100+i%10*10,y:100+Math.floor(i/10)*10,r:12,rock:true,dx:0,dy:1,speedScale:.01,age:0,a:0}));update(.01);difficulty=savedDifficulty');assert(run('difficultyCalls<=5'));
+ run('start()');console.log('V18.2 render audit PASS: 4 gradients/2 sprites reused for 120 frames, distinct background/ribbon keys, resize invalidation and one movement difficulty calculation per update');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
@@ -1064,7 +1078,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('setCanvasOnly(true)');assert(!run('canvasOnly'));assert(els.fullViewSettings.hidden);
  run('selectControlMode("stick")');const savedControl=storage['mooncatch-controls'];
  await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('canvasOnly'));assert(!els.fullViewSettings.hidden);
- run('start();openPanel("controls")');els.canvasOnly.onclick();assert(run('canvasOnly'));assert(els.playShell.classList.contains('canvas-only'));assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],savedControl);assert(els['mode-stick'].disabled);assert(!els.canvasMenu.hidden);
+ run('start();openPanel("controls")');els.canvasOnly.onclick();assert(run('canvasOnly'));assert(els.playShell.classList.contains('canvas-only'));assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],savedControl);assert(!els['mode-stick'].disabled);assert(!els.canvasMenu.hidden);
  els.panelClose.onclick();assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
  // Direct canvas motion is 1:1 even during boost, with no first-contact teleport.
  width=390;height=844;resizeCallback();run('ship.x=ship.target=150;ship.y=ship.targetY=400');isolate();
@@ -1082,5 +1096,22 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('setFocused(true);setCanvasOnly(true);nativeScreen=true');sandbox.document.fullscreenElement=null;docEvents.fullscreenchange();assert(!run('canvasOnly'));assert(!els.playShell.classList.contains('canvas-only'));
  run('selectControlMode("drag");start()');
  console.log('V18.1 fullscreen canvas PASS: opt-in gate, saved controls, direct canvas drag/boost/multi-touch, shape switch, portrait/landscape, pause/menu and app/system exit restoration');
+ // Full-canvas can use all three modes, while the normal-mode preference remains unchanged.
+ const overlayTouch=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop});
+ for(const size of [[390,844],[844,390]])for(const mode of ['stick','dpad','drag']){
+  [width,height]=size;run('resize();start();selectControlMode("stick");setFocused(true);setCanvasOnly(true);openPanel("controls")');
+  els['mode-'+mode].onclick();assert.equal(run('driverMode()'),mode);assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],'stick');assert.equal(els.playShell.attributes['data-canvas-controls'],mode);els.panelClose.onclick();run('if(state==="paused")pause();ship.x=ship.target=W*.4;ship.y=ship.targetY=H*.5');isolate();
+  const x=run('ship.x');
+  if(mode==='stick'){els.stickRing.bounds={left:12,top:height-154,width:92,height:92};elementEvents['joystick:pointerdown'](overlayTouch(220,100,height-108,els.joystick))}
+  if(mode==='dpad')elementEvents['dir-r:pointerdown'](overlayTouch(220,100,height-80,els['dir-r']));
+  if(mode==='drag'){elementEvents['sky:pointerdown'](overlayTouch(220,100,200,els.sky));elementEvents['sky:pointermove'](overlayTouch(220,125,200,els.sky))}
+  run('update(.03)');assert(run('ship.x')>x,mode+' '+size);
+  const held=run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer])');elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});elementEvents['moonToggle:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('boostTime>0'));assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer])'),held);
+  if(mode!=='drag'){const target=run('ship.target');elementEvents['sky:pointerdown'](overlayTouch(221,200,200,els.sky));assert.equal(run('ship.target'),target);assert.equal(run('touches.size'),0)}
+  els.canvasMenu.onclick();assert.equal(run('state'),'paused');assert.equal(run('touches.size+directionPointers.size'),0);assert.equal(run('stickPointer'),null);run('setCanvasOnly(false)');assert.equal(run('driverMode()'),'stick');els.panelClose.onclick();run('setFocused(false)');
+ }
+ delete els.stickRing.bounds;run('selectControlMode("drag");start()');
+ console.log('V18.2 controls PASS: floating stick/dpad/direct drag × portrait/landscape, stored preference isolation, simultaneous boost/phase, no canvas hijack and pause cleanup');
+
 
 })().catch(e=>{console.error(e);process.exitCode=1});

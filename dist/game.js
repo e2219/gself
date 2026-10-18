@@ -28,6 +28,7 @@ function fleetHud(){
  for(const f of fleet){const b=$('ship-'+f.id);b.disabled=!['ready','over'].includes(state);b.setAttribute('aria-pressed',String(selectedShip===f.id));}
  $('fleetHint').textContent=state==='ready'||state==='over'?'出发前选择星舰 · 每局技能重置':'本局：'+hull().name+' · 返航后可换舰，重新开始沿用当前星舰';
 }
+const paintCache=new Map(),glowCache=new Map();
 let W=960,H=510,state='ready',score=0,combo=0,hp=3,time=90,best=0,elapsed=0,spawn=0,invincible=0,last=0;
 let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
@@ -131,7 +132,7 @@ function selectWorld(id){
  try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · '+runName();$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
 }
 function worldHud(){
- const sig=[state,activeWorld,worldSlot,worldWins,worldJumps,worldEvent?.index,worldEvent?.used,Math.ceil(elapsed)].join('|');if(sig===worldSignature)return;worldSignature=sig;
+ const sig=[state,activeWorld,selectedWorld].join('|');if(sig===worldSignature)return;worldSignature=sig;
  $('mapFinal').textContent=activeWorld==='station'?'坚守撤离':activeWorld==='aurora'?'极光之眼':activeWorld==='warp'?'折跃核心':'风暴返航';
  for(const w of worlds){const b=$('world-'+w.id);b.disabled=!['ready','over'].includes(state);b.setAttribute('aria-pressed',String(selectedWorld===w.id))}
  for(let i=0;i<3;i++)$('phase'+i).textContent=`0${i+1} ${phaseInfo(i).name}${i===2?' ×2':''}`;
@@ -255,8 +256,7 @@ function drawWorld(t){
   // Soft, bounded ribbons add depth without particles or full-canvas blur.
   for(let k=0;k<3;k++){
    const ribbonY=u=>H*(.14+k*.22)+Math.sin(u*5+t*.18+k*1.8)*H*.065+Math.sin(u*11-t*.12+k)*H*.016;
-   const glow=ctx.createRadialGradient(W*(.3+k*.2),H*(.22+k*.2),0,W*.5,H*.45,W*.8);
-   glow.addColorStop(0,['#7effd22b','#79d4ff24','#c49bff24'][k]);glow.addColorStop(.65,['#66efc00c','#7ccaff09','#c49bff09'][k]);glow.addColorStop(1,'#7effd200');
+   const glow=cachedPaint('aurora-'+k,()=>{const g=ctx.createRadialGradient(W*(.3+k*.2),H*(.22+k*.2),0,W*.5,H*.45,W*.8);g.addColorStop(0,['#7effd22b','#79d4ff24','#c49bff24'][k]);g.addColorStop(.65,['#66efc00c','#7ccaff09','#c49bff09'][k]);g.addColorStop(1,'#7effd200');return g});
    ctx.fillStyle=glow;ctx.beginPath();for(let i=0;i<=32;i++){const u=i/32;i?ctx.lineTo(u*W,ribbonY(u)):ctx.moveTo(0,ribbonY(0))}
    for(let i=32;i>=0;i--){const u=i/32;ctx.lineTo(u*W,ribbonY(u)+H*(.08+.035*Math.sin(u*4+k)))}ctx.closePath();ctx.fill();
    for(let j=0;j<3;j++){ctx.strokeStyle=['#9affe523','#a2dcff1b','#d5baff19'][k];ctx.lineWidth=j===0?1.2:.6;ctx.beginPath();for(let i=0;i<=32;i++){const u=i/32,y=ribbonY(u)+j*H*.018;i?ctx.lineTo(u*W,y):ctx.moveTo(0,y)}ctx.stroke()}
@@ -384,6 +384,8 @@ let inputMode='keyboard',mouseX=null,mouseY=null,hudSignature='',guard=0,grace=0
 let grazeLock=0,grazeFlash=0;
 let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
+let canvasControl='drag';
+const driverMode=()=>canvasOnly?canvasControl:controlMode;
 let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0};
 let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,canvasOnly=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
 const directions={ul:[-1,-1],u:[0,-1],ur:[1,-1],l:[-1,0],r:[1,0],dl:[-1,1],d:[0,1],dr:[1,1]};
@@ -429,6 +431,7 @@ function resize(){
  if(b.width<=0||b.height<=0)return;
  const pixelsX=Math.round(b.width*d),pixelsY=Math.round(b.height*d);
  if(b.width===W&&b.height===H&&canvas.width===pixelsX&&canvas.height===pixelsY)return;
+ paintCache.clear();glowCache.clear();
  W=b.width;H=b.height;canvas.width=pixelsX;canvas.height=pixelsY;ctx.setTransform(d,0,0,d,0,0);
  ship.x=clamp(ship.x*W/ow);ship.target=clamp(ship.target*W/ow);ship.y=clampY(ship.y*H/oh);ship.targetY=clampY(ship.targetY*H/oh);
  if(bounty){bounty.x*=W/ow;bounty.y*=H/oh;bounty.prevX*=W/ow;bounty.prevY*=H/oh}
@@ -588,7 +591,7 @@ function pointer(e){
 function touchDown(e){
  if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
- if((isPad||e.pointerType==='touch')&&controlMode!=='drag'&&!canvasOnly)return;
+ if((isPad||e.pointerType==='touch')&&driverMode()!=='drag')return;
  if(e.pointerType!=='touch'&&!isPad){pointer(e);canvas.setPointerCapture(e.pointerId);return}
  e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
  if(isPad)$('touchPad').setAttribute('data-active','true');
@@ -598,7 +601,7 @@ function touchDown(e){
 function touchMove(e){
  if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
- if((isPad||e.pointerType==='touch')&&controlMode!=='drag'&&!canvasOnly)return;
+ if((isPad||e.pointerType==='touch')&&driverMode()!=='drag')return;
  if(e.pointerType!=='touch'&&!isPad){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
  if(!touches.has(e.pointerId))return;
  e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
@@ -855,8 +858,8 @@ function splitMeteors(){
  items.push(...children);
 }
 // The blade uses world time so perfect-hit slow motion also slows its turnaround.
-function moveMeteor(o,worldDt){
- const speed=difficulty().speed*o.speedScale;
+function moveMeteor(o,worldDt,baseSpeed=difficulty().speed){
+ const speed=baseSpeed*o.speedScale;
  if(!o.boomerang){o.x+=o.dx*speed*worldDt;o.y+=o.dy*speed*worldDt;return}
  const before=Math.max(0,o.worldAge-worldDt),after=o.worldAge;
  const outbound=Math.min(.7,after)-Math.min(.7,before),returning=Math.max(0,after-2.1)-Math.max(0,before-2.1);
@@ -925,13 +928,13 @@ function update(dt){
  hazardClock-=dt;if(activeWorld==='station')hazardClock=Math.max(hazardClock,100);if(storm&&boss?.hp>0)hazardClock=Math.max(hazardClock,1.5);if(hazardClock<=0){warnWave();hazardClock=difficulty().interval*(activeWorld==='classic'?1:elapsed<20?1.6:1.45)*(objective?.kind==='mining'?1.5:laser?1.3:1)}
  for(let i=warnings.length-1;i>=0;i--){const w=warnings[i];w.remaining-=dt;if(w.remaining<=0){spawnMeteor(w);warnings.splice(i,1)}}
  for(let i=pending.length-1;i>=0;i--){const p=pending[i];p.delay-=dt;if(p.delay<=0){spawnItem(p.x,p.rock);pending.splice(i,1)}}
- const y=shipY();
+ const y=shipY(),meteorSpeed=difficulty().speed;
  for(let i=items.length-1;i>=0;i--){
   const o=items[i];if(o.dead)continue;o.prevX=o.x;o.prevY=o.y;o.a+=dt;o.age=(o.age||0)+dt;o.worldAge=(o.worldAge||0)+worldDt;
   if(!o.rock&&starAttraction()>0&&!o.captured){const target=findAttractor(o,starAttraction());if(target){o.captured=true;o.echoTarget=target.echo}}
   // Captured stars no longer fall: gravity must not balance attraction below the boat.
   if(o.captured)moveToward(o,attractionX(o),attractionY(o),Math.max(500,Math.min(W,H)*1.4),dt);
-  else if(o.rock&&o.dx!==undefined)moveMeteor(o,worldDt);
+  else if(o.rock&&o.dx!==undefined)moveMeteor(o,worldDt,meteorSpeed);
   else o.y+=(o.v||0)*worldDt;
   // Relative swept circles catch fast hits from any direction, including diagonal crossings.
   const hit=touchesPath(o,oldX,oldY,o.r+(o.rock?shipRadius():pickupRadius()));
@@ -1162,6 +1165,17 @@ function drawAdventure(t){
  ctx.restore();
 }
 
+function cachedPaint(key,create){if(!paintCache.has(key))paintCache.set(key,create());return paintCache.get(key)}
+function glowingStar(x,y,r,a,color,blur){
+ if(!document.createElement){ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=blur;star(x,y,r,a);ctx.shadowBlur=0;return}
+ const key=[r,color,blur].join('|');let sprite=glowCache.get(key);
+ if(!sprite){
+  const size=Math.ceil((r+blur*2)*2),scale=canvas.width/W||1,node=document.createElement('canvas');node.width=node.height=Math.ceil(size*scale);
+  const c=node.getContext('2d');c.setTransform(scale,0,0,scale,0,0);c.translate(size/2,size/2);c.fillStyle=color;c.shadowColor=color;c.shadowBlur=blur;c.beginPath();
+  for(let i=0;i<8;i++){const angle=i*Math.PI/4,radius=i%2?r*.35:r;c.lineTo(Math.cos(angle)*radius,Math.sin(angle)*radius)}c.closePath();c.fill();sprite={node,size};glowCache.set(key,sprite);
+ }
+ ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.drawImage(sprite.node,-sprite.size/2,-sprite.size/2,sprite.size,sprite.size);ctx.restore();
+}
 function star(x,y,r,a){ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.beginPath();for(let i=0;i<8;i++){const t=i*Math.PI/4,rr=i%2?r*.35:r;ctx.lineTo(Math.cos(t)*rr,Math.sin(t)*rr)}ctx.closePath();ctx.fill();ctx.restore()}
 // Position follows input immediately; only the craft's pose and engine ease into motion.
 function updateFlight(dt,oldX,oldY){
@@ -1210,7 +1224,7 @@ function drawCraft(x,y,angle,bank,throttle,t,ghost=false){
  ctx.strokeStyle=ghost?'#e6dbff':'#edfff8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(11,-2);ctx.lineTo(15,0);ctx.lineTo(11,2);ctx.stroke();
  ctx.restore();
 }
-function draw(t){ctx.clearRect(0,0,W,H);const bg=ctx.createRadialGradient(W*.55,H*.25,0,W*.5,H*.5,W*.7);bg.addColorStop(0,activeWorld==='classic'?['#1c3046','#302640','#3b3040'][phase]:worldInfo().color);bg.addColorStop(1,'#0a1524');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+function draw(t){ctx.clearRect(0,0,W,H);const bg=cachedPaint('background-'+activeWorld+'-'+phase,()=>{const g=ctx.createRadialGradient(W*.55,H*.25,0,W*.5,H*.5,W*.7);g.addColorStop(0,activeWorld==='classic'?['#1c3046','#302640','#3b3040'][phase]:worldInfo().color);g.addColorStop(1,'#0a1524');return g});ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
 for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillStyle='#dde8ec';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
 ctx.fillStyle='#b8cec617';ctx.beginPath();ctx.arc(W*.83,H*.25,30,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17283c';ctx.beginPath();ctx.arc(W*.83+12,H*.25-7,27,0,Math.PI*2);ctx.fill();
@@ -1220,10 +1234,10 @@ for(const w of warnings){
  const v=warningVector(w),x=Math.max(7,Math.min(W-7,v.x)),y=Math.max(7,Math.min(H-7,v.y));
  ctx.save();ctx.globalAlpha=.2+(Math.sin(t*14)+1)*.1;ctx.strokeStyle=w.variant==='boomerang'?'#ff86af':w.variant==='probe'?'#cba9ff':w.variant==='splitter'?'#ffd09e':'#f08c79';ctx.lineWidth=w.variant?2:1;ctx.setLineDash([5,9]);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+v.dx*Math.hypot(W,H),y+v.dy*Math.hypot(W,H));ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle=w.variant==='boomerang'?'#ff86af':w.variant==='probe'?'#cba9ff':w.variant==='splitter'?'#ffd09e':'#ff9f83';ctx.beginPath();ctx.arc(x,y,5+3*(1-w.remaining/w.total),0,Math.PI*2);ctx.fill();ctx.restore();
 }
-for(const o of items){if(o.rock&&o.dx!==undefined){ctx.strokeStyle='#ed8d7d55';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x-o.dx*22,o.y-o.dy*22);ctx.stroke()}ctx.fillStyle=o.boomerang?'#ff86af':o.probe?'#cba9ff':o.splitter?'#ffd09e':o.core?'#ddb1ff':o.rock?'#ed8d7d':'#f3d694';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=o.rock?8:17;if(o.rock){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.beginPath();for(let i=0,n=o.boomerang?6:o.probe?4:7;i<n;i++){const a=i*Math.PI*2/n,r=o.r*(i%2&&!o.probe?.8:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.fillStyle='#804e54';ctx.beginPath();ctx.arc(2,-2,3,0,7);ctx.fill();ctx.restore()}else star(o.x,o.y,o.r,o.a);ctx.shadowBlur=0}
+for(const o of items){if(o.rock&&o.dx!==undefined){ctx.strokeStyle='#ed8d7d55';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x-o.dx*22,o.y-o.dy*22);ctx.stroke()}ctx.fillStyle=o.boomerang?'#ff86af':o.probe?'#cba9ff':o.splitter?'#ffd09e':o.core?'#ddb1ff':o.rock?'#ed8d7d':'#f3d694';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=o.rock?8:0;if(o.rock){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.beginPath();for(let i=0,n=o.boomerang?6:o.probe?4:7;i<n;i++){const a=i*Math.PI*2/n,r=o.r*(i%2&&!o.probe?.8:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.fillStyle='#804e54';ctx.beginPath();ctx.arc(2,-2,3,0,7);ctx.fill();ctx.restore()}else glowingStar(o.x,o.y,o.r,o.a,'#f3d694',17);ctx.shadowBlur=0}
 if(boss&&boss.hp>0){ctx.save();ctx.globalAlpha=boss.warning>0?.3:1;ctx.translate(boss.x,boss.y);ctx.rotate(t*.15);ctx.fillStyle='#6d5367';ctx.strokeStyle='#f3b49c';ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5,r=boss.r*(i%2?.87:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#f3d694';star(0,0,13,t);for(let i=0;i<boss.hp;i++){ctx.beginPath();ctx.arc(0,0,20+i*6,0,Math.PI*1.6);ctx.stroke()}ctx.restore()}
 if(activeWorld==='warp'&&boss?.hp>0){ctx.save();ctx.strokeStyle='#ffbc9f';ctx.lineWidth=5;ctx.beginPath();ctx.arc(boss.x,boss.y,boss.r+8,-Math.PI/2+.8,Math.PI*1.5-.8);ctx.stroke();ctx.strokeStyle='#a6efdc';ctx.lineWidth=3;ctx.beginPath();ctx.arc(boss.x,boss.y,boss.r+8,-Math.PI/2-.7,-Math.PI/2+.7);ctx.stroke();ctx.restore()}
-for(const s of shards){ctx.globalAlpha=Math.min(1,s.life);ctx.fillStyle='#a6ffe0';ctx.shadowColor='#a6ffe0';ctx.shadowBlur=16;star(s.x,s.y,6,t*2);ctx.shadowBlur=0}ctx.globalAlpha=1;
+for(const s of shards){ctx.globalAlpha=Math.min(1,s.life);glowingStar(s.x,s.y,6,t*2,'#a6ffe0',16)}ctx.globalAlpha=1;
 for(const r of rings){ctx.globalAlpha=r.life/.4;ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x,r.y,r.radius*(1-r.life/.4),0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1;
 for(const e of echoes){if(hasSynergy('gravity')){ctx.strokeStyle='#bca7f530';ctx.lineWidth=1;ctx.beginPath();ctx.arc(e.x,e.y,powers.magnet===2?130:90,0,Math.PI*2);ctx.stroke()}ctx.save();ctx.globalAlpha=Math.min(.6,e.life);drawCraft(e.x,e.y,e.angle??-Math.PI/2,0,0,t,true);ctx.restore()}
 if(starAttraction()>0){ctx.strokeStyle='#a6d9c918';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ship.x,shipY(),starAttraction(),0,Math.PI*2);ctx.stroke()}
@@ -1444,20 +1458,22 @@ function clearVirtualInput(){
  for(const id of Object.keys(directions))$('dir-'+id).setAttribute('data-active','false');
 }
 function virtualDirection(){
- if(controlMode==='stick')return stickVector;
+ if(driverMode()==='stick')return stickVector;
  let x=0,y=0;for(const p of directionPointers.values()){x+=p.x;y+=p.y}
  return {x,y};
 }
 function claimVirtual(){inputMode='virtual';mouseX=mouseY=null;launch=null;ship.target=ship.x;ship.targetY=ship.y}
 function selectControlMode(mode){
- if(canvasOnly||!['drag','stick','dpad'].includes(mode))return;
- clearInput();controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}
+ if(!['drag','stick','dpad'].includes(mode))return;
+ clearInput();if(canvasOnly)canvasControl=mode;else{controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}}
  applyControlMode();hud();
 }
 function applyControlMode(){
- $('touchPad').hidden=controlMode!=='drag';$('joystick').hidden=controlMode!=='stick';$('dpad').hidden=controlMode!=='dpad';
- for(const mode of ['drag','stick','dpad']){$('mode-'+mode).setAttribute('aria-pressed',String(controlMode===mode));$('mode-'+mode).disabled=canvasOnly}
- $('controlsOpen').textContent='操作：'+{drag:'拖动',stick:'摇杆',dpad:'方向键'}[controlMode];
+ const current=driverMode();$('playShell').setAttribute('data-canvas-controls',canvasControl);
+ $('controlIntro').textContent=canvasOnly?'选择铺满屏幕时的控制方式。摇杆和方向键悬浮于星空上。':'选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。';
+ $('touchPad').hidden=current!=='drag';$('joystick').hidden=current!=='stick';$('dpad').hidden=current!=='dpad';
+ for(const mode of ['drag','stick','dpad']){$('mode-'+mode).setAttribute('aria-pressed',String(current===mode));$('mode-'+mode).disabled=false}
+ $('controlsOpen').textContent='操作：'+{drag:'拖动',stick:'摇杆',dpad:'方向键'}[current];
 }
 function syncDirections(){
  for(const [id,[x,y]] of Object.entries(directions))$('dir-'+id).setAttribute('data-active',String([...directionPointers.values()].some(p=>p.x===x&&p.y===y)));
@@ -1470,7 +1486,7 @@ function endDirection(e){
 for(const [id,[x,y]] of Object.entries(directions)){
  const b=$('dir-'+id);
  b.addEventListener('pointerdown',e=>{
-  if(state!=='playing'||panelOpen||controlMode!=='dpad')return;
+  if(state!=='playing'||panelOpen||driverMode()!=='dpad')return;
   e.preventDefault();claimVirtual();directionPointers.set(e.pointerId,{x,y,surface:b});b.setPointerCapture(e.pointerId);syncDirections();
  });
  b.addEventListener('pointermove',e=>{
@@ -1481,7 +1497,7 @@ for(const [id,[x,y]] of Object.entries(directions)){
   directionPointers.set(e.pointerId,{x:dx,y:dy,surface:b});claimVirtual();syncDirections();
  });
  for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,endDirection);
- b.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&state==='playing'&&controlMode==='dpad'&&!panelOpen){e.preventDefault();e.stopPropagation();claimVirtual();directionPointers.set('key-'+id,{x,y,surface:b});syncDirections()}});
+ b.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&state==='playing'&&driverMode()==='dpad'&&!panelOpen){e.preventDefault();e.stopPropagation();claimVirtual();directionPointers.set('key-'+id,{x,y,surface:b});syncDirections()}});
  b.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();endDirection({pointerId:'key-'+id})}});
 }
 function moveStick(e){
@@ -1493,7 +1509,7 @@ function moveStick(e){
  claimVirtual();
 }
 $('joystick').addEventListener('pointerdown',e=>{
- if(state!=='playing'||panelOpen||controlMode!=='stick'||stickPointer!==null)return;
+ if(state!=='playing'||panelOpen||driverMode()!=='stick'||stickPointer!==null)return;
  e.preventDefault();const box=$('stickRing').getBoundingClientRect();stickOrigin={x:box.left+box.width/2,y:(box.top||0)+box.height/2};stickPointer=e.pointerId;
  $('joystick').setPointerCapture(e.pointerId);$('joystick').setAttribute('data-active','true');moveStick(e);
 });
@@ -1523,7 +1539,7 @@ function applyCanvasOnly(){
  $('playShell').classList.toggle('canvas-only',focusMode&&canvasOnly);
  $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;
  $('canvasOnly').setAttribute('aria-pressed',String(canvasOnly));
- $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 直接拖动';
+ $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 悬浮操作';
  applyControlMode();
 }
 function setCanvasOnly(value){
