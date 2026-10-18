@@ -987,6 +987,68 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V17 graze PASS: two tiers, passed-nearest condition, range, immunity exclusion, per-rock idempotency, throttle, floor, real mobile/desktop updates, pause and skill selection/reset');
 }
 
+// V18: optional bounty accepts a deliberate armed boost entry, never an overlay or spawn-under-ship.
+{
+ const invite=()=>{run('state="over";selectRun("endless");selectWorld("classic");start();legIndex=1;elapsed=12;ship.x=ship.target=W*.1;ship.y=ship.targetY=H*.8');isolate();run('stepBounty(0,ship.x,ship.y,false)')};
+ const accept=()=>run('elapsed=13.3;boostTime=.5;boostCooldown=4;ship.x=ship.target=bounty.x;ship.y=ship.targetY=bounty.y;stepBounty(.01,ship.x-70,ship.y,true)');
+ for(const size of [[360,400],[960,510]]){
+  [width,height]=size;run('resize()');invite();assert.equal(run('bounty.stage'),'beacon');assert.equal(run('state'),'playing');
+  run('elapsed=12.5;boostTime=1;ship.x=bounty.x;ship.y=bounty.y;stepBounty(.01,ship.x-70,ship.y,true)');assert.equal(run('bounty.stage'),'beacon');
+  run('elapsed=13.3;boostTime=0;stepBounty(.01,ship.x-70,ship.y,false)');assert.equal(run('bounty.stage'),'beacon');
+  accept();assert.equal(run('bounty.stage'),'hunt');assert.equal(run('bounty.hp'),2);assert(run('resumeShield>=1.5'));assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);
+  run('hitBounty()');assert.equal(run('bounty.hp'),2);
+  run('elapsed=15;boostTime=.5;resumeShield=0;stepBounty(.01,ship.x,ship.y,true);ship.x=ship.target=bounty.x;ship.y=ship.targetY=bounty.y;stepBounty(0,ship.x,ship.y,true);stepBounty(0,ship.x,ship.y,true)');assert.equal(run('bounty.hp'),1);
+  run('boostSerial++;stepBounty(0,ship.x,ship.y,true);hitBounty();closeBounty(true);hud()');assert.equal(run('bountiesWon'),1);assert.equal(run('score'),290);assert.equal(run('dust'),2);assert.equal(run('boostCooldown'),2);assert.equal(run('bounty.stage'),'won');assert(els.bossStatus.textContent.includes('悬赏完成'));
+  run('elapsed=90;nextLeg()');assert.equal(run('bountiesWon'),1);assert.equal(run('bounty'),null);assert(!run('bountySeen'));run('finish()');assert(els.hint.textContent.includes('悬赏完成 1 次'));run('start()');assert.equal(run('bountiesWon'),0);
+ }
+ // Invitation appears underneath a held boost: leave and re-enter before it can accept.
+ invite();run('bounty=null;bountySeen=false;ship.x=W*.8;ship.y=H*.58;boostTime=1;stepBounty(0,ship.x,ship.y,true);elapsed=14;stepBounty(0,ship.x,ship.y,true)');assert.equal(run('bounty.stage'),'beacon');assert(run('bounty.blocked'));
+ run('ship.x=W*.4;stepBounty(.01,ship.x,ship.y,true)');accept();assert.equal(run('bounty.stage'),'hunt');
+ // Firing origin and target are frozen during a 1.6s telegraph; only bounty fire is cleared on escape.
+ invite();accept();run('elapsed=16.4;boostTime=0;ship.x=ship.target=30;ship.y=ship.targetY=H*.9;stepBounty(.01,ship.x,ship.y,false);globalThis.shotWarning=warnings[0];globalThis.aim=JSON.stringify(warningVector(shotWarning))');assert.equal(run('shotWarning.total'),1.6);assert.equal(run('items.length'),0);
+ run('ship.x=W*.9;ship.y=H*.1');assert.equal(run('JSON.stringify(warningVector(shotWarning))'),run('aim'));
+ run('spawnMeteor(shotWarning);warnings.push({edge:0,at:.2,tx:.5,ty:.5,remaining:5,total:5});items.push({x:1,y:1,r:10,rock:true});elapsed=bounty.until;stepBounty(.01,ship.x,ship.y,false)');assert.equal(run('bounty.stage'),'escaped');assert.equal(run('score'),0);assert.equal(run('warnings.length'),1);assert.equal(run('items.length'),1);assert(run('items.every(o=>!o.bountyShot)'));
+ // Reflections can finish armor; repeated shots cannot pay again.
+ invite();accept();run('elapsed=15;stepBounty(.01,ship.x,ship.y,false);bounty.hp=1;reflections=[{x:bounty.x,y:bounty.y,dx:1,dy:0,r:8,life:2}];updateReflections(.01);updateReflections(.01)');assert.equal(run('bountiesWon'),1);assert.equal(run('score'),290);
+ // A stationary contact without protection hurts, while contact with the same boost only chips once.
+ invite();accept();run('elapsed=15;boostTime=0;resumeShield=0;stepBounty(0,0,0,false);ship.x=bounty.x;ship.y=bounty.y;stepBounty(0,ship.x,ship.y,false)');assert.equal(run('hp'),2);
+ // Ignored and skipped invitations never spawn overdue events or a popup.
+ invite();run('elapsed=22;stepBounty(0,ship.x,ship.y,false)');assert.equal(run('bounty'),null);assert.equal(run('score'),0);run('elapsed=30;stepBounty(0,ship.x,ship.y,false)');assert.equal(run('bounty'),null);
+ run('start();legIndex=1;elapsed=25;stepBounty(0,ship.x,ship.y,false)');assert.equal(run('bounty'),null);assert(run('bountySeen'));
+ run('state="over";selectRun("timed");start();elapsed=12;stepBounty(0,ship.x,ship.y,false)');assert.equal(run('bounty'),null);
+ console.log('V18 bounty PASS: voluntary arming/boost/leave-reenter, protection, swept contact, per-boost armor, reflection, exact rewards, fixed aim, escape cleanup, ignored invitations and records/reset');
+ // Existing held movement stays captured through accepting, tracking, resize, and expiry.
+ const pe=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop});
+ for(const driver of ['stick','dpad','drag','keyboard','mouse']){
+  width=360;height=400;run('resize()');invite();
+  if(driver==='stick'){run('selectControlMode("stick")');elementEvents['joystick:pointerdown'](pe(181,112,546,els.joystick))}
+  if(driver==='dpad'){run('selectControlMode("dpad")');elementEvents['dir-r:pointerdown'](pe(181,112,546,els['dir-r']))}
+  if(driver==='drag'){run('selectControlMode("drag")');elementEvents['touchPad:pointerdown'](pe(181,30,560,els.touchPad))}
+  if(driver==='keyboard')run('keys.add("d")');if(driver==='mouse')run('inputMode="pointer"');
+  const controls=run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])');accept();assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
+  run('elapsed=16;stepBounty(.01,ship.x,ship.y,false);globalThis.normalized=[bounty.x/W,bounty.y/H];draw(16)');width=740;height=320;resizeCallback();assert(run('Math.abs(bounty.x/W-normalized[0])+Math.abs(bounty.y/H-normalized[1])<1e-9'));assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
+  run('pause()');const snapshot=run('JSON.stringify([elapsed,bounty,warnings])');run('update(2)');assert.equal(run('JSON.stringify([elapsed,bounty,warnings])'),snapshot);run('pause();elapsed=bounty.until;stepBounty(.01,ship.x,ship.y,false);draw(30)');assert.equal(run('state'),'playing');
+ }
+ run('state="over";selectRun("timed");selectControlMode("drag");start()');
+ console.log('V18 controls PASS: all five drivers retain input on acceptance, normalized resize, stationary pause timers and non-modal expiry');
+}
+
+// Pursuit pilot uses normal ship movement and cooldowns, without invulnerability or direct armor edits.
+{
+ for(const size of [[360,400],[960,510]])for(const map of ['classic','aurora','warp','station']){
+  [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();legIndex=1;elapsed=12;ship.x=ship.target=W*.1;ship.y=ship.targetY=H*.8`);isolate();
+  run(`stepBounty(0,ship.x,ship.y,false);elapsed=13.3;boostTime=.5;boostCooldown=4;ship.x=ship.target=bounty.x;ship.y=ship.targetY=bounty.y;stepBounty(.01,ship.x-70,ship.y,true);inputMode='keyboard';if(station)station.hp=4;
+   for(let i=0;i<1100&&state==='playing'&&bounty?.stage==='hunt';i++){
+    if(elapsed>=bounty.armed&&boostCooldown===0)boost();
+    const attack=boostTime>0&&bounty.lastBoost!==boostSerial&&elapsed>=bounty.armed;
+    ship.target=bounty.x;ship.targetY=clampY(bounty.y+(attack?0:110));update(1/60);if(i%30===0)draw(elapsed);
+   }`);
+  assert.equal(run('bountiesWon'),1,map+' '+size+' '+run('JSON.stringify([state,hp,elapsed,bounty])'));assert.equal(run('state'),'playing');assert(run('hp>0'));assert(run('warnings.every(w=>!w.bountyShot)&&items.every(o=>!o.bountyShot)'));
+ }
+ run('state="over";selectRun("timed");selectWorld("classic");start()');
+ console.log('V18 pursuits PASS: all four maps × phone/desktop, actual movement/cooldown, no invulnerability, successful two-hit pursuit and clean projectiles');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.

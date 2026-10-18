@@ -32,6 +32,7 @@ let W=960,H=510,state='ready',score=0,combo=0,hp=3,time=90,best=0,elapsed=0,spaw
 let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
 let ship={x:480,y:350,target:480,targetY:350,direction:1};
+let bounty=null,bountySeen=false,bountiesWon=0;
 let hazardWave=0,clearChallenge={hits:0,won:false};
 let menuIntro=null,resumeShield=0,resumeSafetyPending=false;
 const newFlight=()=>({angle:-Math.PI/2,bank:0,throttle:0,trail:[]});
@@ -109,7 +110,7 @@ function nextLeg(){
  if(score>best){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  const savedMoon=moonPhase,stationHealth=station?.hp||2;
  legIndex++;elapsed=0;time=90;phase=0;wave=hazardWave=spawn=0;hazardClock=4;
- resetAdventure();grazeLock=grazeFlash=0;moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
+ resetAdventure();bounty=null;bountySeen=false;grazeLock=grazeFlash=0;moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
  station=activeWorld==='station'?newStation():null;if(station)station.hp=Math.min(4,stationHealth+1);
  clearChallenge={hits:0,won:false};boss=null;bossStarted=false;
  items=[];pending=[];warnings=[];shards=[];particles=[];echoes=[];rings=[];skillWake=[];flight.trail=[];
@@ -430,6 +431,7 @@ function resize(){
  if(b.width===W&&b.height===H&&canvas.width===pixelsX&&canvas.height===pixelsY)return;
  W=b.width;H=b.height;canvas.width=pixelsX;canvas.height=pixelsY;ctx.setTransform(d,0,0,d,0,0);
  ship.x=clamp(ship.x*W/ow);ship.target=clamp(ship.target*W/ow);ship.y=clampY(ship.y*H/oh);ship.targetY=clampY(ship.targetY*H/oh);
+ if(bounty){bounty.x*=W/ow;bounty.y*=H/oh;bounty.prevX*=W/ow;bounty.prevY*=H/oh}
  for(const o of items){o.x*=W/ow;o.y*=H/oh;if(Number.isFinite(o.v))o.v*=H/oh}
  for(const s of shards){s.x*=W/ow;s.y*=H/oh}
  for(const e of echoes){e.x*=W/ow;e.y*=H/oh}
@@ -457,7 +459,7 @@ function hud(){
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
  fleetHud();worldHud();runHud();mapHud();adventureHud();
- const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,Math.ceil(resumeShield*10),!!orbit,canSling()].join('|');
+ const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,bounty?.stage,bounty?.hp,Math.ceil(bounty?.until-elapsed),Math.ceil(resumeShield*10),!!orbit,canSling()].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
  $('skillTip').textContent=`${hull().name} · 加速 ${boostDuration()} 秒 / 冷却 ${boostLimit()} 秒 · ${hull().trait}`;
  for(const id of ['boost','padBoost'])$(id).setAttribute('aria-label',`加速：${boostDuration()} 秒护盾与双倍移速，鼠标保持跟随`);
@@ -483,8 +485,8 @@ function hud(){
  $('charge').style.transform=`scaleX(${1-boostCooldown/boostLimit()})`;
  for(let i=0;i<3;i++)$('phase'+i).className=i===phase?'active':i<phase?'done':'';
  $('announcement').style.opacity=announcementTime>0&&state!=='menuIntro'?'1':'0';
- $('bossStatus').hidden=!boss||boss.hp<=0;
- if(boss&&boss.hp>0)$('bossStatus').textContent=stormCaption();
+ $('bossStatus').hidden=(!boss||boss.hp<=0)&&!bountyCaption();
+ if(boss&&boss.hp>0)$('bossStatus').textContent=stormCaption();else if(bountyCaption())$('bossStatus').textContent=bountyCaption();
 
 }
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
@@ -493,7 +495,7 @@ function start(){
  if(panelOpen)closePanel(false);
  activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
  activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;loadWorldBest();
- resetAdventure();grazeLock=grazeFlash=0;menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
+ resetAdventure();bounty=null;bountySeen=false;bountiesWon=0;grazeLock=grazeFlash=0;menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;clearChallenge={hits:0,won:false};
  items=[];particles=[];pending=[];warnings=[];shards=[];echoes=[];rings=[];offers=[];dust=upgradeCount=0;powers=emptyPowers();guard=grace=boostSerial=perfectWindow=perfectCount=slowTime=0;perfectReady=false;boss=null;bossStarted=false;hudSignature='';$('upgrade').hidden=true;$('wager').hidden=true;wagerSlot=wagersWon=wagersFailed=bonusCredits=bonusUpgradeCount=flowProgress=0;wagerOffers=[];activeWager=null;wagerResult='';upgradeSource='dust';clearInput();ship={x:W/2,y:H*.68,target:W/2,targetY:H*.68,direction:1};flight=newFlight();
  if(activeWorld!=='classic'){adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length;adventureResult=worldInfo().hint}
@@ -513,7 +515,7 @@ function finish(){
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(station?.failed?'空间站失守了。':activeRun==='endless'?'本次巡航结束。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  const itinerary=station?`空间站护盾 ${station.hp}/4 · 运送 ${station.delivered} 能源 · 救援 ${station.rescued}/4 · 拦截 ${station.intercepts}${station.paid?' · 撤离奖励 +'+(station.hp*150+station.rescued*100):''}`:activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
- $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
+ $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''}${bountiesWon?' · 悬赏完成 '+bountiesWon+' 次':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
 }
 function boost(){
  if(state!=='playing')return;
@@ -740,12 +742,13 @@ function updateReflections(dt){
   let target=null,first=Infinity;
   const targets=items.filter(o=>o.rock&&!o.dead);
   if(boss&&boss.hp>0&&boss.warning<=0)targets.push(boss);
+  if(bounty?.stage==='hunt'&&elapsed>=bounty.armed&&elapsed<bounty.until)targets.push(bounty);
   if(objective?.kind==='mining')targets.push(...objective.ores.filter(o=>!o.dead),...objective.mines.filter(o=>!o.dead));
   for(const o of targets){
    const t=impactTime(oldX-(o.prevX??o.x),oldY-(o.prevY??o.y),shot.x-o.x,shot.y-o.y,shot.r+o.r);
    if(t!==null&&t<first){target=o;first=t}
   }
-  if(target){if(target===boss)breakBossShell(false,oldX,oldY);else if(target.ore)breakOre(target);else if(target.mine)disarmMine(target);else shatter(target,false);shot.life=0}
+  if(target){if(target===boss)breakBossShell(false,oldX,oldY);else if(target===bounty)hitBounty();else if(target.ore)breakOre(target);else if(target.mine)disarmMine(target);else shatter(target,false);shot.life=0}
   if(shot.x<-60||shot.x>W+60||shot.y<-60||shot.y>H+60)shot.life=0;
  }
  reflections=reflections.filter(s=>s.life>0);items=items.filter(o=>!o.dead);
@@ -808,7 +811,7 @@ function edgePoint(edge,at){
  return {x:-28,y:H*at};
 }
 function warningVector(w){
- const origin=edgePoint(w.edge,w.at),dx=w.tx*W-origin.x,dy=w.ty*H-origin.y,n=Math.hypot(dx,dy)||1;
+ const origin=w.origin?{x:w.origin.x*W,y:w.origin.y*H}:edgePoint(w.edge,w.at),dx=w.tx*W-origin.x,dy=w.ty*H-origin.y,n=Math.hypot(dx,dy)||1;
  return {...origin,dx:dx/n,dy:dy/n};
 }
 function warnWave(){
@@ -824,7 +827,7 @@ function warnWave(){
 }
 function spawnMeteor(w){
  const v=warningVector(w);
- items.push({x:v.x,y:v.y,prevX:v.x,prevY:v.y,r:11+Math.random()*4,dx:v.dx,dy:v.dy,speedScale:w.stationRaid?.65:w.variant==='boomerang'?.75:w.variant==='probe'?1.4:.9+Math.random()*.2,boomerang:w.variant==='boomerang',launchDx:v.dx,launchDy:v.dy,probe:w.variant==='probe',splitter:w.variant==='splitter',worldAge:0,stationRaid:!!w.stationRaid,rock:true,a:Math.random()*6,age:0});
+ items.push({x:v.x,y:v.y,prevX:v.x,prevY:v.y,r:11+Math.random()*4,dx:v.dx,dy:v.dy,bountyShot:!!w.bountyShot,speedScale:w.bountyShot?.6:w.stationRaid?.65:w.variant==='boomerang'?.75:w.variant==='probe'?1.4:.9+Math.random()*.2,boomerang:w.variant==='boomerang',launchDx:v.dx,launchDy:v.dy,probe:w.variant==='probe',splitter:w.variant==='splitter',worldAge:0,stationRaid:!!w.stationRaid,rock:true,a:Math.random()*6,age:0});
 }
 const challengeGoal=()=>activeWorld==='station'?4:6;
 function trackClear(){
@@ -950,6 +953,7 @@ function update(dt){
   if(s.age>.14&&(Math.hypot(s.x-ship.x,s.y-y)<=26||echo||satelliteHit(s,oldX,oldY,dt))){collectDust();shards.splice(i,1)}
   else if(s.life<=0)shards.splice(i,1);
  }
+ stepBounty(dt,oldX,oldY,protectedByBoost);if(state==='over')return;
  updateBoss(dt,worldDt,oldX,protectedByBoost,oldY);if(state==='over')return;
  updateReflections(dt);stepLaser(dt,oldX,oldY,protectedByBoost);stepStorm(dt,oldX,oldY,protectedByBoost);if(state==='over')return;
  perfectWindow=Math.max(0,perfectWindow-dt);
@@ -958,6 +962,69 @@ function update(dt){
 
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)particles.splice(i,1)}
  hud();if(time<=0){if(activeRun==='endless')nextLeg();else finish()}else{updateChoiceDock();adventureHud()}
+}
+// Optional pursuit: one invitation per endless leg, no automatic modal or input reset.
+function bountyCaption(){
+ const b=bounty;if(!b||elapsed>=b.until)return '';
+ if(b.stage==='beacon')return `星盗悬赏 · 加速穿入金色信标接取 · ${Math.ceil(b.until-elapsed)}s`;
+ if(b.stage==='hunt')return `追击星盗 · 装甲 ${b.hp}/2 · ${Math.ceil(b.until-elapsed)}s · 加速 / 反弹击破`;
+ return b.stage==='won'?'悬赏完成 · +240 分、2 星屑、回充 2 秒':'星盗已逃离 · 无额外惩罚';
+}
+function closeBounty(won){
+ const b=bounty;if(!b||b.stage!=='hunt')return;
+ b.stage=won?'won':'escaped';b.until=elapsed+3;
+ warnings=warnings.filter(w=>!w.bountyShot);items=items.filter(o=>!o.bountyShot);
+ if(won){bountiesWon++;score+=240;collectDust();collectDust();boostCooldown=Math.max(0,boostCooldown-2);burst(b.x,b.y,'#ffdf94');rings.push({x:b.x,y:b.y,radius:70,life:.4})}
+}
+function hitBounty(){
+ const b=bounty;if(state!=='playing'||!b||b.stage!=='hunt'||elapsed<b.armed||elapsed>=b.until||b.hp<=0)return;
+ b.hp--;burst(b.x,b.y,'#ffdf94');if(b.hp===0)closeBounty(true);
+}
+function stepBounty(dt,oldX,oldY,protectedByBoost){
+ if(!bountySeen&&voyageDepth()>0&&elapsed>=12){
+  bountySeen=true;
+  if(elapsed<22){const x=W*(legIndex%2?.8:.2),y=H*.58;
+   bounty={stage:'beacon',x,y,prevX:x,prevY:y,r:22,armed:elapsed+1.2,until:22,blocked:Math.hypot(ship.x-x,ship.y-y)<30};
+  }
+ }
+ const b=bounty;if(!b)return;
+ if(elapsed>=b.until){if(b.stage==='hunt')closeBounty(false);else bounty=null;return}
+ if(b.stage==='beacon'){
+  const inside=Math.hypot(ship.x-b.x,ship.y-b.y)<30;
+  if(b.blocked){if(!inside)b.blocked=false;return}
+  if(elapsed<b.armed||boostTime<=0||segmentDistance(b.x,b.y,oldX,oldY,ship.x,ship.y)>=28)return;
+  Object.assign(b,{stage:'hunt',hp:2,born:elapsed,armed:elapsed+1.5,until:elapsed+16,nextShot:elapsed+3,lastBoost:-1,startX:b.x/W,startY:b.y/H});
+  resumeShield=Math.max(resumeShield,1.5);return;
+ }
+ if(b.stage!=='hunt')return;
+ const age=elapsed-b.born,blend=Math.min(1,age/1.5),direction=legIndex%2?1:-1;
+ b.prevX=b.x;b.prevY=b.y;
+ b.x=W*(b.startX*(1-blend)+(.5+Math.sin(age*.65*direction)*.23)*blend);
+ b.y=H*(b.startY*(1-blend)+(.5+Math.sin(age*.9)*.12)*blend);
+ if(elapsed<b.armed)return;
+ if(touchesPath(b,oldX,oldY,b.r+shipRadius())){
+  if(protectedByBoost){if(b.lastBoost!==boostSerial){b.lastBoost=boostSerial;hitBounty()}}
+  else damage();
+ }
+ if(state!=='playing'||b.stage!=='hunt')return;
+ if(elapsed>=b.nextShot){
+  b.nextShot=elapsed+3.5;
+  warnings.push({origin:{x:b.x/W,y:b.y/H},tx:ship.x/W,ty:ship.y/H,remaining:1.6,total:1.6,bountyShot:true});
+ }
+}
+function drawBounty(t){
+ const b=bounty;if(!b||!['beacon','hunt'].includes(b.stage)||elapsed>=b.until)return;
+ ctx.save();ctx.translate(b.x,b.y);ctx.strokeStyle='#ffdf94';ctx.fillStyle='#ffd989';ctx.lineWidth=2;
+ if(b.stage==='beacon'){
+  ctx.globalAlpha=elapsed<b.armed?.4:1;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(0,0,26,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(11,0);ctx.lineTo(0,13);ctx.lineTo(-11,0);ctx.closePath();ctx.stroke();
+  ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('悬赏',0,43);
+ }else{
+  ctx.globalAlpha=elapsed<b.armed?.45:1;ctx.rotate(Math.sin(t*2)*.18);ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(23,14);ctx.lineTo(0,5);ctx.lineTo(-23,14);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#332c49';ctx.beginPath();ctx.arc(0,-3,6,0,Math.PI*2);ctx.fill();
+  for(let i=0;i<b.hp;i++){ctx.beginPath();ctx.arc(0,0,28+i*5,Math.PI*.15,Math.PI*.85);ctx.stroke()}
+ }
+ ctx.restore();
 }
 // Optional field objectives are timed by game time; no new automatic modal or timer.
 function beginObjective(spec){
@@ -1146,7 +1213,7 @@ function draw(t){ctx.clearRect(0,0,W,H);const bg=ctx.createRadialGradient(W*.55,
 for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillStyle='#dde8ec';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
 ctx.fillStyle='#b8cec617';ctx.beginPath();ctx.arc(W*.83,H*.25,30,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17283c';ctx.beginPath();ctx.arc(W*.83+12,H*.25-7,27,0,Math.PI*2);ctx.fill();
-drawWorld(t);drawAdventure(t);drawSpecialSpace(t);drawMining(t);drawFleet();drawStorm();drawNavigation();drawThreatDetails();
+drawWorld(t);drawBounty(t);drawAdventure(t);drawSpecialSpace(t);drawMining(t);drawFleet();drawStorm();drawNavigation();drawThreatDetails();
 for(const r of reflections){ctx.save();ctx.strokeStyle='#9cffe6';ctx.lineWidth=4;ctx.shadowColor='#9cffe6';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(r.x-r.dx*24,r.y-r.dy*24);ctx.lineTo(r.x,r.y);ctx.stroke();ctx.fillStyle='#e1fff2';star(r.x,r.y,r.r,t*5);ctx.restore()}
 for(const w of warnings){
  const v=warningVector(w),x=Math.max(7,Math.min(W-7,v.x)),y=Math.max(7,Math.min(H-7,v.y));
