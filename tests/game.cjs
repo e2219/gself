@@ -1060,4 +1060,27 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  el('playShell').requestFullscreen=async()=>{throw Error('unsupported')};await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('fullscreenBusy'));events.keydown({key:'Escape',target:{tagName:'CANVAS'},preventDefault:noop});assert(!run('focusMode'));assert(!sandbox.document.body.classList.contains('game-focused'));
  delete els.playShell.requestFullscreen;run('start()');assert.equal(run('state'),'playing');
  console.log('V11 fullscreen PASS: native enter/system exit, safe pause/resume, CSS fallback on unsupported/rejected API, Escape and body-scroll restoration');
+ // Full-canvas is explicitly opt-in after fullscreen; it does not overwrite saved controls.
+ run('setCanvasOnly(true)');assert(!run('canvasOnly'));assert(els.fullViewSettings.hidden);
+ run('selectControlMode("stick")');const savedControl=storage['mooncatch-controls'];
+ await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('canvasOnly'));assert(!els.fullViewSettings.hidden);
+ run('start();openPanel("controls")');els.canvasOnly.onclick();assert(run('canvasOnly'));assert(els.playShell.classList.contains('canvas-only'));assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],savedControl);assert(els['mode-stick'].disabled);assert(!els.canvasMenu.hidden);
+ els.panelClose.onclick();assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
+ // Direct canvas motion is 1:1 even during boost, with no first-contact teleport.
+ width=390;height=844;resizeCallback();run('ship.x=ship.target=150;ship.y=ship.targetY=400');isolate();
+ const fullTouch=(id,x,y)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:els.sky,preventDefault:noop});
+ elementEvents['sky:pointerdown'](fullTouch(201,40,60));assert.equal(run('ship.target'),150);
+ elementEvents['sky:pointermove'](fullTouch(201,70,80));run('update(.01)');assert.equal(run('ship.x'),180);assert.equal(run('ship.y'),420);
+ elementEvents['sky:pointerdown'](fullTouch(202,280,600));assert(run('boostTime>0'));
+ elementEvents['sky:pointermove'](fullTouch(201,90,90));run('update(.01)');assert.equal(run('ship.x'),200);assert.equal(run('ship.y'),430);
+ const moon=run('moonPhase');elementEvents['moonToggle:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.notEqual(run('moonPhase'),moon);assert.equal(run('movePointer'),201);
+ width=844;height=390;resizeCallback();assert.equal(run('movePointer'),201);assert(run('canvasOnly'));run('draw(1)');
+ // Floating menu pauses and releases touches; turning this option off restores the joystick.
+ els.canvasMenu.onclick();assert.equal(run('state'),'paused');assert(run('panelOpen'));assert.equal(run('touches.size'),0);els.canvasOnly.onclick();assert(!run('canvasOnly'));assert(run('focusMode'));assert.equal(run('controlMode'),'stick');assert(!els['mode-stick'].disabled);assert(!els.joystick.hidden);els.panelClose.onclick();assert.equal(run('state'),'playing');
+ run('openPanel("controls")');els.canvasOnly.onclick();els.panelClose.onclick();await els.fullViewExit.onclick();assert(!run('canvasOnly'));assert(!run('focusMode'));assert(els.fullViewSettings.hidden);assert(els.canvasMenu.hidden);assert.equal(storage['mooncatch-controls'],savedControl);
+ // Browser/system fullscreen exit also resets the temporary mode.
+ run('setFocused(true);setCanvasOnly(true);nativeScreen=true');sandbox.document.fullscreenElement=null;docEvents.fullscreenchange();assert(!run('canvasOnly'));assert(!els.playShell.classList.contains('canvas-only'));
+ run('selectControlMode("drag");start()');
+ console.log('V18.1 fullscreen canvas PASS: opt-in gate, saved controls, direct canvas drag/boost/multi-touch, shape switch, portrait/landscape, pause/menu and app/system exit restoration');
+
 })().catch(e=>{console.error(e);process.exitCode=1});

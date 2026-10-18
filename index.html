@@ -72,6 +72,29 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .worlds .fleet-options{grid-template-columns:repeat(4,minmax(0,1fr))}.worlds .fleet-card:nth-child(4){background:linear-gradient(135deg,#33424c,#1b2b3d)}@media(max-width:650px){.worlds .fleet-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .run-picker{display:flex;align-items:center;gap:14px;justify-content:space-between;margin:0 0 18px}.run-options{display:flex;gap:7px;flex-shrink:0}.run-options button{padding:10px 14px;border:1px solid #ffffff30;border-radius:8px;background:#162a38;color:var(--ink);touch-action:manipulation}.run-options button[aria-pressed="true"]{background:#234049;border-color:var(--mint);color:var(--mint)}.run-options button:disabled{cursor:default}.run-picker small{color:var(--muted);font-size:10px;line-height:1.6}@media(max-width:650px){.run-picker{align-items:flex-start;flex-direction:column;gap:8px}.run-options{width:100%}.run-options button{flex:1}.panel-actions{flex-wrap:wrap}}
+
+/* Optional full-canvas layout; standard fullscreen and saved control preferences stay intact. */
+.canvas-menu{display:none}.play-shell.immersive.canvas-only{padding:0}
+.immersive.canvas-only .play-content{position:relative;display:block;width:100%;height:100%;gap:0}
+.immersive.canvas-only .play-content>.playbar,.immersive.canvas-only .play-content>.route-map,.immersive.canvas-only .play-content>.touch-controls,.immersive.canvas-only .play-content>.flight-status,.immersive.canvas-only .play-content>.wager-status{display:none}
+.immersive.canvas-only .game{position:absolute;inset:0;width:100%;height:100%;min-height:0;margin:0;border:0;border-radius:0}
+.immersive.canvas-only .game canvas{display:block;width:100%;height:100%;touch-action:none}
+.immersive.canvas-only .canvas-menu{display:block;position:absolute;z-index:12;right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));min-width:52px;min-height:44px;border:1px solid #a6d9c970;border-radius:12px;background:#132736d9;color:#d5ede6;font-size:12px;touch-action:manipulation}
+.immersive.canvas-only .canvas-menu[hidden]{display:none}
+.immersive.canvas-only .game #boost{display:flex;right:max(12px,env(safe-area-inset-right));bottom:calc(max(14px,env(safe-area-inset-bottom)) + 58px);z-index:8}
+.immersive.canvas-only .play-content>.skillbar{display:block;position:absolute;z-index:8;right:max(12px,env(safe-area-inset-right));bottom:calc(max(14px,env(safe-area-inset-bottom)) + 128px);margin:0;padding:0;border:0;background:none}
+.immersive.canvas-only .skillbar>span{display:none}.immersive.canvas-only #moonToggle{display:block;min-height:44px;max-width:100px;font-size:10px}
+.immersive.canvas-only .play-content>.choice-dock{position:absolute;left:max(10px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:8;display:flex;flex-direction:column;align-items:flex-start;width:max-content;max-width:calc(100% - 130px);height:auto;min-height:0;max-height:none;margin:0;padding:0;background:none;border:0;gap:6px}
+.immersive.canvas-only .choice-dock #choiceHint{display:none}.immersive.canvas-only .choice-dock button{min-height:44px;white-space:normal}
+.immersive.canvas-only .phase-track,.immersive.canvas-only .coordinates{display:none}
+.immersive.canvas-only .hud{top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right))}
+.immersive.canvas-only .pressure{top:calc(max(12px,env(safe-area-inset-top)) + 48px)}
+.immersive.canvas-only .bossbar{top:calc(max(12px,env(safe-area-inset-top)) + 76px)}
+.full-view-settings{border-bottom:1px solid #a6d9c930;margin-bottom:16px}.full-view-settings #canvasOnly[aria-pressed="true"]{border-color:#f3d694;color:#f3d694}.control-options button:disabled{opacity:.5}
+
+.immersive.canvas-only .game #boost{left:auto}
+.immersive.canvas-only:has(.game.controls-left) .canvas-menu,.immersive.canvas-only:has(.game.controls-left) .game #boost,.immersive.canvas-only:has(.game.controls-left) .play-content>.skillbar{right:auto;left:max(12px,env(safe-area-inset-left))}
+.immersive.canvas-only:has(.game.controls-left) .play-content>.choice-dock{left:auto;right:max(10px,env(safe-area-inset-right));align-items:flex-end}
 </style></head>
 <body>
 <main>
@@ -91,6 +114,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </div></section>
 <section id="playShell" class="play-shell" aria-label="航行驾驶舱">
 <div id="playContent" class="play-content">
+<button id="canvasMenu" class="canvas-menu" aria-haspopup="dialog" aria-label="暂停并打开游戏菜单" hidden>菜单</button>
 <nav class="playbar" aria-label="游戏快捷操作"><button id="pause" disabled>暂停 <kbd>P</kbd></button><button id="fullscreen" aria-pressed="false">全屏</button><button id="controlsOpen" aria-haspopup="dialog">操作：拖动</button><button id="helpOpen" aria-haspopup="dialog">玩法</button></nav>
 <div id="routeMap" class="route-map" role="group" aria-label="本局分岔星图"><span class="map-end">起航</span><div class="map-branch"><span id="map-port" class="route-node">货运港</span><span id="map-relic" class="route-node">引力遗迹</span></div><div class="map-branch"><span id="map-whale" class="route-node">星鲸迁徙带</span><span id="map-mine" class="route-node">陨石矿场</span></div><span id="mapFinal" class="map-end">风暴<br>返航</span></div>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
@@ -126,7 +150,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </div>
 <div id="gamePanel" class="game-panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
 <div class="panel-sheet"><header class="panel-heading"><h2 id="panelTitle">驾驶设置</h2><button id="panelClose">返回游戏</button></header>
-<section id="controlSettings"><p class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
+<section id="controlSettings"><div id="fullViewSettings" class="full-view-settings" hidden><div class="panel-actions"><button id="canvasOnly" aria-pressed="false">铺满屏幕 · 直接拖动</button><button id="fullViewExit">退出全屏</button></div><p class="panel-intro">铺满模式隐藏下方操作区，在画面上滑动驾驶；双指可加速。菜单、形态、强化与赌约保留为悬浮按钮。关闭后恢复原来的控制方式。</p></div><p class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
 <button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动；抬手可换位置。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>推向任意方向，推得越远飞得越快。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住持续移动，支持八向与斜向。</small></button>
 </div><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="endRun" hidden>结束并结算</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
 <section id="gameRules" hidden><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。第 24 秒选择货运港或引力遗迹，第 54 秒选择星鲸带或矿场。左路更安全，右路星光 ×1.4、陨石略增；忽略航门自动走左路。</p></div></article></section>
@@ -138,7 +162,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V18.0</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V18.1</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -526,7 +550,7 @@ let grazeLock=0,grazeFlash=0;
 let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
 let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0};
-let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
+let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,canvasOnly=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
 const directions={ul:[-1,-1],u:[0,-1],ur:[1,-1],l:[-1,0],r:[1,0],dl:[-1,1],d:[0,1],dr:[1,1]};
 try{const saved=localStorage.getItem('mooncatch-controls');if(['drag','stick','dpad'].includes(saved))controlMode=saved}catch{}
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
@@ -678,6 +702,7 @@ for(const id of ['boost','padBoost']){
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
 }
 $('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
+$('canvasOnly').onclick=()=>setCanvasOnly(!canvasOnly);$('fullViewExit').onclick=toggleFullscreen;$('canvasMenu').onclick=()=>openPanel('controls');
 for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
 $('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
 // A second touch may not synthesize a click while the driving finger stays down.
@@ -728,7 +753,7 @@ function pointer(e){
 function touchDown(e){
  if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
- if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
+ if((isPad||e.pointerType==='touch')&&controlMode!=='drag'&&!canvasOnly)return;
  if(e.pointerType!=='touch'&&!isPad){pointer(e);canvas.setPointerCapture(e.pointerId);return}
  e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
  if(isPad)$('touchPad').setAttribute('data-active','true');
@@ -738,12 +763,12 @@ function touchDown(e){
 function touchMove(e){
  if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
- if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
+ if((isPad||e.pointerType==='touch')&&controlMode!=='drag'&&!canvasOnly)return;
  if(e.pointerType!=='touch'&&!isPad){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
  if(!touches.has(e.pointerId))return;
  e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
  inputMode='pointer';mouseX=mouseY=null;launch=null;
- const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1)*cargoSpeed();lastTouchX=p.x;lastTouchY=p.y;
+ const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=canvasOnly?1:(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1)*cargoSpeed();lastTouchX=p.x;lastTouchY=p.y;
  ship.target=clamp(ship.target+dx*gain);ship.targetY=clampY(ship.targetY+dy*gain);
 }
 function touchEnd(e){
@@ -1590,13 +1615,13 @@ function virtualDirection(){
 }
 function claimVirtual(){inputMode='virtual';mouseX=mouseY=null;launch=null;ship.target=ship.x;ship.targetY=ship.y}
 function selectControlMode(mode){
- if(!['drag','stick','dpad'].includes(mode))return;
+ if(canvasOnly||!['drag','stick','dpad'].includes(mode))return;
  clearInput();controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}
  applyControlMode();hud();
 }
 function applyControlMode(){
  $('touchPad').hidden=controlMode!=='drag';$('joystick').hidden=controlMode!=='stick';$('dpad').hidden=controlMode!=='dpad';
- for(const mode of ['drag','stick','dpad'])$('mode-'+mode).setAttribute('aria-pressed',String(controlMode===mode));
+ for(const mode of ['drag','stick','dpad']){$('mode-'+mode).setAttribute('aria-pressed',String(controlMode===mode));$('mode-'+mode).disabled=canvasOnly}
  $('controlsOpen').textContent='操作：'+{drag:'拖动',stick:'摇杆',dpad:'方向键'}[controlMode];
 }
 function syncDirections(){
@@ -1640,7 +1665,7 @@ $('joystick').addEventListener('pointerdown',e=>{
 $('joystick').addEventListener('pointermove',moveStick);
 for(const type of ['pointerup','pointercancel','lostpointercapture'])$('joystick').addEventListener(type,e=>{if(e.pointerId===stickPointer){clearVirtualInput();ship.target=ship.x;ship.targetY=ship.y}});
 function openPanel(kind){
- if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
+ if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):canvasOnly?$('canvasMenu'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
  $('playContent').inert=true;$('gamePanel').hidden=false;
  $('gameRules').hidden=kind!=='rules';$('controlSettings').hidden=kind!=='controls';
  $('panelTitle').textContent=kind==='rules'?'航行手册':'驾驶设置';
@@ -1649,15 +1674,26 @@ function openPanel(kind){
 function closePanel(resume=true){
  if(!panelOpen)return;
  const shouldResume=resume&&panelResume&&state==='paused';panelOpen=false;panelResume=false;
- $('playContent').inert=false;$('gamePanel').hidden=true;clearInput();panelTrigger?.focus({preventScroll:true});
+ $('playContent').inert=false;$('gamePanel').hidden=true;clearInput();(panelTrigger===$('canvasMenu')&&!canvasOnly?$('controlsOpen'):panelTrigger)?.focus({preventScroll:true});
  if(shouldResume){resumeSafetyPending=true;pause()}else hud();
 }
 function prepareLayoutChange(){
  clearInput();if(state==='playing'){pause();resumeSafetyPending=true}
 }
 function setFocused(value){
- focusMode=value;$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
+ focusMode=value;if(!value)canvasOnly=false;applyCanvasOnly();$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
  $('fullscreen').textContent=value?'退出全屏':'全屏';$('fullscreen').setAttribute('aria-pressed',String(value));
+}
+function applyCanvasOnly(){
+ $('playShell').classList.toggle('canvas-only',focusMode&&canvasOnly);
+ $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;
+ $('canvasOnly').setAttribute('aria-pressed',String(canvasOnly));
+ $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 直接拖动';
+ applyControlMode();
+}
+function setCanvasOnly(value){
+ if(!focusMode)return;
+ prepareLayoutChange();canvasOnly=!!value;applyCanvasOnly();hud();
 }
 async function toggleFullscreen(){
  if(fullscreenBusy)return;fullscreenBusy=true;prepareLayoutChange();

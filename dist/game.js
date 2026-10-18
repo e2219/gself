@@ -385,7 +385,7 @@ let grazeLock=0,grazeFlash=0;
 let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
 let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0};
-let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
+let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,canvasOnly=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
 const directions={ul:[-1,-1],u:[0,-1],ur:[1,-1],l:[-1,0],r:[1,0],dl:[-1,1],d:[0,1],dr:[1,1]};
 try{const saved=localStorage.getItem('mooncatch-controls');if(['drag','stick','dpad'].includes(saved))controlMode=saved}catch{}
 try{leftHand=localStorage.getItem('mooncatch-left-hand')==='true'}catch{}
@@ -537,6 +537,7 @@ for(const id of ['boost','padBoost']){
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
 }
 $('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
+$('canvasOnly').onclick=()=>setCanvasOnly(!canvasOnly);$('fullViewExit').onclick=toggleFullscreen;$('canvasMenu').onclick=()=>openPanel('controls');
 for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
 $('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
 // A second touch may not synthesize a click while the driving finger stays down.
@@ -587,7 +588,7 @@ function pointer(e){
 function touchDown(e){
  if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
- if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
+ if((isPad||e.pointerType==='touch')&&controlMode!=='drag'&&!canvasOnly)return;
  if(e.pointerType!=='touch'&&!isPad){pointer(e);canvas.setPointerCapture(e.pointerId);return}
  e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);surface.setPointerCapture(e.pointerId);
  if(isPad)$('touchPad').setAttribute('data-active','true');
@@ -597,12 +598,12 @@ function touchDown(e){
 function touchMove(e){
  if(state!=='playing'||panelOpen)return;
  const surface=e.currentTarget||canvas,isPad=surface===$('touchPad');
- if((isPad||e.pointerType==='touch')&&controlMode!=='drag')return;
+ if((isPad||e.pointerType==='touch')&&controlMode!=='drag'&&!canvasOnly)return;
  if(e.pointerType!=='touch'&&!isPad){if(e.pointerType==='mouse'||e.buttons)pointer(e);return}
  if(!touches.has(e.pointerId))return;
  e.preventDefault();const p={x:e.clientX,y:e.clientY??0,surface};touches.set(e.pointerId,p);if(e.pointerId!==movePointer)return;
  inputMode='pointer';mouseX=mouseY=null;launch=null;
- const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1)*cargoSpeed();lastTouchX=p.x;lastTouchY=p.y;
+ const dx=p.x-lastTouchX,dy=p.y-lastTouchY,gain=canvasOnly?1:(boostTime>0?BOOST_SPEED:1)*(isPad?1.65:1)*cargoSpeed();lastTouchX=p.x;lastTouchY=p.y;
  ship.target=clamp(ship.target+dx*gain);ship.targetY=clampY(ship.targetY+dy*gain);
 }
 function touchEnd(e){
@@ -1449,13 +1450,13 @@ function virtualDirection(){
 }
 function claimVirtual(){inputMode='virtual';mouseX=mouseY=null;launch=null;ship.target=ship.x;ship.targetY=ship.y}
 function selectControlMode(mode){
- if(!['drag','stick','dpad'].includes(mode))return;
+ if(canvasOnly||!['drag','stick','dpad'].includes(mode))return;
  clearInput();controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}
  applyControlMode();hud();
 }
 function applyControlMode(){
  $('touchPad').hidden=controlMode!=='drag';$('joystick').hidden=controlMode!=='stick';$('dpad').hidden=controlMode!=='dpad';
- for(const mode of ['drag','stick','dpad'])$('mode-'+mode).setAttribute('aria-pressed',String(controlMode===mode));
+ for(const mode of ['drag','stick','dpad']){$('mode-'+mode).setAttribute('aria-pressed',String(controlMode===mode));$('mode-'+mode).disabled=canvasOnly}
  $('controlsOpen').textContent='操作：'+{drag:'拖动',stick:'摇杆',dpad:'方向键'}[controlMode];
 }
 function syncDirections(){
@@ -1499,7 +1500,7 @@ $('joystick').addEventListener('pointerdown',e=>{
 $('joystick').addEventListener('pointermove',moveStick);
 for(const type of ['pointerup','pointercancel','lostpointercapture'])$('joystick').addEventListener(type,e=>{if(e.pointerId===stickPointer){clearVirtualInput();ship.target=ship.x;ship.targetY=ship.y}});
 function openPanel(kind){
- if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
+ if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):canvasOnly?$('canvasMenu'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
  $('playContent').inert=true;$('gamePanel').hidden=false;
  $('gameRules').hidden=kind!=='rules';$('controlSettings').hidden=kind!=='controls';
  $('panelTitle').textContent=kind==='rules'?'航行手册':'驾驶设置';
@@ -1508,15 +1509,26 @@ function openPanel(kind){
 function closePanel(resume=true){
  if(!panelOpen)return;
  const shouldResume=resume&&panelResume&&state==='paused';panelOpen=false;panelResume=false;
- $('playContent').inert=false;$('gamePanel').hidden=true;clearInput();panelTrigger?.focus({preventScroll:true});
+ $('playContent').inert=false;$('gamePanel').hidden=true;clearInput();(panelTrigger===$('canvasMenu')&&!canvasOnly?$('controlsOpen'):panelTrigger)?.focus({preventScroll:true});
  if(shouldResume){resumeSafetyPending=true;pause()}else hud();
 }
 function prepareLayoutChange(){
  clearInput();if(state==='playing'){pause();resumeSafetyPending=true}
 }
 function setFocused(value){
- focusMode=value;$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
+ focusMode=value;if(!value)canvasOnly=false;applyCanvasOnly();$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
  $('fullscreen').textContent=value?'退出全屏':'全屏';$('fullscreen').setAttribute('aria-pressed',String(value));
+}
+function applyCanvasOnly(){
+ $('playShell').classList.toggle('canvas-only',focusMode&&canvasOnly);
+ $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;
+ $('canvasOnly').setAttribute('aria-pressed',String(canvasOnly));
+ $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 直接拖动';
+ applyControlMode();
+}
+function setCanvasOnly(value){
+ if(!focusMode)return;
+ prepareLayoutChange();canvasOnly=!!value;applyCanvasOnly();hud();
 }
 async function toggleFullscreen(){
  if(fullscreenBusy)return;fullscreenBusy=true;prepareLayoutChange();
