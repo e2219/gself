@@ -84,6 +84,7 @@ let selectedWorld='classic',activeWorld='classic',worldEvent=null,worldSlot=0,wo
 try{const saved=localStorage.getItem('mooncatch-world');if(worlds.some(w=>w.id===saved))selectedWorld=activeWorld=saved}catch{}
 let selectedRun='timed',activeRun='timed',legIndex=0,runHudSignature='',voyage={cleared:0,bonus:0,challenges:0,rescued:0};
 try{if(localStorage.getItem('mooncatch-run')==='endless')selectedRun=activeRun='endless'}catch{}
+const voyageDepth=()=>activeRun==='endless'?Math.max(0,Math.min(legIndex,5)):0;
 const runName=()=>activeRun==='endless'?'无尽巡航':'90 秒挑战';
 function selectRun(mode){
  if(!['ready','over'].includes(state)||!['timed','endless'].includes(mode))return;
@@ -93,7 +94,7 @@ function selectRun(mode){
 function runHud(){
  const sig=[activeRun,state,legIndex].join('|');if(sig===runHudSignature)return;runHudSignature=sig;
  for(const mode of ['timed','endless']){const b=$('run-'+mode);b.setAttribute('aria-pressed',String(selectedRun===mode));b.disabled=!['ready','over'].includes(state)}
- $('runHint').textContent=activeRun==='endless'?`第 ${legIndex+1} 段 · 每段补 1 点船盾、加速充满 · 强化与积分保留`:'90 秒一局 · 四张地图独立纪录';
+ $('runHint').textContent=activeRun==='endless'?`第 ${legIndex+1} 段 · 压力 ${voyageDepth()+1}/6${voyageDepth()===5?"（上限）":""} · 强化保留 / 换段补盾`:'90 秒一局 · 四张地图独立纪录';
  $('timeLabel').textContent=activeRun==='endless'?`第 ${legIndex+1} 段剩余`:'剩余时间';$('bestLabel').textContent=activeRun==='endless'?'无尽纪录':'本版最佳';
  $('endRun').hidden=activeRun!=='endless';$('endRun').disabled=!['playing','paused'].includes(state);
 }
@@ -117,7 +118,7 @@ function nextLeg(){
  if(availablePowers().filter(p=>(powers[p.id]||0)<2).length>=2)bonusCredits++;
  if(activeWorld!=='classic'){adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length}
  hudSignature=worldSignature=adventureSignature=runHudSignature='';
- announce(`第 ${legIndex+1} 段 · 护盾补给，继续航行`);$('status').textContent=phaseInfo().subtitle;hud();
+ announce(`第 ${legIndex+1} 段 · 压力 ${voyageDepth()+1}/6 · 护盾补给`);$('status').textContent=phaseInfo().subtitle;hud();
 }
 function endVoyage(){if(activeRun!=='endless'||!['playing','paused'].includes(state))return;if(panelOpen)closePanel(false);finish()}
 const worldInfo=()=>worlds.find(w=>w.id===activeWorld);
@@ -158,7 +159,8 @@ function notifyWorld(text){worldNotice={text,until:elapsed+2.4};adventureResult=
 const auroraTimes=[10,20,32,42,54,62],warpTimes=[8,24,40,56];
 function auroraGeometry(e,at){
  const travel=Math.max(0,Math.min(1,(at-e.at-2)/5));
- return {x:W*(.5+Math.sin((at-e.at)*.55+e.seed)*.19),y:-30+travel*(H+60),half:Math.max(48,W*.18)};
+ const depth=voyageDepth();
+ return {x:W*(.5+Math.sin((at-e.at)*(.55+.055*depth)+e.seed)*.19),y:-30+travel*(H+60),half:Math.max(48-depth*1.6,W*(.18-.012*depth))};
 }
 function stepWorld(dt,oldX,oldY){
  if(activeWorld==='classic')return false;
@@ -211,7 +213,12 @@ function chargeResonance(clean){
 }
 function warpGates(e){const flip=x=>e.mirror?1-x:x;return [{id:'safe',x:flip(.22),y:.4,exit:{x:flip(.78),y:.64}},{id:'risk',x:flip(.78),y:.4,exit:{x:flip(.22),y:.76}}]}
 function warpBeacons(e){return (e.route==='risk'?[{x:.32,y:.55},{x:.7,y:.3},{x:.76,y:.72}]:[{x:.7,y:.43},{x:.48,y:.3},{x:.28,y:.67}]).map(p=>({...p,x:e.mirror?1-p.x:p.x}))}
-function warpRocks(e){return [{x:.49,y:.43,r:16},{x:.73,y:.5,r:15}].map(p=>({...p,x:e.mirror?1-p.x:p.x}))}
+function warpRocks(e){
+ const depth=voyageDepth(),rocks=[{x:.49,y:.43,r:16},{x:.73,y:.5,r:15}];
+ if(depth>=1)rocks.push({x:.5,y:.65,r:14});
+ if(depth>=3)rocks.push({x:.52,y:.22,r:14});
+ return rocks.map(p=>({...p,r:p.r+depth,x:e.mirror?1-p.x:p.x}));
+}
 function drawWarpChoices(e,t){
  for(const gate of warpGates(e)){
   const color=gate.id==='safe'?'#a6efdc':'#ffbd9f',preview={...e,route:gate.id};ctx.globalAlpha=elapsed<e.at+1.5?.4:.9;
@@ -398,11 +405,11 @@ const clamp=x=>Math.max(24,Math.min(W-24,x));
 const clampY=y=>Math.max(28,Math.min(H-28,y));
 const moveKeys=['arrowleft','arrowright','arrowup','arrowdown','a','d','w','s'];
 function difficulty(t=elapsed){
- const p=Math.max(0,Math.min(1,t/90));
+ const depth=voyageDepth(),floor=Math.min(.85,depth*.4),p=floor+(1-floor)*Math.max(0,Math.min(1,t/90));
  const speedScale=activeRoute?.id==='calm'?.9:activeRoute?.id==='rich'?1.05:1;
  const intervalScale=activeRoute?.id==='calm'?1.25:activeRoute?.id==='rich'?.9:1;
- const pressure=Math.max(0,(p*90-20)/70),depth=activeRun==='endless'?Math.min(legIndex,5):0;
- return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure)*(1+.1*depth),interval:(2.1-p)*intervalScale/((1+.2*pressure)*(1+.08*depth)),warning:1.65-.4*p,count:1+(p>=.5?1:0),level:1+Math.min(5,Math.floor(p*6))};
+ const pressure=Math.max(0,(p*90-20)/70);
+ return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure)*(1+.12*depth),interval:(2.1-p)*intervalScale/((1+.2*pressure)*(1+.14*depth)),warning:1.65-.4*p,count:1+(p>=.5||depth>0?1:0)+(depth>=3&&p>=.85?1:0),level:1+depth*6+Math.min(5,Math.floor(p*6))};
 }
 function segmentDistance(px,py,ax,ay,bx,by){
  const dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
@@ -455,7 +462,7 @@ function hud(){
  $('score').textContent=String(score).padStart(3,'0');$('time').innerHTML=Math.ceil(time)+'<span>s</span>';
  $('health').textContent='● '.repeat(hp)+'○ '.repeat(3-hp)+(guard?` +◇${guard}`:'');$('health').setAttribute('aria-label',hp+'点护盾，'+guard+'层护甲');
  $('combo').textContent=combo>=5?`${combo} 连击 · 星光 ×${Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier}`:'';
- $('pressure').textContent=resumeShield>0?`恢复保护 ${resumeShield.toFixed(1)}s · 可安全调整位置`:`威胁 Lv.${difficulty().level} · 四面来袭`;
+ $('pressure').textContent=resumeShield>0?`恢复保护 ${resumeShield.toFixed(1)}s · 可安全调整位置`:(activeRun==='endless'?`压力 ${voyageDepth()+1}/6 · ${activeWorld==='station'?'袭击加强':difficulty().count+' 向来袭'}`:`威胁 Lv.${difficulty().level} · 四面来袭`);
  $('boost').disabled=state!=='playing'||(boostCooldown>0&&!orbit&&!canSling());
  $('padBoost').disabled=$('boost').disabled;
  $('padBoost').setAttribute('data-active',String(boostTime>0));
@@ -809,7 +816,7 @@ function warnWave(){
   const aimed=Math.random()<.4;
   const tx=aimed?ship.x/W+(Math.random()-.5)*.22:.15+Math.random()*.7;
   const ty=aimed?ship.y/H+(Math.random()-.5)*.22:.15+Math.random()*.7;
-  const variant=elapsed>=22&&j===0?(hazardWave%4===0?'probe':hazardWave%3===0?'splitter':''):'';
+  const variant=(elapsed>=22||voyageDepth()>0)&&j===0?(hazardWave%4===0?'probe':hazardWave%3===0?'splitter':''):'';
   warnings.push({variant,edge:(first+j)%4,at:.08+Math.random()*.84,tx:Math.max(.08,Math.min(.92,tx)),ty:Math.max(.08,Math.min(.92,ty)),remaining:d.warning,total:d.warning});
  }
 }
@@ -1237,14 +1244,15 @@ function drawStorm(){
 }
 
 
+function stationRaids(){const depth=voyageDepth();return depth?Array.from({length:Math.floor(71/(8-depth*.4))+1},(_,i)=>10+i*(8-depth*.4)):[10,19,28,37,46,55,64,73,81]}
 function newStation(){return {hp:2,load:0,delivered:0,rescued:0,intercepts:0,raidSlot:0,rescueSlot:0,supplySlot:0,supplyAt:0,cells:[],rescue:null,failed:false,paid:false}}
 function stepStation(dt,oldX,oldY){
  const s=station;if(!s||s.failed)return;
  if(elapsed>=s.supplyAt){s.supplyAt=elapsed+12;s.supplySlot++;s.cells=[{x:.18,y:.3},{x:.8,y:.35},{x:.76,y:.78}].map(p=>({...p,x:s.supplySlot%2?p.x:1-p.x,taken:false}))}
  for(const c of s.cells)if(!c.taken&&s.load<3&&segmentDistance(c.x*W,c.y*H,oldX,oldY,ship.x,ship.y)<22){c.taken=true;s.load++;tone(700,.05)}
  if(s.load&&segmentDistance(W*.5,H*.52,oldX,oldY,ship.x,ship.y)<34){const n=s.load;s.load=0;s.delivered+=n;s.hp=Math.min(4,s.hp+n);score+=45*n;for(let i=0;i<n;i++)collectDust();notifyWorld(`能源交付 ${n} · 空间站护盾 ${s.hp}/4`)}
- const raids=[10,19,28,37,46,55,64,73,81];
- if(s.raidSlot<raids.length&&elapsed>=raids[s.raidSlot]){const edge=s.raidSlot++%4;for(let i=0;i<(elapsed>=70?2:1);i++)warnings.push({edge:(edge+i*2)%4,at:.3+(s.raidSlot%3)*.2,tx:.5,ty:.52,remaining:2,total:2,stationRaid:true})}
+ const raids=stationRaids();
+ if(s.raidSlot<raids.length&&elapsed>=raids[s.raidSlot]){const edge=s.raidSlot++%4;for(let i=0;i<(elapsed>=70-voyageDepth()*8?2:1);i++)warnings.push({edge:(edge+i*2)%4,at:.3+(s.raidSlot%3)*.2,tx:.5,ty:.52,remaining:2,total:2,stationRaid:true})}
  const rescues=[14,34,54,74];
  if(!s.rescue&&s.rescueSlot<rescues.length&&elapsed>=rescues[s.rescueSlot]){const at=rescues[s.rescueSlot++];if(elapsed<at+13)s.rescue={x:s.rescueSlot%2?.12:.88,y:.27,until:at+13,following:false}}
  const r=s.rescue;if(!r)return;
@@ -1270,7 +1278,7 @@ function drawStation(t){
 }
 
 function irisGeometry(e,at=elapsed){
- const age=Math.max(0,at-e.fire);return {x:e.x*W,y:e.y*H,r:Math.min(W,H)*(.27+.025*Math.sin(age*2)),gap:e.gap+age*.38,half:.78+.12*Math.sin(age*1.8)};
+ const age=Math.max(0,at-e.fire),depth=voyageDepth();return {x:e.x*W,y:e.y*H,r:Math.min(W,H)*(.27+.025*Math.sin(age*2)),gap:e.gap+age*(.38+.045*depth),half:.78-.035*depth+.12*Math.sin(age*1.8)};
 }
 function stepIris(e,dt,oldX,oldY,protectedByBoost){
  if(protectedByBoost)return;

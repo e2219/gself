@@ -904,6 +904,37 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V16 journeys PASS: four maps × phone/desktop × three complete legs, repeated schedules, retained progression, bounded entities and no forced dialogs');
 }
 
+// V16.1: test actual emitted waves as well as the numbers used by map collisions.
+{
+ for(const size of [[360,400],[960,510]]){
+  [width,height]=size;
+  const samples=[];
+  for(const depth of [0,1,2,3,5]){
+   run(`state='over';selectRun('endless');selectWorld('classic');resize();start();legIndex=${depth};invincible=1000;globalThis.auditWaves=0;globalThis.auditMeteors=0;globalThis.originalWarn=warnWave;warnWave=function(){const n=warnings.length;originalWarn();auditWaves++;auditMeteors+=warnings.length-n};`);
+   isolate();run('hazardClock=4;for(let i=0;i<3600;i++)update(1/60);warnWave=originalWarn');
+   samples.push(JSON.parse(run('JSON.stringify({depth:legIndex,waves:auditWaves,meteors:auditMeteors,startSpeed:difficulty(0).speed,warning:difficulty(90).warning})')));
+   assert(run('hp===3&&state==="playing"'));assert(run('difficulty(90).warning>=1.25'));
+  }
+  for(let i=1;i<samples.length;i++){assert(samples[i].waves>samples[i-1].waves);assert(samples[i].meteors>samples[i-1].meteors);assert(samples[i].startSpeed>samples[i-1].startSpeed)}
+  assert(samples[1].meteors>=samples[0].meteors*1.7);assert(samples[1].startSpeed>=samples[0].startSpeed*1.7);
+  console.log('V16.1 real 60s waves '+size+': '+JSON.stringify(samples));
+  run('legIndex=0;globalThis.baseGap=auroraGeometry({at:10,seed:1},14).half;globalThis.baseIris=irisGeometry({fire:72,x:.5,y:.42,gap:0},74);globalThis.baseRaids=stationRaids().length');
+  for(const depth of [1,3,5]){
+   run(`legIndex=${depth}`);
+   assert(run('auroraGeometry({at:10,seed:1},14).half<baseGap&&auroraGeometry({at:10,seed:1},14).half>=40'));
+   assert(run('irisGeometry({fire:72,x:.5,y:.42,gap:0},74).half<baseIris.half&&irisGeometry({fire:72,x:.5,y:.42,gap:0},74).gap>baseIris.gap'));
+   assert(run('stationRaids().length>baseRaids&&stationRaids().every(t=>t>=10&&t<=81)'));
+   // Extra risk-route rocks never cover a numbered beacon or the protected exit.
+   assert(run('warpRocks({mirror:false}).length>=3'));
+   assert(run('warpRocks({mirror:false}).every(r=>warpBeacons({route:"risk",mirror:false}).every(p=>Math.hypot((r.x-p.x)*W,(r.y-p.y)*H)>r.r+shipRadius()))'));
+  }
+  run('activeWorld="station";station=newStation();elapsed=62;warnings=[];stepStation(0,0,0)');assert.equal(run('warnings.length'),2);assert(run('warnings.every(w=>w.total===2)'));
+  run('hud()');assert(els.pressure.textContent.includes('压力 6/6'));
+ }
+ run('state="over";selectRun("timed");selectWorld("classic");start()');assert.equal(run('voyageDepth()'),0);
+ console.log('V16.1 progression PASS: real emission increases, bounded warnings, map collision geometry, station crossfire, HUD and timed-mode isolation');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
