@@ -70,11 +70,14 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr)) 24px;gap:7px}.route-map[data-layout="steps"] .map-branch{display:contents}.route-map[data-layout="steps"] .map-branch:before,.route-map[data-layout="steps"]>.map-end:last-child:before{content:none}.route-map[data-layout="steps"] .route-node{height:auto;min-height:24px;line-height:1.4;white-space:normal;display:flex;align-items:center;justify-content:center;padding:2px}
 
 .worlds .fleet-options{grid-template-columns:repeat(4,minmax(0,1fr))}.worlds .fleet-card:nth-child(4){background:linear-gradient(135deg,#33424c,#1b2b3d)}@media(max-width:650px){.worlds .fleet-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.run-picker{display:flex;align-items:center;gap:14px;justify-content:space-between;margin:0 0 18px}.run-options{display:flex;gap:7px;flex-shrink:0}.run-options button{padding:10px 14px;border:1px solid #ffffff30;border-radius:8px;background:#162a38;color:var(--ink);touch-action:manipulation}.run-options button[aria-pressed="true"]{background:#234049;border-color:var(--mint);color:var(--mint)}.run-options button:disabled{cursor:default}.run-picker small{color:var(--muted);font-size:10px;line-height:1.6}@media(max-width:650px){.run-picker{align-items:flex-start;flex-direction:column;gap:8px}.run-options{width:100%}.run-options button{flex:1}.panel-actions{flex-wrap:wrap}}
 </style></head>
 <body>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 15</span></header>
-<section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span>本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 16</span></header>
+<section class="intro"><div><div class="eyebrow">A LITTLE ESCAPE INTO THE NIGHT</div><h1>穿过星雨，<em>带着光返航。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><div class="best"><span id="bestLabel">本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
+<section class="run-picker" aria-label="选择航行模式"><div class="run-options"><button id="run-timed" aria-pressed="true">90 秒挑战</button><button id="run-endless" aria-pressed="false">∞ 无尽巡航</button></div><small id="runHint">90 秒一局 · 四张地图独立纪录</small></section>
 <section class="fleet worlds" aria-label="选择本局地图"><div class="fleet-heading"><strong>选择一片新星空</strong><span id="worldHint">每张地图独立玩法与最高分</span></div><div class="fleet-options">
 <button id="world-classic" class="fleet-card" aria-pressed="true"><span>☾ 拾光星海</span><strong>原版 · 分岔探索</strong><small>货运、遗迹、星鲸与矿场，自选下一站。</small><em>探索 / 综合挑战</em></button>
 <button id="world-aurora" class="fleet-card" aria-pressed="false"><span>≋ 极光航道</span><strong>新地图 · 光幕穿梭</strong><small>精准穿幕积累共鸣，挑战旋转极光之眼。</small><em>走位 / 加速突围</em></button>
@@ -93,7 +96,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
 <div id="synergyBar" class="synergybar">技能两两搭配，可自动激活星座合成</div>
 <section class="game" aria-label="月面拾光游戏">
-<div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span>剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
+<div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span id="timeLabel">剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
 <canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机可自选拖动、摇杆或方向键，旁边的按钮加速。"></canvas>
 <div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">先选地图与星舰，开始新的航程。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
@@ -125,17 +128,17 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <div class="panel-sheet"><header class="panel-heading"><h2 id="panelTitle">驾驶设置</h2><button id="panelClose">返回游戏</button></header>
 <section id="controlSettings"><p class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
 <button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动；抬手可换位置。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>推向任意方向，推得越远飞得越快。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住持续移动，支持八向与斜向。</small></button>
-</div><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
+</div><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="endRun" hidden>结束并结算</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
 <section id="gameRules" hidden><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。第 24 秒选择货运港或引力遗迹，第 54 秒选择星鲸带或矿场。左路更安全，右路星光 ×1.4、陨石略增；忽略航门自动走左路。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>星光货运</h3><p>靠近方箱装货，飞到金色空间站交付。最多 3 件，满载奖励更高，键盘／触控最多减速 24%；鼠标保持跟手；到期未交货不扣分。</p></div></article><article><span class="symbol mint">↗</span><div><h3>反射护盾</h3><p>加速起手 0.18 秒内（守望者 0.26 秒）接触陨石，可沿来路反弹；绿色弹体能碎星、破巨陨外壳。普通陨石每次加速反射一次，紫色核心弹在加速护盾期间均可反射。</p></div></article></section>
 <section class="guide"><article><span class="symbol mint">◉</span><div><h3>引力弹弓</h3><p>靠近紫环，点加速入轨，再点沿切线弹射；蓄力 1.3 秒也会自动弹出。沿预览轨迹连穿三枚星环，移动可接管弹射。</p></div></article><article><span class="symbol gold">≈</span><div><h3>追逐星鲸</h3><p>蓝色尾流内免受伤害并可收集星光，累计同行 5 秒获得奖励。提前显示航线，跟随尾流可安全穿越激光闸门；星鲸离开时有短暂保护。</p></div></article><article><span class="symbol coral">ϟ</span><div><h3>激光闸门</h3><p>虚线预警 1.8 秒后开启；绿色缺口始终安全，也可用加速护盾穿越。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol coral">✺</span><div><h3>终局 · 星空风暴</h3><p>最后 20 秒依次迎来碎星环、缺口冲击波和核心攻击，每轮预警 1.8 秒，中间留有间歇。风暴期间暂停生成普通陨石。</p></div></article><article><span class="symbol gold">◇</span><div><h3>选择你的终局</h3><p>朝绿色缺口移动，或加速反射紫色核心弹。生还获得 200 分，击破三层核心获得 600 分；两项奖励不叠加。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>货运港与陨石矿场</h3><p>货运港交齐三箱，额外补一层护甲。矿场用加速或反弹击破矿核，每颗获得 60 基础分、2 星屑并充能 1.5 秒；三颗全破额外 +120 分。</p></div></article><article><span class="symbol coral">◉</span><div><h3>新障碍 · 脉冲水雷</h3><p>虚线蓄能 1.6 秒后，红圈放电 0.7 秒，随后休眠。可加速撞核心或用反弹排雷，获得 40 分。风暴开始时停止放电，矿场结束后清除。</p></div></article></section>
-<section class="guide cargo-guide"><article><span class="symbol mint">≋</span><div><h3>极光航道</h3><p>六道光幕先预警 2 秒，再从上往下扫过。每道穿越获得 120 分和 1 星屑。连续三次从缺口精准穿过，自动清除普通陨石并奖励 150 分；从光幕处硬穿或错过会重置共鸣。最后 20 秒挑战带旋转、开合缺口的极光之眼。</p></div></article><article><span class="symbol gold">◎</span><div><h3>折跃回廊</h3><p>四轮折跃各开放 12 秒，加速选稳路或险径，出口和信标路线提前可见。稳路每个信标 60 分、整组额外 120 分；险径有两颗固定障碍，每个 100 分、整组额外 220 分。每个信标另有 1 星屑。传送奖励 40 分及 1.5 秒保护。终局通过侧翼门绕到核心上方，再向下加速破壳；正面装甲无法击破。</p></div></article></section><section class="guide cargo-guide"><article><span class="symbol mint">⬡</span><div><h3>受损空间站</h3><p>空间站初始 2 格护盾，最多 4 格。拾取绿色能源并送往中央修复，每份 45 分与 1 星屑。靠近紫色运输船并伴飞至站内，救援奖励 120 分、2 星屑及一格站盾。</p></div></article><article><span class="symbol coral">↗</span><div><h3>拦截与撤离</h3><p>红色预警后陨石会冲向空间站，用加速或反弹拦截，每颗额外 40 分。站盾或星舰护盾耗尽，本局结束。坚守至 90 秒，按剩余站盾每格 150 分、救援每艘 100 分结算撤离奖励。四张地图分别保存纪录。</p></div></article></section><section class="guide"><article><span class="symbol gold">⋔</span><div><h3>裂变陨石</h3><p>金色陨石入场后会沿两条虚线分裂成碎片。提前用加速或反弹击碎可阻止分裂，额外获得 30 分。碎片不会再次分裂。</p></div></article><article><span class="symbol coral">◇</span><div><h3>锁定探针</h3><p>紫色预警后高速直线突进。预警时就已锁定方向，不会追踪你后续的位置；避开线路或用加速击碎，额外获得 40 分。</p></div></article><article><span class="symbol mint">✧</span><div><h3>限时清障挑战</h3><p>第 30–65 秒自动计数，击碎 6 个障碍（空间站为 4 个）获得 200 分与 2 星屑。加速、反弹、连爆及拆除水雷均可计数；错过不扣分，无需打开弹窗。20 秒后难度加速上升，45 秒起可能从两边同时来袭。</p></div></article></section><details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
+<section class="guide cargo-guide"><article><span class="symbol mint">≋</span><div><h3>极光航道</h3><p>六道光幕先预警 2 秒，再从上往下扫过。每道穿越获得 120 分和 1 星屑。连续三次从缺口精准穿过，自动清除普通陨石并奖励 150 分；从光幕处硬穿或错过会重置共鸣。最后 20 秒挑战带旋转、开合缺口的极光之眼。</p></div></article><article><span class="symbol gold">◎</span><div><h3>折跃回廊</h3><p>四轮折跃各开放 12 秒，加速选稳路或险径，出口和信标路线提前可见。稳路每个信标 60 分、整组额外 120 分；险径有两颗固定障碍，每个 100 分、整组额外 220 分。每个信标另有 1 星屑。传送奖励 40 分及 1.5 秒保护。终局通过侧翼门绕到核心上方，再向下加速破壳；正面装甲无法击破。</p></div></article></section><section class="guide cargo-guide"><article><span class="symbol mint">⬡</span><div><h3>受损空间站</h3><p>空间站初始 2 格护盾，最多 4 格。拾取绿色能源并送往中央修复，每份 45 分与 1 星屑。靠近紫色运输船并伴飞至站内，救援奖励 120 分、2 星屑及一格站盾。</p></div></article><article><span class="symbol coral">↗</span><div><h3>拦截与撤离</h3><p>红色预警后陨石会冲向空间站，用加速或反弹拦截，每颗额外 40 分。站盾或星舰护盾耗尽，本局结束。坚守至 90 秒，按剩余站盾每格 150 分、救援每艘 100 分结算撤离奖励。四张地图分别保存纪录。</p></div></article></section><section class="guide"><article><span class="symbol gold">⋔</span><div><h3>裂变陨石</h3><p>金色陨石入场后会沿两条虚线分裂成碎片。提前用加速或反弹击碎可阻止分裂，额外获得 30 分。碎片不会再次分裂。</p></div></article><article><span class="symbol coral">◇</span><div><h3>锁定探针</h3><p>紫色预警后高速直线突进。预警时就已锁定方向，不会追踪你后续的位置；避开线路或用加速击碎，额外获得 40 分。</p></div></article><article><span class="symbol mint">✧</span><div><h3>限时清障挑战</h3><p>第 30–65 秒自动计数，击碎 6 个障碍（空间站为 4 个）获得 200 分与 2 星屑。加速、反弹、连爆及拆除水雷均可计数；错过不扣分，无需打开弹窗。20 秒后难度加速上升，45 秒起可能从两边同时来袭。</p></div></article></section><section class="guide cargo-guide"><article><span class="symbol mint">∞</span><div><h3>无尽巡航</h3><p>出发前选择模式。每 90 秒自动进入下一段，保留积分、星屑和强化；补 1 点船盾，加速充满，并提供 1.5 秒保护。空间站也补 1 格站盾。有强化候选时，每段额外获得一次可选强化。换段不会中断摇杆或弹窗暂停。</p></div></article><article><span class="symbol coral">↗</span><div><h3>深入星海</h3><p>后续每段的陨石速度和频率逐步提高，第 6 段起保持最高压力。每段重新安排事件、分岔和挑战。可在「操作」中点「结束并结算」。无尽纪录独立保存，每完成一段也会保存当前最高分；不保存可恢复的局内进度。</p></div></article></section><details class="recipes"><summary>查看 3 种星座合成配方</summary><div><p><strong>引力双生</strong> · 磁力月舟＋加速分身<br>分身也能吸星光与星屑。</p><p><strong>破盾星环</strong> · 月辉护甲＋碎星连爆<br>护甲挡伤时，击碎周围普通陨石。</p><p><strong>星流续航</strong> · 星能回充＋连击保险<br>每收 5 颗星光，缩短冷却并补 1 次容错。</p></div></details>
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V15.0</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V16.0</span></footer>
 </main><script>'use strict';
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
@@ -220,13 +223,51 @@ const worlds=[
 ];
 let selectedWorld='classic',activeWorld='classic',worldEvent=null,worldSlot=0,worldWins=0,worldJumps=0,worldSignature='',worldNotice=null,resonance=0,resonanceWaves=0,station=null;
 try{const saved=localStorage.getItem('mooncatch-world');if(worlds.some(w=>w.id===saved))selectedWorld=activeWorld=saved}catch{}
+let selectedRun='timed',activeRun='timed',legIndex=0,runHudSignature='',voyage={cleared:0,bonus:0,challenges:0,rescued:0};
+try{if(localStorage.getItem('mooncatch-run')==='endless')selectedRun=activeRun='endless'}catch{}
+const runName=()=>activeRun==='endless'?'无尽巡航':'90 秒挑战';
+function selectRun(mode){
+ if(!['ready','over'].includes(state)||!['timed','endless'].includes(mode))return;
+ selectedRun=activeRun=mode;try{localStorage.setItem('mooncatch-run',mode)}catch{}loadWorldBest();hud();
+ $('title').textContent=runName();$('message').textContent=activeRun==='endless'?'每段 90 秒自动续航，强化保留。可在「操作」中结束并结算。':'完成 90 秒旅程，带着星光返航。';
+}
+function runHud(){
+ const sig=[activeRun,state,legIndex].join('|');if(sig===runHudSignature)return;runHudSignature=sig;
+ for(const mode of ['timed','endless']){const b=$('run-'+mode);b.setAttribute('aria-pressed',String(selectedRun===mode));b.disabled=!['ready','over'].includes(state)}
+ $('runHint').textContent=activeRun==='endless'?`第 ${legIndex+1} 段 · 每段补 1 点船盾、加速充满 · 强化与积分保留`:'90 秒一局 · 四张地图独立纪录';
+ $('timeLabel').textContent=activeRun==='endless'?`第 ${legIndex+1} 段剩余`:'剩余时间';$('bestLabel').textContent=activeRun==='endless'?'无尽纪录':'本版最佳';
+ $('endRun').hidden=activeRun!=='endless';$('endRun').disabled=!['playing','paused'].includes(state);
+}
+function settleLeg(){
+ if(hp<=0||station?.failed||elapsed<90)return;
+ if(station&&!station.paid){station.paid=true;const reward=station.hp*150+station.rescued*100;score+=reward;voyage.bonus+=reward}
+ if(bossStarted&&boss?.hp>0&&!stormRewarded){score+=200;voyage.bonus+=200;stormRewarded=true}
+}
+function nextLeg(){
+ if(activeRun!=='endless'||state!=='playing'||elapsed<90||hp<=0||station?.failed)return;
+ settleLeg();voyage.cleared++;voyage.challenges+=Number(clearChallenge.won);voyage.rescued+=station?.rescued||0;
+ if(score>best){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
+ const savedMoon=moonPhase,stationHealth=station?.hp||2;
+ legIndex++;elapsed=0;time=90;phase=0;wave=hazardWave=spawn=0;hazardClock=4;
+ resetAdventure();moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
+ station=activeWorld==='station'?newStation():null;if(station)station.hp=Math.min(4,stationHealth+1);
+ clearChallenge={hits:0,won:false};boss=null;bossStarted=false;
+ items=[];pending=[];warnings=[];shards=[];particles=[];echoes=[];rings=[];skillWake=[];flight.trail=[];
+ boostTime=boostCooldown=slowTime=perfectWindow=0;perfectReady=false;hp=Math.min(3,hp+1);resumeShield=Math.max(resumeShield,1.5);
+ wagerSlot=0;activeWager=null;wagerResult='';wagerOffers=[];menuIntro=null;resumeSafetyPending=false;
+ if(availablePowers().filter(p=>(powers[p.id]||0)<2).length>=2)bonusCredits++;
+ if(activeWorld!=='classic'){adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length}
+ hudSignature=worldSignature=adventureSignature=runHudSignature='';
+ announce(`第 ${legIndex+1} 段 · 护盾补给，继续航行`);$('status').textContent=phaseInfo().subtitle;hud();
+}
+function endVoyage(){if(activeRun!=='endless'||!['playing','paused'].includes(state))return;if(panelOpen)closePanel(false);finish()}
 const worldInfo=()=>worlds.find(w=>w.id===activeWorld);
-const bestKey=()=>activeWorld==='classic'?'mooncatch-best-v6':'mooncatch-best-'+activeWorld+'-v13';
+const bestKey=()=>activeRun==='endless'?'mooncatch-endless-'+activeWorld+'-v16':activeWorld==='classic'?'mooncatch-best-v6':'mooncatch-best-'+activeWorld+'-v13';
 function loadWorldBest(){try{best=Number(localStorage.getItem(bestKey()))||0}catch{best=0}$('best').textContent=String(best).padStart(3,'0')}
 function selectWorld(id){
  if(!['ready','over'].includes(state)||!worlds.some(w=>w.id===id))return;
  selectedWorld=activeWorld=id;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;mapSignature='';
- try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · 90 秒返航挑战';$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
+ try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · '+runName();$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
 }
 function worldHud(){
  const sig=[state,activeWorld,worldSlot,worldWins,worldJumps,worldEvent?.index,worldEvent?.used,Math.ceil(elapsed)].join('|');if(sig===worldSignature)return;worldSignature=sig;
@@ -501,8 +542,8 @@ function difficulty(t=elapsed){
  const p=Math.max(0,Math.min(1,t/90));
  const speedScale=activeRoute?.id==='calm'?.9:activeRoute?.id==='rich'?1.05:1;
  const intervalScale=activeRoute?.id==='calm'?1.25:activeRoute?.id==='rich'?.9:1;
- const pressure=Math.max(0,(p*90-20)/70);
- return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure),interval:(2.1-p)*intervalScale/(1+.2*pressure),warning:1.65-.4*p,count:1+(p>=.5?1:0),level:1+Math.min(5,Math.floor(p*6))};
+ const pressure=Math.max(0,(p*90-20)/70),depth=activeRun==='endless'?Math.min(legIndex,5):0;
+ return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure)*(1+.1*depth),interval:(2.1-p)*intervalScale/((1+.2*pressure)*(1+.08*depth)),warning:1.65-.4*p,count:1+(p>=.5?1:0),level:1+Math.min(5,Math.floor(p*6))};
 }
 function segmentDistance(px,py,ax,ay,bx,by){
  const dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
@@ -547,7 +588,7 @@ function hud(){
   $('touchControls').setAttribute('aria-disabled',String(state!=='playing'||panelOpen));
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
- fleetHud();worldHud();mapHud();adventureHud();
+ fleetHud();worldHud();runHud();mapHud();adventureHud();
  const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,Math.ceil(resumeShield*10),!!orbit,canSling()].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
  $('skillTip').textContent=`${hull().name} · 加速 ${boostDuration()} 秒 / 冷却 ${boostLimit()} 秒 · ${hull().trait}`;
@@ -582,6 +623,7 @@ function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
  if(panelOpen)closePanel(false);
+ activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
  activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;loadWorldBest();
  resetAdventure();menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;clearChallenge={hits:0,won:false};
@@ -598,13 +640,12 @@ function pause(){
 }
 function finish(){
  if(state==='over')return;
- if(station&&!station.failed&&elapsed>=90&&!station.paid){station.paid=true;score+=station.hp*150+station.rescued*100}
- if(hp>0&&elapsed>=90&&bossStarted&&boss?.hp>0&&!stormRewarded){score+=200;stormRewarded=true}
+ settleLeg();
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
- show(station?.failed?'空间站失守了。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
+ show(station?.failed?'空间站失守了。':activeRun==='endless'?'本次巡航结束。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  const itinerary=station?`空间站护盾 ${station.hp}/4 · 运送 ${station.delivered} 能源 · 救援 ${station.rescued}/4 · 拦截 ${station.intercepts}${station.paid?' · 撤离奖励 +'+(station.hp*150+station.rescued*100):''}`:activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
- $('hint').textContent=`${itinerary}${clearChallenge.won?' · 清障挑战达成':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
+ $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
 }
 function boost(){
  if(state!=='playing')return;
@@ -616,6 +657,8 @@ function boost(){
  boostSerial++;perfectWindow=activeShip==='warden'?.26:.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
  boostTime=boostDuration();boostCooldown=boostLimit();burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
+for(const mode of ['timed','endless'])$('run-'+mode).onclick=()=>selectRun(mode);
+$('endRun').onclick=endVoyage;
 for(const w of worlds)$('world-'+w.id).onclick=()=>selectWorld(w.id);
 for(const f of fleet)$('ship-'+f.id).onclick=()=>selectShip(f.id);
 $('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('restart').onclick=start;$('boost').onclick=()=>{boost()};
@@ -1019,7 +1062,7 @@ function update(dt){
  for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);
 
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)particles.splice(i,1)}
- hud();if(time<=0)finish();else{updateChoiceDock();adventureHud()}
+ hud();if(time<=0){if(activeRun==='endless')nextLeg();else finish()}else{updateChoiceDock();adventureHud()}
 }
 // Optional field objectives are timed by game time; no new automatic modal or timer.
 function beginObjective(spec){

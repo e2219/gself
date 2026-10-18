@@ -82,13 +82,51 @@ const worlds=[
 ];
 let selectedWorld='classic',activeWorld='classic',worldEvent=null,worldSlot=0,worldWins=0,worldJumps=0,worldSignature='',worldNotice=null,resonance=0,resonanceWaves=0,station=null;
 try{const saved=localStorage.getItem('mooncatch-world');if(worlds.some(w=>w.id===saved))selectedWorld=activeWorld=saved}catch{}
+let selectedRun='timed',activeRun='timed',legIndex=0,runHudSignature='',voyage={cleared:0,bonus:0,challenges:0,rescued:0};
+try{if(localStorage.getItem('mooncatch-run')==='endless')selectedRun=activeRun='endless'}catch{}
+const runName=()=>activeRun==='endless'?'无尽巡航':'90 秒挑战';
+function selectRun(mode){
+ if(!['ready','over'].includes(state)||!['timed','endless'].includes(mode))return;
+ selectedRun=activeRun=mode;try{localStorage.setItem('mooncatch-run',mode)}catch{}loadWorldBest();hud();
+ $('title').textContent=runName();$('message').textContent=activeRun==='endless'?'每段 90 秒自动续航，强化保留。可在「操作」中结束并结算。':'完成 90 秒旅程，带着星光返航。';
+}
+function runHud(){
+ const sig=[activeRun,state,legIndex].join('|');if(sig===runHudSignature)return;runHudSignature=sig;
+ for(const mode of ['timed','endless']){const b=$('run-'+mode);b.setAttribute('aria-pressed',String(selectedRun===mode));b.disabled=!['ready','over'].includes(state)}
+ $('runHint').textContent=activeRun==='endless'?`第 ${legIndex+1} 段 · 每段补 1 点船盾、加速充满 · 强化与积分保留`:'90 秒一局 · 四张地图独立纪录';
+ $('timeLabel').textContent=activeRun==='endless'?`第 ${legIndex+1} 段剩余`:'剩余时间';$('bestLabel').textContent=activeRun==='endless'?'无尽纪录':'本版最佳';
+ $('endRun').hidden=activeRun!=='endless';$('endRun').disabled=!['playing','paused'].includes(state);
+}
+function settleLeg(){
+ if(hp<=0||station?.failed||elapsed<90)return;
+ if(station&&!station.paid){station.paid=true;const reward=station.hp*150+station.rescued*100;score+=reward;voyage.bonus+=reward}
+ if(bossStarted&&boss?.hp>0&&!stormRewarded){score+=200;voyage.bonus+=200;stormRewarded=true}
+}
+function nextLeg(){
+ if(activeRun!=='endless'||state!=='playing'||elapsed<90||hp<=0||station?.failed)return;
+ settleLeg();voyage.cleared++;voyage.challenges+=Number(clearChallenge.won);voyage.rescued+=station?.rescued||0;
+ if(score>best){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
+ const savedMoon=moonPhase,stationHealth=station?.hp||2;
+ legIndex++;elapsed=0;time=90;phase=0;wave=hazardWave=spawn=0;hazardClock=4;
+ resetAdventure();moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
+ station=activeWorld==='station'?newStation():null;if(station)station.hp=Math.min(4,stationHealth+1);
+ clearChallenge={hits:0,won:false};boss=null;bossStarted=false;
+ items=[];pending=[];warnings=[];shards=[];particles=[];echoes=[];rings=[];skillWake=[];flight.trail=[];
+ boostTime=boostCooldown=slowTime=perfectWindow=0;perfectReady=false;hp=Math.min(3,hp+1);resumeShield=Math.max(resumeShield,1.5);
+ wagerSlot=0;activeWager=null;wagerResult='';wagerOffers=[];menuIntro=null;resumeSafetyPending=false;
+ if(availablePowers().filter(p=>(powers[p.id]||0)<2).length>=2)bonusCredits++;
+ if(activeWorld!=='classic'){adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length}
+ hudSignature=worldSignature=adventureSignature=runHudSignature='';
+ announce(`第 ${legIndex+1} 段 · 护盾补给，继续航行`);$('status').textContent=phaseInfo().subtitle;hud();
+}
+function endVoyage(){if(activeRun!=='endless'||!['playing','paused'].includes(state))return;if(panelOpen)closePanel(false);finish()}
 const worldInfo=()=>worlds.find(w=>w.id===activeWorld);
-const bestKey=()=>activeWorld==='classic'?'mooncatch-best-v6':'mooncatch-best-'+activeWorld+'-v13';
+const bestKey=()=>activeRun==='endless'?'mooncatch-endless-'+activeWorld+'-v16':activeWorld==='classic'?'mooncatch-best-v6':'mooncatch-best-'+activeWorld+'-v13';
 function loadWorldBest(){try{best=Number(localStorage.getItem(bestKey()))||0}catch{best=0}$('best').textContent=String(best).padStart(3,'0')}
 function selectWorld(id){
  if(!['ready','over'].includes(state)||!worlds.some(w=>w.id===id))return;
  selectedWorld=activeWorld=id;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;mapSignature='';
- try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · 90 秒返航挑战';$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
+ try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · '+runName();$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
 }
 function worldHud(){
  const sig=[state,activeWorld,worldSlot,worldWins,worldJumps,worldEvent?.index,worldEvent?.used,Math.ceil(elapsed)].join('|');if(sig===worldSignature)return;worldSignature=sig;
@@ -363,8 +401,8 @@ function difficulty(t=elapsed){
  const p=Math.max(0,Math.min(1,t/90));
  const speedScale=activeRoute?.id==='calm'?.9:activeRoute?.id==='rich'?1.05:1;
  const intervalScale=activeRoute?.id==='calm'?1.25:activeRoute?.id==='rich'?.9:1;
- const pressure=Math.max(0,(p*90-20)/70);
- return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure),interval:(2.1-p)*intervalScale/(1+.2*pressure),warning:1.65-.4*p,count:1+(p>=.5?1:0),level:1+Math.min(5,Math.floor(p*6))};
+ const pressure=Math.max(0,(p*90-20)/70),depth=activeRun==='endless'?Math.min(legIndex,5):0;
+ return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure)*(1+.1*depth),interval:(2.1-p)*intervalScale/((1+.2*pressure)*(1+.08*depth)),warning:1.65-.4*p,count:1+(p>=.5?1:0),level:1+Math.min(5,Math.floor(p*6))};
 }
 function segmentDistance(px,py,ax,ay,bx,by){
  const dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
@@ -409,7 +447,7 @@ function hud(){
   $('touchControls').setAttribute('aria-disabled',String(state!=='playing'||panelOpen));
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
- fleetHud();worldHud();mapHud();adventureHud();
+ fleetHud();worldHud();runHud();mapHud();adventureHud();
  const signature=[score,Math.ceil(time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,Math.ceil(resumeShield*10),!!orbit,canSling()].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
  $('skillTip').textContent=`${hull().name} · 加速 ${boostDuration()} 秒 / 冷却 ${boostLimit()} 秒 · ${hull().trait}`;
@@ -444,6 +482,7 @@ function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
  if(panelOpen)closePanel(false);
+ activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
  activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;loadWorldBest();
  resetAdventure();menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
  state='playing';score=combo=elapsed=spawn=invincible=boostTime=boostCooldown=wave=0;hp=3;time=90;hazardClock=4;hazardWave=0;clearChallenge={hits:0,won:false};
@@ -460,13 +499,12 @@ function pause(){
 }
 function finish(){
  if(state==='over')return;
- if(station&&!station.failed&&elapsed>=90&&!station.paid){station.paid=true;score+=station.hp*150+station.rescued*100}
- if(hp>0&&elapsed>=90&&bossStarted&&boss?.hp>0&&!stormRewarded){score+=200;stormRewarded=true}
+ settleLeg();
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
- show(station?.failed?'空间站失守了。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
+ show(station?.failed?'空间站失守了。':activeRun==='endless'?'本次巡航结束。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  const itinerary=station?`空间站护盾 ${station.hp}/4 · 运送 ${station.delivered} 能源 · 救援 ${station.rescued}/4 · 拦截 ${station.intercepts}${station.paid?' · 撤离奖励 +'+(station.hp*150+station.rescued*100):''}`:activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
- $('hint').textContent=`${itinerary}${clearChallenge.won?' · 清障挑战达成':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?'90 秒旅程完成':'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
+ $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
 }
 function boost(){
  if(state!=='playing')return;
@@ -478,6 +516,8 @@ function boost(){
  boostSerial++;perfectWindow=activeShip==='warden'?.26:.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
  boostTime=boostDuration();boostCooldown=boostLimit();burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
 }
+for(const mode of ['timed','endless'])$('run-'+mode).onclick=()=>selectRun(mode);
+$('endRun').onclick=endVoyage;
 for(const w of worlds)$('world-'+w.id).onclick=()=>selectWorld(w.id);
 for(const f of fleet)$('ship-'+f.id).onclick=()=>selectShip(f.id);
 $('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('restart').onclick=start;$('boost').onclick=()=>{boost()};
@@ -881,7 +921,7 @@ function update(dt){
  for(const r of rings)r.life-=dt;rings=rings.filter(r=>r.life>0);
 
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.life<=0)particles.splice(i,1)}
- hud();if(time<=0)finish();else{updateChoiceDock();adventureHud()}
+ hud();if(time<=0){if(activeRun==='endless')nextLeg();else finish()}else{updateChoiceDock();adventureHud()}
 }
 // Optional field objectives are timed by game time; no new automatic modal or timer.
 function beginObjective(spec){

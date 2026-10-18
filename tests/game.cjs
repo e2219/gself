@@ -841,6 +841,69 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V15 challenge PASS: 6/4 map-specific targets, time boundaries, unique kills/bonus, non-modal HUD, optional expiry and restart');
 }
 
+// V16: segment rollover preserves earned progression and held inputs, without dialogs.
+{
+ const timedBest=storage['mooncatch-best-v6'];run('state="over";selectWorld("classic");selectRun("endless");start()');isolate();
+ assert.equal(storage['mooncatch-run'],'endless');assert.equal(els.bestLabel.textContent,'无尽纪录');assert(els['run-timed'].disabled);run('selectRun("timed")');assert.equal(run('activeRun'),'endless');
+ run('selectControlMode("stick")');elementEvents['joystick:pointerdown']({pointerId:161,clientX:112,clientY:546,pointerType:'touch',currentTarget:els.joystick,preventDefault:noop});
+ run('score=100;dust=12;powers.magnet=2;upgradeCount=2;hp=1;guard=1;moonPhase="dark";boostCooldown=3;bossStarted=true;boss={hp:3};elapsed=90;clearChallenge.won=true;nextLeg()');
+ assert.equal(run('state'),'playing');assert.equal(run('legIndex'),1);assert.equal(run('elapsed'),0);assert.equal(run('time'),90);assert.equal(run('score'),300);assert.equal(run('hp'),2);assert.equal(run('guard'),1);assert.equal(run('powers.magnet'),2);assert.equal(run('dust'),12);assert.equal(run('upgradeCount'),2);assert.equal(run('bonusCredits'),1);assert.equal(run('moonPhase'),'dark');assert.equal(run('boostCooldown'),0);assert(run('resumeShield>=1.5'));assert.equal(run('stickPointer'),161);assert.equal(run('inputMode'),'virtual');assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);
+ assert.equal(run('voyage.cleared'),1);assert.equal(run('voyage.challenges'),1);assert.equal(storage['mooncatch-endless-classic-v16'],'300');assert.equal(storage['mooncatch-best-v6'],timedBest);assert.equal(run('boss'),null);assert.equal(run('adventureSlot'),0);
+ run('nextLeg()');assert.equal(run('score'),300);assert.equal(run('legIndex'),1);const x=run('ship.x');run('update(.03)');assert(run('ship.x')>x);
+ run('elapsed=89.99;pause()');const frozen=run('JSON.stringify([legIndex,elapsed,powers,voyage])');run('update(2)');assert.equal(run('JSON.stringify([legIndex,elapsed,powers,voyage])'),frozen);run('pause();update(.02)');assert.equal(run('legIndex'),2);
+ run('openPanel("controls")');els.endRun.onclick();assert.equal(run('state'),'over');assert(!run('panelOpen'));assert(els.hint.textContent.includes('完成 2 段'));const score=run('score');els.endRun.onclick();assert.equal(run('score'),score);
+ run('start()');assert.equal(run('legIndex'),0);assert.equal(run('voyage.cleared'),0);assert.equal(run('score'),0);assert.equal(run('powers.magnet'),0);assert.equal(run('hp'),3);
+ run('state="over";selectRun("timed");start()');assert.equal(run('best'),Number(timedBest)||0);assert(els.endRun.hidden);run('elapsed=89.99;update(.02)');assert.equal(run('state'),'over');assert.equal(run('legIndex'),0);
+ console.log('V16 rollover PASS: retained powers/score/credits/phase, bounded resupply, one-time payout, live held joystick, pause across boundary, manual cash-out, mode-separated records and clean restart');
+}
+// Every mobile driver plus desktop keyboard/mouse survives a segment boundary and resize.
+{
+ const pe=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop});
+ for(const driver of ['stick','dpad','drag','keyboard','mouse']){
+  width=360;height=400;run('state="over";selectRun("endless");selectWorld("warp");resize();start()');isolate();
+  if(driver==='stick'){run('selectControlMode("stick")');elementEvents['joystick:pointerdown'](pe(170,112,546,els.joystick))}
+  if(driver==='dpad'){run('selectControlMode("dpad")');elementEvents['dir-r:pointerdown'](pe(170,112,546,els['dir-r']))}
+  if(driver==='drag'){run('selectControlMode("drag")');elementEvents['touchPad:pointerdown'](pe(170,30,560,els.touchPad))}
+  if(driver==='keyboard')run('keys.add("d")');
+  if(driver==='mouse')run('inputMode="pointer";mouseX=ship.x;mouseY=ship.y;ship.target=ship.x+12');
+  const controls=run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])');run('elapsed=90;nextLeg()');assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
+  width=740;height=320;resizeCallback();assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
+  const x=run('ship.x');if(driver==='drag')elementEvents['touchPad:pointermove'](pe(170,45,560,els.touchPad));run('update(.03);draw(1)');assert(run('ship.x')>x,driver);
+  sandbox.document.hidden=true;docEvents.visibilitychange();assert.equal(run('state'),'paused');sandbox.document.hidden=false;docEvents.visibilitychange();assert.equal(run('state'),'paused');run('pause()');assert.equal(run('state'),'playing');
+ }
+ run('state="over";selectRun("timed");selectControlMode("drag");start()');
+ console.log('V16 controls PASS: stick/dpad/drag/keyboard/mouse rollover, portrait-to-landscape resize, continued movement, background pause and explicit resume');
+}
+// Death cannot advance a segment or pay survival, including the station at the time boundary.
+{
+ run('state="over";selectRun("endless");selectWorld("station");start();hp=0;elapsed=90;score=0;finish()');assert.equal(run('score'),0);assert.equal(run('legIndex'),0);assert(!run('station.paid'));
+ run('start();station.hp=3;station.rescued=2;elapsed=90;nextLeg()');assert.equal(run('score'),650);assert.equal(run('station.hp'),4);assert.equal(run('station.rescued'),0);assert.equal(run('voyage.rescued'),2);assert.equal(run('voyage.cleared'),1);
+ run('station.failed=true;station.hp=0;elapsed=90;nextLeg()');assert.equal(run('legIndex'),1);run('finish()');assert.equal(run('score'),650);
+ run('start();legIndex=5');const cap=run('JSON.stringify(difficulty(80))');run('legIndex=500');assert.equal(run('JSON.stringify(difficulty(80))'),cap);
+ run('state="over";selectRun("timed");selectWorld("classic");start()');
+ console.log('V16 safety PASS: death/failure at boundary, independent station payouts/resupply, accumulated rescue totals and bounded deep-space pressure');
+}
+// Three uninterrupted full legs on each map and screen size; no modal automation.
+{
+ for(const map of ['classic','aurora','warp','station'])for(const size of [[360,400],[960,510]]){
+  [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();invincible=1000;inputMode='keyboard';globalThis.endlessAudit={peak:0,legs:new Set(),captures:0};
+   for(let i=0;i<17000&&state==='playing'&&legIndex<3;i++){
+    if(station){const c=station.cells.find(c=>!c.taken),r=station.rescue;
+     if(station.load){ship.target=W*.5;ship.targetY=H*.52;if(station.hp<=2)boost();}
+     else if(r&&station.hp>=3){ship.target=r.x*W;ship.targetY=r.y*H;}
+     else if(c&&station.hp<4){ship.target=c.x*W;ship.targetY=c.y*H;}
+     else{ship.target=W*.5;ship.targetY=H*.82;}
+     const threat=items.filter(o=>o.stationRaid&&!o.dead).sort((a,b)=>Math.hypot(a.x-W*.5,a.y-H*.52)-Math.hypot(b.x-W*.5,b.y-H*.52))[0];
+     if(threat&&boostCooldown===0&&Math.hypot(threat.x-ship.x,threat.y-ship.y)<Math.min(W,H)*.5){boost();ship.target=threat.x;ship.targetY=threat.y;}
+    }
+    update(1/60);endlessAudit.legs.add(legIndex);endlessAudit.peak=Math.max(endlessAudit.peak,items.length+warnings.length+shards.length);if(i%90===0)draw(i/60);
+   }`);
+  assert.equal(run('legIndex'),3,map+' '+size+' '+run('JSON.stringify([elapsed,station])'));assert.equal(run('state'),'playing');assert.equal(run('voyage.cleared'),3);assert(run('endlessAudit.peak<180'));assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);assert(run('bonusCredits>=3'));
+ }
+ run('endVoyage();selectRun("timed");selectWorld("classic");start()');
+ console.log('V16 journeys PASS: four maps × phone/desktop × three complete legs, repeated schedules, retained progression, bounded entities and no forced dialogs');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
