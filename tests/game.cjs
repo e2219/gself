@@ -3,7 +3,7 @@ const els={},events={},docEvents={},elementEvents={},storage={},noop=()=>{};
 const classList=()=>({values:new Set(),toggle(k,v){if(v)this.values.add(k);else this.values.delete(k)},contains(k){return this.values.has(k)}});
 const ctx=new Proxy({createRadialGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
 let width=960,height=510,resizeCallback;
-function el(id){return els[id]??={style:{},classList:classList(),attributes:{},captures:new Set(),textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:function(k,v){this.attributes[k]=v},focus:function(){sandbox.document.activeElement=this},closest:()=>null,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:function(id){this.captures.add(id)},releasePointerCapture:function(id){this.captures.delete(id)},getContext:()=>ctx,getBoundingClientRect:function(){return this.bounds||{width,height,left:0,top:0}}}}
+function el(id){return els[id]??={style:{setProperty(k,v){this[k]=v}},classList:classList(),attributes:{},captures:new Set(),textContent:'',innerHTML:'',hidden:false,disabled:false,setAttribute:function(k,v){this.attributes[k]=v},focus:function(){sandbox.document.activeElement=this},closest:()=>null,addEventListener:(name,f)=>{elementEvents[id+':'+name]=f},setPointerCapture:function(id){this.captures.add(id)},releasePointerCapture:function(id){this.captures.delete(id)},getContext:()=>ctx,getBoundingClientRect:function(){return this.bounds||{width,height,left:0,top:0}}}}
 const sandbox={document:{body:{classList:classList()},getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:(n,f)=>docEvents[n]=f},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{constructor(callback){resizeCallback=callback}observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
@@ -1092,6 +1092,34 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  }
  sandbox.devicePixelRatio=1;run('selectRenderMode("smooth");resize()');assert.equal(els.sky.width,390);run('selectRenderMode("auto");clearInput();selectControlMode("drag");start()');
  console.log('V18.3 quality PASS: measured frame windows, staged degrade/recovery/hysteresis, min/max bounds, pause/background/hitch exclusion, manual persistence, DPR caps and unchanged physics/held inputs');
+}
+
+// V18.4: independent orientation presets, safe bounds and no gameplay edits from layout settings.
+{
+ for(const size of [[320,568],[390,844],[568,320],[844,390]])for(const controlSize of ['normal','large','largest'])for(const position of ['edge','raised','inset']){
+  const g=JSON.parse(run(`JSON.stringify(floatingGeometry(${size[0]},${size[1]},{size:'${controlSize}',position:'${position}'}))`));
+  assert(g.move>=140&&g.scale<=1.3);assert(g.move+g.action+g.edge*2+20<=size[0]+1e-8);assert(g.bottom+172*g.scale<size[1]);assert(g.bottom>=14);
+ }
+ run('floatingPrefs=normalizeFloatingPrefs(null);floatingSignature="";canvasControl="drag";state="over";selectRun("timed");selectWorld("classic");start();selectFloatingLayout("size","largest")');assert.equal(run('floatingPrefs.portrait.size'),'normal');
+ width=390;height=844;resizeCallback();run('setFocused(true);setCanvasOnly(true);openPanel("controls")');
+ const gameSnapshot=run('JSON.stringify([elapsed,score,hp,ship,items,warnings])');els['float-size-largest'].onclick();els['float-position-raised'].onclick();assert.equal(run('floatingPrefs.portrait.size'),'largest');assert.equal(run('floatingPrefs.portrait.position'),'raised');assert.equal(run('floatingPrefs.landscape.size'),'normal');assert.equal(run('JSON.stringify([elapsed,score,hp,ship,items,warnings])'),gameSnapshot);assert.equal(run('state'),'paused');assert(els.floatingTitle.textContent.includes('竖屏'));
+ assert(parseFloat(els.playShell.style['--float-move'])>140);assert.equal(els['float-size-largest'].attributes['aria-pressed'],'true');
+ width=844;height=390;resizeCallback();assert(els.floatingTitle.textContent.includes('横屏'));assert.equal(els.playShell.style['--float-move'],'140px');els['float-position-inset'].onclick();els['float-size-large'].onclick();assert.equal(run('floatingPrefs.landscape.position'),'inset');assert.equal(run('floatingPrefs.portrait.position'),'raised');
+ const saved=JSON.parse(storage['mooncatch-floating-layout']);assert.equal(saved.portrait.size,'largest');assert.equal(saved.landscape.size,'large');assert.equal(run('JSON.stringify(normalizeFloatingPrefs(JSON.parse(localStorage.getItem("mooncatch-floating-layout"))))'),JSON.stringify(saved));
+ els.floatReset.onclick();assert.equal(run('floatingPrefs.landscape.size'),'normal');assert.equal(run('floatingPrefs.landscape.position'),'edge');assert.equal(run('floatingPrefs.portrait.size'),'largest');
+ run('selectFloatingLayout("size","bogus")');assert.equal(run('floatingPrefs.landscape.size'),'normal');
+ // Scale joystick throw with its ring while retaining live movement and multi-touch actions.
+ width=390;height=844;resizeCallback();els['mode-stick'].onclick();assert.equal(storage['mooncatch-canvas-controls'],'stick');els.panelClose.onclick();run('if(state==="paused")pause();ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5');isolate();
+ const g=JSON.parse(run('JSON.stringify(floatingGeometry())')),ring=92*g.scale;
+ els.stickRing.bounds={left:12,top:height-250,width:ring,height:ring};
+ const cx=12+ring/2,cy=height-250+ring/2;
+ elementEvents['joystick:pointerdown']({pointerId:401,clientX:cx+36*g.scale,clientY:cy,currentTarget:els.joystick,pointerType:'touch',preventDefault:noop});assert(Math.abs(run('stickVector.x')-1)<1e-8);
+ const x=run('ship.x');run('update(.02)');assert(run('ship.x')>x);elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('stickPointer'),401);
+ width=844;height=390;resizeCallback();assert.equal(run('stickPointer'),401);assert.equal(run('driverMode()'),'stick');assert.equal(els.playShell.style['--float-move'],'140px');run('draw(1)');
+ els.canvasMenu.onclick();assert.equal(run('stickPointer'),null);run('leftHand=false;applyHand()');els.hand.onclick();assert(run('leftHand'));els.hand.onclick();assert(!run('leftHand'));run('setCanvasOnly(false)');assert(els.floatingSettings.hidden);els.panelClose.onclick();run('setFocused(false)');
+ const defaults=run('JSON.stringify(normalizeFloatingPrefs({portrait:{size:"invalid",position:99},landscape:null}))');assert.equal(defaults,run('JSON.stringify(normalizeFloatingPrefs(null))'));
+ delete els.stickRing.bounds;run('floatingPrefs=normalizeFloatingPrefs(null);floatingSignature="";canvasControl="drag";applyFloatingLayout();selectControlMode("drag");start()');
+ console.log('V18.4 layout PASS: 36 size/position/viewport combinations, orientation-specific persistence/reset, bounded geometry, scaled joystick, multi-touch/resize, handedness and normal-layout restoration');
 }
 
 (async()=>{

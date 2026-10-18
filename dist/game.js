@@ -420,6 +420,18 @@ let grazeLock=0,grazeFlash=0;
 let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
 let canvasControl='drag';
+const floatingDefaults=()=>({size:'normal',position:'edge'});
+function normalizeFloatingPrefs(saved){
+ const prefs={portrait:floatingDefaults(),landscape:floatingDefaults()};
+ for(const axis of ['portrait','landscape'])if(saved?.[axis]){
+  if(['normal','large','largest'].includes(saved[axis].size))prefs[axis].size=saved[axis].size;
+  if(['edge','raised','inset'].includes(saved[axis].position))prefs[axis].position=saved[axis].position;
+ }
+ return prefs;
+}
+let floatingPrefs=normalizeFloatingPrefs(null),floatingSignature='';
+try{floatingPrefs=normalizeFloatingPrefs(JSON.parse(localStorage.getItem('mooncatch-floating-layout')||'null'))}catch{}
+try{const mode=localStorage.getItem('mooncatch-canvas-controls');if(['drag','stick','dpad'].includes(mode))canvasControl=mode}catch{}
 const driverMode=()=>canvasOnly?canvasControl:controlMode;
 let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0};
 let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,canvasOnly=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
@@ -488,6 +500,7 @@ function resize(){
  // Event text and browser chrome can resize the arena while a finger stays down.
  // Preserve driver state and pointer capture; only explicit pause/menu transitions release them.
  for(const p of flight.trail){p.x*=W/ow;p.y*=H/oh;p.x2*=W/ow;p.y2*=H/oh}
+ applyFloatingLayout();
 }
 new ResizeObserver(resize).observe(canvas);
 function tone(f=600,d=.09){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
@@ -579,6 +592,9 @@ for(const id of ['boost','padBoost']){
 }
 $('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
 for(const mode of ['auto','smooth','clear'])$('render-'+mode).onclick=()=>selectRenderMode(mode);
+for(const size of ['normal','large','largest'])$('float-size-'+size).onclick=()=>selectFloatingLayout('size',size);
+for(const position of ['edge','raised','inset'])$('float-position-'+position).onclick=()=>selectFloatingLayout('position',position);
+$('floatReset').onclick=()=>selectFloatingLayout('reset');
 $('canvasOnly').onclick=()=>setCanvasOnly(!canvasOnly);$('fullViewExit').onclick=toggleFullscreen;$('canvasMenu').onclick=()=>openPanel('controls');
 for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
 $('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
@@ -1504,7 +1520,7 @@ function virtualDirection(){
 function claimVirtual(){inputMode='virtual';mouseX=mouseY=null;launch=null;ship.target=ship.x;ship.targetY=ship.y}
 function selectControlMode(mode){
  if(!['drag','stick','dpad'].includes(mode))return;
- clearInput();if(canvasOnly)canvasControl=mode;else{controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}}
+ clearInput();if(canvasOnly){canvasControl=mode;try{localStorage.setItem('mooncatch-canvas-controls',mode)}catch{}}else{controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}}
  applyControlMode();hud();
 }
 function applyControlMode(){
@@ -1541,7 +1557,7 @@ for(const [id,[x,y]] of Object.entries(directions)){
 }
 function moveStick(e){
  if(state!=='playing'||panelOpen||e.pointerId!==stickPointer||!stickOrigin)return;
- e.preventDefault();const x=e.clientX-stickOrigin.x,y=e.clientY-stickOrigin.y,d=Math.hypot(x,y),radius=36;
+ e.preventDefault();const x=e.clientX-stickOrigin.x,y=e.clientY-stickOrigin.y,d=Math.hypot(x,y),radius=36*(canvasOnly?floatingGeometry().scale:1);
  const strength=Math.max(0,Math.min(1,(d/radius-.12)/.88));
  stickVector=d?{x:x/d*strength,y:y/d*strength}:{x:0,y:0};
  const scale=d?Math.min(d,radius)/d:0;$('stickKnob').style.transform=`translate(${x*scale}px,${y*scale}px)`;
@@ -1574,12 +1590,41 @@ function setFocused(value){
  focusMode=value;if(!value)canvasOnly=false;applyCanvasOnly();$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
  $('fullscreen').textContent=value?'退出全屏':'全屏';$('fullscreen').setAttribute('aria-pressed',String(value));
 }
+function floatingAxis(){return W>H?'landscape':'portrait'}
+function floatingGeometry(w=W,h=H,prefs=floatingPrefs[floatingAxis()]){
+ const requested={normal:1,large:1.15,largest:1.3}[prefs.size];
+ const edge=Math.min(prefs.position==='inset'?32:12,Math.max(8,(w-260)/2));
+ const scale=Math.max(1,Math.min(requested,(w-edge*2-20)/240));
+ const bottom=Math.min(prefs.position==='raised'?58:14,Math.max(14,h-112-172*scale));
+ return {scale,edge,bottom,move:140*scale,action:100*scale};
+}
+function applyFloatingLayout(){
+ const axis=floatingAxis(),prefs=floatingPrefs[axis],g=floatingGeometry(),signature=[canvasOnly,axis,prefs.size,prefs.position,W,H].join('|');
+ if(signature===floatingSignature)return;floatingSignature=signature;
+ $('floatingSettings').hidden=!canvasOnly;
+ const style=$('playShell').style;
+ for(const [key,value] of Object.entries({'move':g.move,'action':g.action,'edge':g.edge,'bottom':g.bottom,'menu-height':44*g.scale,'boost-width':92*g.scale,'boost-height':58*g.scale,'boost-offset':58*g.scale,'moon-offset':128*g.scale,'stick-size':92*g.scale,'stick-knob':43*g.scale}))style.setProperty('--float-'+key,value+'px');
+ for(const size of ['normal','large','largest'])$('float-size-'+size).setAttribute('aria-pressed',String(prefs.size===size));
+ for(const position of ['edge','raised','inset'])$('float-position-'+position).setAttribute('aria-pressed',String(prefs.position===position));
+ $('floatingTitle').textContent='悬浮控件布局 · '+(axis==='portrait'?'竖屏':'横屏');
+ $('floatingHint').textContent='当前方向单独保存 · '+({normal:'标准',large:'加大',largest:'超大'}[prefs.size])+' / '+({edge:'贴边',raised:'抬高',inset:'靠内'}[prefs.position])+' · 小屏幕会自动限制大小';
+}
+function selectFloatingLayout(kind,value){
+ if(!canvasOnly||!panelOpen)return;
+ const prefs=floatingPrefs[floatingAxis()];
+ if(kind==='reset')floatingPrefs[floatingAxis()]=floatingDefaults();
+ else if(kind==='size'&&['normal','large','largest'].includes(value))prefs.size=value;
+ else if(kind==='position'&&['edge','raised','inset'].includes(value))prefs.position=value;
+ else return;
+ try{localStorage.setItem('mooncatch-floating-layout',JSON.stringify(floatingPrefs))}catch{}
+ applyFloatingLayout();
+}
 function applyCanvasOnly(){
  $('playShell').classList.toggle('canvas-only',focusMode&&canvasOnly);
  $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;
  $('canvasOnly').setAttribute('aria-pressed',String(canvasOnly));
  $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 悬浮操作';
- applyControlMode();
+ applyControlMode();applyFloatingLayout();
 }
 function setCanvasOnly(value){
  if(!focusMode)return;
@@ -1645,4 +1690,4 @@ function drawMining(t){
  ctx.restore();
 }
 
-function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();renderSettings();hud();requestAnimationFrame(frame);
+function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
