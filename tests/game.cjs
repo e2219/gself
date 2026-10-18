@@ -1063,6 +1063,37 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('start()');console.log('V18.2 render audit PASS: 4 gradients/2 sprites reused for 120 frames, distinct background/ribbon keys, resize invalidation and one movement difficulty calculation per update');
 }
 
+// V18.3: adaptive drawing quality changes only raster/effects, not the simulation or active input.
+{
+ const feed=(frames,ms)=>run(`for(let i=0;i<${frames};i++)recordFrame(${ms})`);
+ width=390;height=844;sandbox.devicePixelRatio=3;run('state="over";selectRun("timed");selectWorld("classic");start();selectRenderMode("auto");frameHealth.state=state;resetFrameWindow(0);resize();selectControlMode("stick");stickPointer=301;stickOrigin={x:40,y:700};stickVector={x:.5,y:.2};inputMode="virtual";ship.target=ship.x+20;ship.targetY=ship.y-10');
+ const position=run('JSON.stringify([W,H,ship,stickPointer,stickOrigin,stickVector,inputMode,elapsed,hp,score,items,warnings])');
+ assert.equal(els.sky.width,780);assert.equal(els.sky.height,1688);
+ feed(120,1000/60);assert.equal(run('renderTier'),0);
+ feed(75,1000/30);assert.equal(run('renderTier'),1);assert.equal(els.sky.width,585);assert.equal(els.sky.height,1266);assert.equal(run('JSON.stringify([W,H,ship,stickPointer,stickOrigin,stickVector,inputMode,elapsed,hp,score,items,warnings])'),position);
+ assert.equal(run('effectBlur(17)'),0);assert(els.renderHint.textContent.includes('30 FPS'));
+ feed(240,1000/30);assert.equal(run('renderTier'),2);assert.equal(els.sky.width,390);assert.equal(els.sky.height,844);
+ feed(180,1000/30);assert.equal(run('renderTier'),2); // bounded under continued overload
+ feed(1560,1000/60);assert.equal(run('renderTier'),1);feed(120,1000/60);assert.equal(run('renderTier'),1);feed(1560,1000/60);assert.equal(run('renderTier'),0);assert.equal(run('effectBlur(17)'),17);
+ assert.equal(run('JSON.stringify([W,H,ship,stickPointer,stickOrigin,stickVector,inputMode,elapsed,hp,score,items,warnings])'),position);
+ // One isolated hitch, browser suspension, and menu time never count as sustained overload.
+ run('selectRenderMode("auto");frameHealth.state=state;resetFrameWindow(0)');feed(119,1000/60);feed(1,100);assert.equal(run('renderTier'),0);
+ feed(60,500);assert.equal(run('renderTier'),0);assert.equal(run('frameHealth.count'),0);
+ run('pause()');feed(300,1000/30);assert.equal(run('renderTier'),0);assert.equal(run('frameHealth.count'),0);run('pause()');
+ sandbox.document.hidden=true;feed(300,1000/30);assert.equal(run('renderTier'),0);sandbox.document.hidden=false;
+ run('openPanel("controls")');els['render-smooth'].onclick();assert.equal(run('renderMode'),'smooth');assert.equal(storage['mooncatch-render'],'smooth');assert.equal(els.sky.width,488);assert.equal(els.sky.height,1055);assert.equal(run('effectiveTier()'),2);assert.equal(run('state'),'paused');els.panelClose.onclick();assert.equal(run('state'),'playing');
+ feed(1800,1000/60);assert.equal(run('renderMode'),'smooth');assert.equal(els.sky.width,488);assert.equal(run('effectiveTier()'),2);
+ run('selectRenderMode("clear")');feed(600,1000/30);assert.equal(run('effectiveTier()'),0);assert.equal(els.sky.width,780);assert.equal(storage['mooncatch-render'],'clear');
+ run('selectRenderMode("invalid")');assert.equal(run('renderMode'),'clear');run('start()');assert.equal(run('renderMode'),'clear');
+ // Density-only changes do not move either end of a swept object or drop dpad/drag input.
+ for(const mode of ['drag','dpad']){
+  run(`selectControlMode('${mode}');ship.x=120;ship.y=140;ship.target=145;ship.targetY=160;items=[{x:70,y:90,prevX:65,prevY:85,r:12,rock:true}];movePointer=${mode==='drag'?302:'null'};directionPointers.set(303,{x:1,y:0});inputMode='${mode==='drag'?'pointer':'virtual'}'`);
+  const held=run('JSON.stringify([ship,items,movePointer,[...directionPointers],inputMode])');run('selectRenderMode("smooth");draw(1);selectRenderMode("clear");draw(2)');assert.equal(run('JSON.stringify([ship,items,movePointer,[...directionPointers],inputMode])'),held);
+ }
+ sandbox.devicePixelRatio=1;run('selectRenderMode("smooth");resize()');assert.equal(els.sky.width,390);run('selectRenderMode("auto");clearInput();selectControlMode("drag");start()');
+ console.log('V18.3 quality PASS: measured frame windows, staged degrade/recovery/hysteresis, min/max bounds, pause/background/hitch exclusion, manual persistence, DPR caps and unchanged physics/held inputs');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.

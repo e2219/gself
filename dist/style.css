@@ -100,3 +100,5 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .immersive.canvas-only .joystick{background:#13273680;border-color:#a6d9c950}.immersive.canvas-only .joystick small{display:none}.immersive.canvas-only .dpad button{background:#173340aa;min-width:40px;min-height:40px}.immersive.canvas-only .dpad button[data-active="true"]{background:#447369e0}
 .immersive.canvas-only:has(.game.controls-left) .play-content>.touch-controls{left:auto;right:max(12px,env(safe-area-inset-right))}
 .immersive.canvas-only:not([data-canvas-controls="drag"]) .play-content>.choice-dock{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 152px)}
+
+.render-settings{border-top:1px solid #a6d9c930;margin-top:18px;padding-top:14px}.render-settings h3{font-size:14px;font-weight:500;color:var(--ink);margin:0}.render-settings .panel-actions{margin:12px 0}.render-settings button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:#3c403b}.render-settings .panel-intro{margin:6px 0}

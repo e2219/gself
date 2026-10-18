@@ -29,6 +29,41 @@ function fleetHud(){
  $('fleetHint').textContent=state==='ready'||state==='over'?'出发前选择星舰 · 每局技能重置':'本局：'+hull().name+' · 返航后可换舰，重新开始沿用当前星舰';
 }
 const paintCache=new Map(),glowCache=new Map();
+let renderMode='auto',renderTier=0;
+try{const saved=localStorage.getItem('mooncatch-render');if(['auto','smooth','clear'].includes(saved))renderMode=saved}catch{}
+const frameHealth={span:0,count:0,slow:0,stable:0,cooldown:0,grace:1.5,fps:null,state:''};
+const effectiveTier=()=>renderMode==='smooth'?2:renderMode==='clear'?0:renderTier;
+const pixelDensity=()=>Math.min(devicePixelRatio||1,renderMode==='smooth'?1.25:renderMode==='clear'?2:[2,1.5,1][renderTier]);
+const effectBlur=n=>effectiveTier()>0?0:n;
+function resetFrameWindow(grace=1.5){frameHealth.span=frameHealth.count=frameHealth.slow=frameHealth.stable=0;frameHealth.grace=grace}
+function renderSettings(){
+ for(const id of ['auto','smooth','clear'])$('render-'+id).setAttribute('aria-pressed',String(renderMode===id));
+ $('renderHint').textContent=({auto:'自动调节',smooth:'流畅优先',clear:'画质优先'}[renderMode])+' · '+['完整特效','轻量特效','低负载特效'][effectiveTier()]+(frameHealth.fps===null?' · 航行后检测帧率':` · 最近约 ${frameHealth.fps} FPS`);
+}
+function selectRenderMode(mode){
+ if(!['auto','smooth','clear'].includes(mode))return;
+ renderMode=mode;renderTier=0;frameHealth.cooldown=0;resetFrameWindow();try{localStorage.setItem('mooncatch-render',mode)}catch{}
+ paintCache.clear();glowCache.clear();resize();renderSettings();
+}
+function recordFrame(milliseconds){
+ const f=frameHealth;
+ if(f.state!==state){f.state=state;resetFrameWindow()}
+ if(document.hidden||state!=='playing'||panelOpen||!Number.isFinite(milliseconds)||milliseconds<=0||milliseconds>250){resetFrameWindow();return}
+ const seconds=milliseconds/1000;f.cooldown=Math.max(0,f.cooldown-seconds);
+ if(f.grace>0){f.grace=Math.max(0,f.grace-seconds);return}
+ f.span+=seconds;f.count++;if(milliseconds>22)f.slow++;
+ if(f.span<2)return;
+ const mean=f.span*1000/f.count,ratio=f.slow/f.count;f.fps=Math.round(f.count/f.span);
+ if(mean<18&&ratio<.1)f.stable+=f.span;else f.stable=0;
+ let next=renderTier;
+ if(renderMode==='auto'&&f.cooldown===0){
+  if(mean>22&&ratio>.3&&renderTier<2){next++;f.cooldown=4}
+  else if(f.stable>=20&&renderTier>0){next--;f.cooldown=12}
+ }
+ f.span=f.count=f.slow=0;
+ if(next!==renderTier){renderTier=next;resetFrameWindow(1);paintCache.clear();glowCache.clear();resize()}
+ renderSettings();
+}
 let W=960,H=510,state='ready',score=0,combo=0,hp=3,time=90,best=0,elapsed=0,spawn=0,invincible=0,last=0;
 let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
@@ -427,12 +462,15 @@ function touchesPath(o,oldX,oldY,radius){
 function eventPoint(e){const rect=canvas.getBoundingClientRect();return {x:e.clientX-rect.left,y:e.clientY===undefined?ship.y:e.clientY-(rect.top||0)}}
 
 function resize(){
- const b=canvas.getBoundingClientRect(),ow=W,oh=H,d=Math.min(devicePixelRatio||1,2);
+ const b=canvas.getBoundingClientRect(),ow=W,oh=H,d=pixelDensity();
  if(b.width<=0||b.height<=0)return;
  const pixelsX=Math.round(b.width*d),pixelsY=Math.round(b.height*d);
  if(b.width===W&&b.height===H&&canvas.width===pixelsX&&canvas.height===pixelsY)return;
  paintCache.clear();glowCache.clear();
  W=b.width;H=b.height;canvas.width=pixelsX;canvas.height=pixelsY;ctx.setTransform(d,0,0,d,0,0);
+ // Density changes only the backing bitmap, never the world geometry or held inputs.
+ if(W===ow&&H===oh)return;
+ resetFrameWindow();
  ship.x=clamp(ship.x*W/ow);ship.target=clamp(ship.target*W/ow);ship.y=clampY(ship.y*H/oh);ship.targetY=clampY(ship.targetY*H/oh);
  if(bounty){bounty.x*=W/ow;bounty.y*=H/oh;bounty.prevX*=W/ow;bounty.prevY*=H/oh}
  for(const o of items){o.x*=W/ow;o.y*=H/oh;if(Number.isFinite(o.v))o.v*=H/oh}
@@ -540,6 +578,7 @@ for(const id of ['boost','padBoost']){
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
 }
 $('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
+for(const mode of ['auto','smooth','clear'])$('render-'+mode).onclick=()=>selectRenderMode(mode);
 $('canvasOnly').onclick=()=>setCanvasOnly(!canvasOnly);$('fullViewExit').onclick=toggleFullscreen;$('canvasMenu').onclick=()=>openPanel('controls');
 for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
 $('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
@@ -797,7 +836,7 @@ function breakBossShell(allowPerfect=false,attackX=ship.x,attackY=ship.y){
   announce(boss.hp?`${perfect?'完美破壳':'巨陨破壳'} · 剩余 ${boss.hp} 层`:'月蚀消散 · +600 分');
   if(boss.hp===0){if(storm)storm.event=null;items=items.filter(o=>!o.core&&!o.storm);score+=600;for(let i=0;i<6;i++)shards.push({x:boss.x+(i-2.5)*12,y:boss.y,age:0,life:5,locked:true});rings.push({x:boss.x,y:boss.y,radius:170,life:.4})}
 }
-function burst(x,y,color){for(let i=0;i<10&&particles.length<220;i++)particles.push({x,y,vx:(Math.random()-.5)*150,vy:(Math.random()-.5)*150,life:.5,color})}
+function burst(x,y,color){for(let i=0;i<(effectiveTier()>0?6:10)&&particles.length<(effectiveTier()>0?120:220);i++)particles.push({x,y,vx:(Math.random()-.5)*150,vy:(Math.random()-.5)*150,life:.5,color})}
 // Queue a readable trail, with enough time between stars to follow it on any screen.
 function starWave(){
  const reverse=wave%2,shape=wave%3,n=phase===0?6:8,center=.3+Math.random()*.4;
@@ -1147,7 +1186,7 @@ function drawAdventure(t){
  if(o?.kind==='escort'){
   ctx.globalAlpha=.85;ctx.strokeStyle='#a9daff';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(o.home.x*W,o.home.y*H,32,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#c6eaff';ctx.fillText('归航',o.home.x*W,o.home.y*H);
   if(o.following){ctx.globalAlpha=.3;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(ship.x,ship.y);ctx.stroke()}
-  ctx.globalAlpha=1;ctx.shadowColor='#b6deff';ctx.shadowBlur=13;ctx.fillStyle='#c6eaff';ctx.beginPath();ctx.arc(o.x,o.y,9,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#16384c';ctx.beginPath();ctx.arc(o.x-3,o.y-1,1.3,0,7);ctx.arc(o.x+3,o.y-1,1.3,0,7);ctx.fill();
+  ctx.globalAlpha=1;ctx.shadowColor='#b6deff';ctx.shadowBlur=effectBlur(13);ctx.fillStyle='#c6eaff';ctx.beginPath();ctx.arc(o.x,o.y,9,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#16384c';ctx.beginPath();ctx.arc(o.x-3,o.y-1,1.3,0,7);ctx.arc(o.x+3,o.y-1,1.3,0,7);ctx.fill();
  }
  if(o?.kind==='cargo'){
   ctx.globalAlpha=.9;ctx.strokeStyle='#ffdca0';ctx.fillStyle='#ffdca0';ctx.lineWidth=2;
@@ -1206,7 +1245,7 @@ function drawCraft(x,y,angle,bank,throttle,t,ghost=false){
  // Twin swept fins surround a compact capsule, with the gold moon core at its center.
  if(!ghost&&throttle>.02){
   const flame=(9+throttle*16+(boostTime>0?15:0))*(1+Math.sin(t*36)*.08);
-  ctx.fillStyle=boostTime>0?'#b9ffe67a':'#86dac45c';ctx.shadowColor=mint;ctx.shadowBlur=12;
+  ctx.fillStyle=boostTime>0?'#b9ffe67a':'#86dac45c';ctx.shadowColor=mint;ctx.shadowBlur=effectBlur(12);
   for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(-11,side*7-3);ctx.quadraticCurveTo(-flame-14,side*7,-11,side*7+3);ctx.fill()}
   ctx.shadowBlur=0;
  }
@@ -1217,7 +1256,7 @@ function drawCraft(x,y,angle,bank,throttle,t,ghost=false){
  }
  ctx.lineWidth=1.5;ctx.strokeStyle=mint;ctx.fillStyle=ghost?'#bca7f522':'#244d5a';
  for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(8,side*5);ctx.quadraticCurveTo(-2,side*19,-15,side*17);ctx.lineTo(-10,side*7);ctx.closePath();ctx.fill();ctx.stroke()}
- ctx.shadowColor=mint;ctx.shadowBlur=ghost?5:10;ctx.fillStyle=ghost?'#bca7f533':'#a9dfd4';
+ ctx.shadowColor=mint;ctx.shadowBlur=effectBlur(ghost?5:10);ctx.fillStyle=ghost?'#bca7f533':'#a9dfd4';
  ctx.beginPath();ctx.moveTo(21,0);ctx.bezierCurveTo(12,-10,-6,-12,-13,-5);ctx.lineTo(-13,5);ctx.bezierCurveTo(-6,12,12,10,21,0);ctx.closePath();ctx.fill();ctx.stroke();ctx.shadowBlur=0;
  ctx.fillStyle=ghost?'#e6dbff':'#183748';ctx.beginPath();ctx.ellipse(3,0,8,5,0,0,Math.PI*2);ctx.fill();
  ctx.fillStyle='#f3d694';ctx.beginPath();ctx.arc(2,0,3.2,0,Math.PI*2);ctx.fill();
@@ -1229,15 +1268,15 @@ for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillSty
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
 ctx.fillStyle='#b8cec617';ctx.beginPath();ctx.arc(W*.83,H*.25,30,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17283c';ctx.beginPath();ctx.arc(W*.83+12,H*.25-7,27,0,Math.PI*2);ctx.fill();
 drawWorld(t);drawBounty(t);drawAdventure(t);drawSpecialSpace(t);drawMining(t);drawFleet();drawStorm();drawNavigation();drawThreatDetails();
-for(const r of reflections){ctx.save();ctx.strokeStyle='#9cffe6';ctx.lineWidth=4;ctx.shadowColor='#9cffe6';ctx.shadowBlur=12;ctx.beginPath();ctx.moveTo(r.x-r.dx*24,r.y-r.dy*24);ctx.lineTo(r.x,r.y);ctx.stroke();ctx.fillStyle='#e1fff2';star(r.x,r.y,r.r,t*5);ctx.restore()}
+for(const r of reflections){ctx.save();ctx.strokeStyle='#9cffe6';ctx.lineWidth=4;ctx.shadowColor='#9cffe6';ctx.shadowBlur=effectBlur(12);ctx.beginPath();ctx.moveTo(r.x-r.dx*24,r.y-r.dy*24);ctx.lineTo(r.x,r.y);ctx.stroke();ctx.fillStyle='#e1fff2';star(r.x,r.y,r.r,t*5);ctx.restore()}
 for(const w of warnings){
  const v=warningVector(w),x=Math.max(7,Math.min(W-7,v.x)),y=Math.max(7,Math.min(H-7,v.y));
  ctx.save();ctx.globalAlpha=.2+(Math.sin(t*14)+1)*.1;ctx.strokeStyle=w.variant==='boomerang'?'#ff86af':w.variant==='probe'?'#cba9ff':w.variant==='splitter'?'#ffd09e':'#f08c79';ctx.lineWidth=w.variant?2:1;ctx.setLineDash([5,9]);ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+v.dx*Math.hypot(W,H),y+v.dy*Math.hypot(W,H));ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;ctx.fillStyle=w.variant==='boomerang'?'#ff86af':w.variant==='probe'?'#cba9ff':w.variant==='splitter'?'#ffd09e':'#ff9f83';ctx.beginPath();ctx.arc(x,y,5+3*(1-w.remaining/w.total),0,Math.PI*2);ctx.fill();ctx.restore();
 }
-for(const o of items){if(o.rock&&o.dx!==undefined){ctx.strokeStyle='#ed8d7d55';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x-o.dx*22,o.y-o.dy*22);ctx.stroke()}ctx.fillStyle=o.boomerang?'#ff86af':o.probe?'#cba9ff':o.splitter?'#ffd09e':o.core?'#ddb1ff':o.rock?'#ed8d7d':'#f3d694';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=o.rock?8:0;if(o.rock){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.beginPath();for(let i=0,n=o.boomerang?6:o.probe?4:7;i<n;i++){const a=i*Math.PI*2/n,r=o.r*(i%2&&!o.probe?.8:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.fillStyle='#804e54';ctx.beginPath();ctx.arc(2,-2,3,0,7);ctx.fill();ctx.restore()}else glowingStar(o.x,o.y,o.r,o.a,'#f3d694',17);ctx.shadowBlur=0}
+for(const o of items){if(o.rock&&o.dx!==undefined){ctx.strokeStyle='#ed8d7d55';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x-o.dx*22,o.y-o.dy*22);ctx.stroke()}ctx.fillStyle=o.boomerang?'#ff86af':o.probe?'#cba9ff':o.splitter?'#ffd09e':o.core?'#ddb1ff':o.rock?'#ed8d7d':'#f3d694';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=o.rock?effectBlur(8):0;if(o.rock){ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.a);ctx.beginPath();for(let i=0,n=o.boomerang?6:o.probe?4:7;i<n;i++){const a=i*Math.PI*2/n,r=o.r*(i%2&&!o.probe?.8:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.fillStyle='#804e54';ctx.beginPath();ctx.arc(2,-2,3,0,7);ctx.fill();ctx.restore()}else glowingStar(o.x,o.y,o.r,o.a,'#f3d694',effectBlur(17));ctx.shadowBlur=0}
 if(boss&&boss.hp>0){ctx.save();ctx.globalAlpha=boss.warning>0?.3:1;ctx.translate(boss.x,boss.y);ctx.rotate(t*.15);ctx.fillStyle='#6d5367';ctx.strokeStyle='#f3b49c';ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5,r=boss.r*(i%2?.87:1);ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#f3d694';star(0,0,13,t);for(let i=0;i<boss.hp;i++){ctx.beginPath();ctx.arc(0,0,20+i*6,0,Math.PI*1.6);ctx.stroke()}ctx.restore()}
 if(activeWorld==='warp'&&boss?.hp>0){ctx.save();ctx.strokeStyle='#ffbc9f';ctx.lineWidth=5;ctx.beginPath();ctx.arc(boss.x,boss.y,boss.r+8,-Math.PI/2+.8,Math.PI*1.5-.8);ctx.stroke();ctx.strokeStyle='#a6efdc';ctx.lineWidth=3;ctx.beginPath();ctx.arc(boss.x,boss.y,boss.r+8,-Math.PI/2-.7,-Math.PI/2+.7);ctx.stroke();ctx.restore()}
-for(const s of shards){ctx.globalAlpha=Math.min(1,s.life);glowingStar(s.x,s.y,6,t*2,'#a6ffe0',16)}ctx.globalAlpha=1;
+for(const s of shards){ctx.globalAlpha=Math.min(1,s.life);glowingStar(s.x,s.y,6,t*2,'#a6ffe0',effectBlur(16))}ctx.globalAlpha=1;
 for(const r of rings){ctx.globalAlpha=r.life/.4;ctx.strokeStyle='#a6d9c9';ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x,r.y,r.radius*(1-r.life/.4),0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1;
 for(const e of echoes){if(hasSynergy('gravity')){ctx.strokeStyle='#bca7f530';ctx.lineWidth=1;ctx.beginPath();ctx.arc(e.x,e.y,powers.magnet===2?130:90,0,Math.PI*2);ctx.stroke()}ctx.save();ctx.globalAlpha=Math.min(.6,e.life);drawCraft(e.x,e.y,e.angle??-Math.PI/2,0,0,t,true);ctx.restore()}
 if(starAttraction()>0){ctx.strokeStyle='#a6d9c918';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ship.x,shipY(),starAttraction(),0,Math.PI*2);ctx.stroke()}
@@ -1520,7 +1559,7 @@ function openPanel(kind){
  $('playContent').inert=true;$('gamePanel').hidden=false;
  $('gameRules').hidden=kind!=='rules';$('controlSettings').hidden=kind!=='controls';
  $('panelTitle').textContent=kind==='rules'?'航行手册':'驾驶设置';
- $('panelClose').textContent=panelResume?'继续游戏':'返回游戏';$('panelClose').focus({preventScroll:true});hud();
+ renderSettings();$('panelClose').textContent=panelResume?'继续游戏':'返回游戏';$('panelClose').focus({preventScroll:true});hud();
 }
 function closePanel(resume=true){
  if(!panelOpen)return;
@@ -1606,4 +1645,4 @@ function drawMining(t){
  ctx.restore();
 }
 
-function frame(ms){const dt=Math.min((ms-last)/1000,.05);last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();hud();requestAnimationFrame(frame);
+function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();renderSettings();hud();requestAnimationFrame(frame);
