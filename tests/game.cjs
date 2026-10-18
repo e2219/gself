@@ -205,8 +205,8 @@ assert(run('warnings.every(w=>w.remaining>=1.25)'));
 run('warnings.forEach(spawnMeteor)');assert(run('items.every(o=>o.dx*(W/2-o.x)+o.dy*(H/2-o.y)>0)'));
 const direction=run('JSON.stringify(items.map(o=>[o.dx,o.dy]))');run('warnings=[];ship.x=ship.target=24;ship.y=ship.targetY=28;update(.01)');assert.equal(run('JSON.stringify(items.map(o=>[o.dx,o.dy]))'),direction);
 for(let t=1;t<=90;t++)assert(run(`difficulty(${t}).speed>difficulty(${t-1}).speed && difficulty(${t}).interval<difficulty(${t-1}).interval && difficulty(${t}).count>=difficulty(${t-1}).count`));
-assert(run('difficulty(90).speed/difficulty(0).speed>2 && difficulty(90).speed/difficulty(0).speed<2.4'));assert.equal(run('difficulty(59).count'),1);assert.equal(run('difficulty(90).count'),2);assert(run('difficulty(90).interval>=1.1'));
-run('start()');isolate();run('ship.x=ship.target=24;ship.y=ship.targetY=28;items=[{x:500,y:250,dx:1,dy:0,speedScale:1,r:12,rock:true,a:0}];update(.01)');const earlySpeed=run('items[0].x-500');run('items[0].x=500;elapsed=85;bossStarted=true;update(.01)');assert(run('items[0].x-500')>earlySpeed*2);assert(run('items[0].x-500')<earlySpeed*2.4);
+assert(run('difficulty(90).speed/difficulty(0).speed>2.6 && difficulty(90).speed/difficulty(0).speed<2.7'));assert.equal(run('difficulty(44).count'),1);assert.equal(run('difficulty(45).count'),2);assert.equal(run('difficulty(90).count'),2);assert(run('difficulty(90).interval>=.9'));
+run('start()');isolate();run('ship.x=ship.target=24;ship.y=ship.targetY=28;items=[{x:500,y:250,dx:1,dy:0,speedScale:1,r:12,rock:true,a:0}];update(.01)');const earlySpeed=run('items[0].x-500');run('items[0].x=500;elapsed=85;bossStarted=true;update(.01)');assert(run('items[0].x-500')>earlySpeed*2);assert(run('items[0].x-500')<earlySpeed*2.7);
 // Echo remains at the 2D departure point; attraction and expiry use the correct Y coordinate.
 run('start()');isolate();run('powers.echo=1;powers.magnet=1;ship.x=ship.target=200;ship.y=ship.targetY=100;boost();ship.x=ship.target=700;ship.y=ship.targetY=400;items=[{x:200,y:165,v:220,a:0,r:9,rock:false}]');
 for(let i=0;i<30;i++)run('update(1/60)');assert.equal(run('echoes[0].y'),100);assert.equal(run('score'),10);
@@ -799,7 +799,10 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
      const c=station.cells.find(c=>!c.taken);const r=station.rescue;
      if(station.load||station.hp<2&&!c){ship.target=W*.5;ship.targetY=H*.52;if(station.hp<=2)boost();}
      else if(r&&station.hp>=3){ship.target=r.x*W;ship.targetY=r.y*H;}
-     else if(c){ship.target=c.x*W;ship.targetY=c.y*H;}
+     else if(c&&station.hp<4){ship.target=c.x*W;ship.targetY=c.y*H;}
+     else{ship.target=W*.5;ship.targetY=H*.82;}
+     const incoming=items.filter(o=>o.stationRaid&&!o.dead).sort((a,b)=>Math.hypot(a.x-W*.5,a.y-H*.52)-Math.hypot(b.x-W*.5,b.y-H*.52))[0];
+     if(incoming&&boostCooldown===0&&Math.hypot(incoming.x-ship.x,incoming.y-ship.y)<Math.min(W,H)*.5){boost();ship.target=incoming.x;ship.targetY=incoming.y;}
     }
     update(1/60);if(storm?.event)v14Seen.add(storm.event.kind);if(i%90===0)draw(i/60);
    }`);
@@ -808,6 +811,34 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  }
  run('state="over";selectWorld("classic");start()');assert.equal(run('station'),null);assert.equal(els['map-port'].textContent,'货运港');
  console.log('V14 journeys PASS: all new finale kinds, station supply/rescue/defense to 90s, mobile/desktop draws, optional menus and classic restoration');
+}
+
+// V15 variants preserve readable warning trajectories and finite, once-only splits.
+{
+ width=360;height=400;run('state="over";selectWorld("classic");resize();start()');isolate();
+ run('elapsed=25;hazardWave=2;warnWave()');assert.equal(run('warnings[0].variant'),'splitter');assert(run('warnings[0].remaining>=1.25'));
+ run('spawnMeteor(warnings[0]);globalThis.parent=items[0];parent.x=W*.5;parent.y=H*.5;parent.worldAge=1.24;splitMeteors()');assert.equal(run('items.length'),1);
+ run('parent.worldAge=1.25;splitMeteors()');assert.equal(run('items.filter(o=>o.fragment).length'),2);assert(run('parent.dead'));assert(run('items.filter(o=>o.fragment).every(o=>!o.splitter&&o.x===parent.x&&o.prevX===o.x)'));
+ run('splitMeteors()');assert.equal(run('items.filter(o=>o.fragment).length'),2);assert.equal(run('clearChallenge.hits'),0);
+ run('items=[];warnings=[];hazardWave=2;warnWave();spawnMeteor(warnings[0]);shatter(items[0],false);items[0].worldAge=2;splitMeteors()');assert.equal(run('items.filter(o=>o.fragment).length'),0);assert.equal(run('score'),30);
+ run('items=[];warnings=[];hazardWave=3;warnWave();globalThis.w=warnings[0];globalThis.v=warningVector(w);ship.x=W*.9;ship.y=H*.9;spawnMeteor(w)');assert(run('items[0].probe'));assert.equal(run('items[0].dx'),run('v.dx'));assert.equal(run('items[0].dy'),run('v.dy'));assert.equal(run('items[0].speedScale'),1.4);
+ run('globalThis.direction=items[0].dx;warnings=[];invincible=100;update(.02)');assert.equal(run('items[0].dx'),run('direction'));run('draw(25)');
+ run('pause()');const frozen=run('JSON.stringify([items,clearChallenge,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([items,clearChallenge,elapsed])'),frozen);run('pause()');
+ run('start()');isolate();run('elapsed=25;items=[{x:W*.2,y:H*.2,dx:1,dy:0,r:13,speedScale:1,rock:true,splitter:true,worldAge:0,age:0,a:0}];slowTime=2;update(.05)');assert(Math.abs(run('items[0].worldAge')-.02)<1e-9);
+ console.log('V15 hazards PASS: variant scheduling, fixed probe aim, 1.25s split preview, two non-recursive fragments, early destruction bonus, pause and slowed split clock');
+}
+// Optional clearance goals are attainable on each map and award once only.
+{
+ for(const map of ['classic','aurora','warp','station']){
+  run(`state='over';selectWorld('${map}');start()`);isolate();
+  run('elapsed=29.9;trackClear()');assert.equal(run('clearChallenge.hits'),0);
+  run('elapsed=30;score=0;for(let i=0;i<challengeGoal();i++){const o={x:40,y:40,rock:true};shatter(o,false);shatter(o,false)}');assert(run('clearChallenge.won'));assert.equal(run('clearChallenge.hits'),run('challengeGoal()'));assert.equal(run('score'),250);assert.equal(run('dust'),2);
+  run('trackClear();hud()');assert.equal(run('score'),250);assert(els.routeStatus.textContent.includes('清障挑战 ✓'));assert.equal(run('state'),'playing');
+  run('start()');isolate();run('elapsed=65;trackClear();hud()');assert.equal(run('clearChallenge.hits'),0);assert(!run('clearChallenge.won'));assert(els.routeStatus.textContent.includes('结束'));
+ }
+ run('state="over";selectWorld("classic");start()');isolate();run('elapsed=40;phase=1;items=[{x:80,y:80,rock:true,probe:true}];shatter(items[0],false)');assert.equal(run('score'),40);assert.equal(run('clearChallenge.hits'),1);
+ run('start()');assert.equal(run('clearChallenge.hits'),0);assert(!run('clearChallenge.won'));
+ console.log('V15 challenge PASS: 6/4 map-specific targets, time boundaries, unique kills/bonus, non-modal HUD, optional expiry and restart');
 }
 
 (async()=>{
