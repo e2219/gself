@@ -1122,6 +1122,53 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V18.4 layout PASS: 36 size/position/viewport combinations, orientation-specific persistence/reset, bounded geometry, scaled joystick, multi-touch/resize, handedness and normal-layout restoration');
 }
 
+// V19: an offensive loop earned by distinct boosts, independent of input method.
+{
+ width=960;height=510;run('resize();state="over";selectRun("timed");selectWorld("classic");start()');isolate();
+ run('boost()');assert.equal(run('overload.charge'),0);hit(true);assert.equal(run('overload.charge'),1);
+ hit(true);assert.equal(run('overload.charge'),1);assert.equal(run('overload.bursts'),0);
+ // Passive destruction, reflection projectiles and damage protection never charge.
+ run('items=[{x:ship.x+80,y:ship.y,r:10,rock:true}];shatter(items[0]);boostTime=0;invincible=2');hit(true);assert.equal(run('overload.charge'),1);
+ run('boostCooldown=0;boost()');hit(true);assert.equal(run('overload.charge'),2);
+ run('boostCooldown=0;boost();perfectReady=false;items=[{x:ship.x+65,y:ship.y,r:10,rock:true,v:0,a:0},{x:ship.x+220,y:ship.y,r:10,rock:true,v:0,a:0},{x:ship.x,y:ship.y,r:10,rock:true,v:0,a:0}];update(.01)');
+ assert.equal(run('overload.charge'),0);assert.equal(run('overload.bursts'),1);assert.equal(run('overload.cleared'),1);assert.equal(run('items.filter(o=>o.rock).length'),1);assert(run('overload.pulse.life>0'));
+ hit(true);assert.equal(run('overload.charge'),0);assert.equal(run('overload.bursts'),1);
+ // Pausing freezes the visual; resizing keeps its normalized origin and does not fire twice.
+ run('pause()');const frozen=run('JSON.stringify(overload)');run('update(3);draw(1)');assert.equal(run('JSON.stringify(overload)'),frozen);
+ width=390;height=844;run('resize();draw(2)');assert.equal(run('JSON.stringify(overload)'),frozen);run('pause();items=[];update(.6)');assert.equal(run('overload.pulse'),null);
+ // At most eight nearby meteors, one reward each, no chain escape or perfect-hit reward.
+ width=960;height=510;run('resize();start()');isolate();
+ run('powers.chain=2;perfectReady=true;perfectWindow=.18;overload.pending=true;items=Array.from({length:10},(_,i)=>({x:ship.x+70+i*3,y:ship.y,r:8,rock:true,a:0}));items.push({x:ship.x+200,y:ship.y,r:8,rock:true,a:0},{x:ship.x+70,y:ship.y,r:8,rock:false,a:0});releaseOverload()');
+ assert.equal(run('overload.cleared'),8);assert.equal(run('shards.length'),8);assert.equal(run('items.filter(o=>o.dead).length'),8);assert(!run('items[10].dead'));assert(!run('items[11].dead'));assert.equal(run('rings.length'),0);assert(run('perfectReady'));
+ run('releaseOverload()');assert.equal(run('overload.bursts'),1);assert.equal(run('shards.length'),8);
+ // Bosses, mines and warning schedules are outside the pulse's target set.
+ run('boss={x:ship.x,y:ship.y,hp:3};objective={kind:"mining",ores:[{hp:2}],mines:[{dead:false}]};warnings=[{remaining:1}];overload.pending=true;releaseOverload()');assert.equal(run('boss.hp'),3);assert.equal(run('objective.ores[0].hp'),2);assert(!run('objective.mines[0].dead'));assert.equal(run('warnings[0].remaining'),1);
+ // Station interception rewards remain exactly once even when multiple releases see a dead rock.
+ run('start()');isolate();run('station=newStation();items=[{x:ship.x+65,y:ship.y,r:10,rock:true,stationRaid:true}];overload.pending=true;releaseOverload();overload.pending=true;releaseOverload()');assert.equal(run('station.intercepts'),1);assert.equal(run('score'),40);assert.equal(run('shards.length'),1);
+ // Partial charge and totals survive a leg; starting a new run clears all of them.
+ run('state="over";selectRun("endless");start();overload.charge=2;overload.bursts=3;overload.cleared=7;elapsed=90;nextLeg()');assert.equal(run('overload.charge'),2);assert.equal(run('overload.bursts'),3);assert.equal(run('overload.cleared'),7);run('finish()');assert(els.hint.textContent.includes('过载 3 次 / 清除 7 颗'));run('start()');assert.equal(run('JSON.stringify(overload)'),run('JSON.stringify(newOverload())'));
+ // Real input handlers keep movement held while boosts earn and release the pulse on all maps.
+ for(const world of ['classic','aurora','warp','station'])for(const mode of ['mouse','keyboard','drag','stick','dpad']){
+  [width,height]=mode==='mouse'||mode==='keyboard'?[960,510]:[390,844];
+  run(`resize();state='over';selectRun('timed');selectWorld('${world}');start();selectControlMode('${['mouse','keyboard'].includes(mode)?'drag':mode}');ship.x=ship.target=W*.25;ship.y=ship.targetY=H*.3`);isolate();
+  const e={pointerId:501,clientX:100,clientY:200,pointerType:mode==='mouse'?'mouse':'touch',currentTarget:els.sky,preventDefault:noop};
+  if(mode==='mouse'||mode==='drag'){elementEvents['sky:pointerdown'](e);elementEvents['sky:pointermove']({...e,clientX:125})}
+  if(mode==='keyboard')events.keydown({key:'d',target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});
+  if(mode==='stick'){els.stickRing.bounds={left:0,top:0,width:92,height:92};elementEvents['joystick:pointerdown']({...e,clientX:82,clientY:46,currentTarget:els.joystick})}
+  if(mode==='dpad')elementEvents['dir-r:pointerdown']({...e,currentTarget:els['dir-r']});
+  run('update(.01)');
+  const held=run('JSON.stringify([movePointer,stickPointer,[...directionPointers.keys()],[...keys]])');
+  for(let i=0;i<3;i++){
+   run('boostCooldown=0');elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});
+   run('perfectReady=false;items=[{x:ship.x,y:ship.y,r:12,rock:true,v:0,a:0}];update(.001);draw(1)');
+  }
+  assert.equal(run('overload.bursts'),1,world+' '+mode);assert.equal(run('state'),'playing');assert.equal(run('hp'),3);assert.equal(run('JSON.stringify([movePointer,stickPointer,[...directionPointers.keys()],[...keys]])'),held);
+  run('clearInput()');
+ }
+ delete els.stickRing.bounds;run('state="over";selectWorld("classic");selectRun("timed");selectControlMode("drag");start()');
+ console.log('V19 overload PASS: distinct-boost charge, bounded pulse/rewards/no recursion, pause/resize, station accounting, leg retention/restart and 20 map/input simulations');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.

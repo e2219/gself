@@ -146,7 +146,7 @@ function nextLeg(){
  if(score>best){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  const savedMoon=moonPhase,stationHealth=station?.hp||2;
  legIndex++;elapsed=0;time=90;phase=0;wave=hazardWave=spawn=0;hazardClock=4;
- resetAdventure();bounty=null;bountySeen=false;grazeLock=grazeFlash=0;moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
+ resetAdventure();overload.pending=false;overload.pulse=null;bounty=null;bountySeen=false;grazeLock=grazeFlash=0;moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
  station=activeWorld==='station'?newStation():null;if(station)station.hp=Math.min(4,stationHealth+1);
  clearChallenge={hits:0,won:false};boss=null;bossStarted=false;
  items=[];pending=[];warnings=[];shards=[];particles=[];echoes=[];rings=[];skillWake=[];flight.trail=[];
@@ -417,6 +417,34 @@ function synergyHint(id){
 const emptyPowers=()=>Object.fromEntries(powersList.map(p=>[p.id,0]));
 let inputMode='keyboard',mouseX=null,mouseY=null,hudSignature='',guard=0,grace=0,boostSerial=0,perfectWindow=0,perfectReady=false,perfectCount=0,slowTime=0,boss=null,bossStarted=false;
 let grazeLock=0,grazeFlash=0;
+const newOverload=()=>({charge:0,lastBoost:0,pending:false,pulse:null,bursts:0,cleared:0});
+let overload=newOverload();
+function chargeOverload(){
+ if(state!=='playing'||boostSerial<=0||overload.lastBoost===boostSerial)return;
+ overload.lastBoost=boostSerial;overload.charge++;
+ if(overload.charge===3){overload.charge=0;overload.pending=true}
+}
+function releaseOverload(){
+ if(!overload.pending||state!=='playing')return;
+ overload.pending=false;overload.bursts++;
+ const radius=Math.max(100,Math.min(150,Math.min(W,H)*.3));
+ // Resolve after every meteor has moved; take only nearby, live targets once.
+ const targets=items.filter(o=>o.rock&&!o.dead&&Math.hypot(o.x-ship.x,o.y-ship.y)<=radius+o.r)
+  .sort((a,b)=>Math.hypot(a.x-ship.x,a.y-ship.y)-Math.hypot(b.x-ship.x,b.y-ship.y)).slice(0,8);
+ for(const rock of targets)shatter(rock,false,false);
+ overload.cleared+=targets.length;
+ overload.pulse={x:ship.x/W,y:ship.y/H,radius:radius/Math.min(W,H),life:.55};
+ tone(980,.16);
+}
+function drawOverload(){
+ if(state==='ready'||state==='over')return;
+ ctx.save();
+ const p=overload.pulse;
+ if(p){ctx.globalAlpha=p.life/.55;ctx.strokeStyle='#ffe0a3';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x*W,p.y*H,p.radius*Math.min(W,H)*(1-p.life/.55),0,Math.PI*2);ctx.stroke()}
+ ctx.globalAlpha=.85;ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillStyle=overload.charge===2||p?'#ffe0a3':'#b7d8d1';
+ ctx.fillText(p?'过载释放':`过载 ${overload.charge}/3`,Math.max(36,Math.min(W-36,ship.x)),ship.y<58?ship.y+42:ship.y-36);
+ ctx.restore();
+}
 let dust=0,upgradeCount=0,powers=emptyPowers(),offers=[],shards=[],echoes=[],rings=[];
 let touches=new Map(),movePointer=null,lastTouchX=0,lastTouchY=0,leftHand=false;
 let canvasControl='drag';
@@ -547,6 +575,7 @@ function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
  if(panelOpen)closePanel(false);
+ overload=newOverload();
  activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
  activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;loadWorldBest();
  resetAdventure();bounty=null;bountySeen=false;bountiesWon=0;grazeLock=grazeFlash=0;menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
@@ -569,7 +598,7 @@ function finish(){
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(station?.failed?'空间站失守了。':activeRun==='endless'?'本次巡航结束。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  const itinerary=station?`空间站护盾 ${station.hp}/4 · 运送 ${station.delivered} 能源 · 救援 ${station.rescued}/4 · 拦截 ${station.intercepts}${station.paid?' · 撤离奖励 +'+(station.hp*150+station.rescued*100):''}`:activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
- $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''}${bountiesWon?' · 悬赏完成 '+bountiesWon+' 次':''} · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
+ $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''}${bountiesWon?' · 悬赏完成 '+bountiesWon+' 次':''} · 过载 ${overload.bursts} 次 / 清除 ${overload.cleared} 颗 · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();tone(hp&&!station?.failed?660:180,.25);
 }
 function boost(){
  if(state!=='playing')return;
@@ -762,7 +791,7 @@ function shieldNova(){
  const radius=powers.chain===2?150:110;rings.push({x:ship.x,y:shipY(),radius,life:.4});
  for(const rock of items)if(rock.rock&&!rock.dead&&Math.hypot(rock.x-ship.x,rock.y-shipY())<=radius)shatter(rock);
 }
-function shatter(rock,allowPerfect=true){
+function shatter(rock,allowPerfect=true,allowChain=true){
  if(rock.dead)return;
  const perfect=allowPerfect&&claimPerfect(rock.x,rock.y);
  if(perfect)for(let i=0;i<2;i++)shards.push({x:rock.x+(i?12:-12),y:rock.y-20,life:5,age:0,locked:false});
@@ -770,7 +799,7 @@ function shatter(rock,allowPerfect=true){
  while(queue.length&&count<24){
   const r=queue.shift();if(r.dead)continue;r.dead=true;count++;trackClear();if(r.boomerang)score+=50;if(r.probe)score+=40;if(r.splitter)score+=30;if(r.stationRaid&&station){station.intercepts++;score+=40}
   shards.push({x:r.x,y:r.y-14,life:5,age:0,locked:false});burst(r.x,r.y,'#a6d9c9');
-  if(powers.chain){const radius=powers.chain===2?125:85;rings.push({x:r.x,y:r.y,radius,life:.4});
+  if(allowChain&&powers.chain){const radius=powers.chain===2?125:85;rings.push({x:r.x,y:r.y,radius,life:.4});
    for(const other of items)if(other.rock&&!other.dead&&Math.hypot(other.x-r.x,other.y-r.y)<radius&&!queue.includes(other))queue.push(other);
   }
  }
@@ -960,6 +989,7 @@ function update(dt){
  }
  if(state!=='playing')return;
  grazeLock=Math.max(0,grazeLock-dt);grazeFlash=Math.max(0,grazeFlash-dt);
+ if(overload.pulse){overload.pulse.life-=dt;if(overload.pulse.life<=0)overload.pulse=null}
  resumeShield=Math.max(0,resumeShield-dt);moonCooldown=Math.max(0,moonCooldown-dt);
  elapsed+=dt;tickWager();time=Math.max(0,90-elapsed);const next=Math.min(2,Math.floor(elapsed/30));if(next!==phase)setPhase(next);
  announcementTime=Math.max(0,announcementTime-dt);invincible=Math.max(0,invincible-dt);boostCooldown=Math.max(0,boostCooldown-dt);
@@ -978,7 +1008,7 @@ function update(dt){
  }
  if(stepWorld(dt,oldX,oldY)){oldX=ship.x;oldY=ship.y}if(state==='over')return;
  updateFlight(dt,oldX,oldY);updateAdventure(dt,oldX,oldY);if(state==='over')return;stepFleet(dt,oldX,oldY);
- const protectedByBoost=boostTime>0||!!launch;boostTime=Math.max(0,boostTime-dt);
+ const chargingBoost=boostTime>0,protectedByBoost=chargingBoost||!!launch;boostTime=Math.max(0,boostTime-dt);
  spawn-=dt;if(spawn<=0){starWave();spawn=phases[phase].interval}
  hazardClock-=dt;if(activeWorld==='station')hazardClock=Math.max(hazardClock,100);if(storm&&boss?.hp>0)hazardClock=Math.max(hazardClock,1.5);if(hazardClock<=0){warnWave();hazardClock=difficulty().interval*(activeWorld==='classic'?1:elapsed<20?1.6:1.45)*(objective?.kind==='mining'?1.5:laser?1.3:1)}
  for(let i=warnings.length-1;i>=0;i--){const w=warnings[i];w.remaining-=dt;if(w.remaining<=0){spawnMeteor(w);warnings.splice(i,1)}}
@@ -995,11 +1025,12 @@ function update(dt){
   const hit=touchesPath(o,oldX,oldY,o.r+(o.rock?shipRadius():pickupRadius()));
   const echoHit=!o.rock&&echoes.some(e=>segmentDistance(e.x,e.y,o.prevX,o.prevY,o.x,o.y)<o.r+22);
   if(hit||echoHit||(!o.rock&&satelliteHit(o,oldX,oldY,dt))){
-   if(o.rock){if(protectedByBoost){if(!reflectMeteor(o))shatter(o)}else{o.dead=true;damage();if(state==='over')return}}
+   if(o.rock){if(protectedByBoost){if(!reflectMeteor(o))shatter(o);if(chargingBoost)chargeOverload()}else{o.dead=true;damage();if(state==='over')return}}
    else{o.dead=true;collectStar(o)}
   }else if((!o.rock&&o.y>H+20)||o.x<-60||o.x>W+60||o.y<-60||o.y>H+60||o.age>18){o.dead=true;if(!o.rock)missStar()}
   if(!hit)tryGraze(o,oldX,oldY,protectedByBoost);
  }
+ releaseOverload();
  splitMeteors();
  if(station){for(const o of items)if(o.stationRaid&&!o.dead&&segmentDistance(W*.5,H*.52,o.prevX,o.prevY,o.x,o.y)<o.r+28){o.dead=true;station.hp=Math.max(0,station.hp-1);burst(W*.5,H*.52,'#ffba9f');notifyWorld('空间站受损 · 运送能源修复');if(station.hp===0){station.failed=true;finish();return}}}
  items=items.filter(o=>!o.dead);
@@ -1303,7 +1334,7 @@ ctx.restore();
 if(boostTime>0){ctx.save();ctx.translate(ship.x,ship.y);ctx.strokeStyle='#a6d9c9a0';ctx.lineWidth=1.5;ctx.fillStyle='#a6d9c912';ctx.beginPath();ctx.arc(0,0,27+Math.sin(t*16),0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore()}
 if(resumeShield>0){ctx.save();ctx.strokeStyle='#acd9ff';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.arc(ship.x,ship.y,28,0,Math.PI*2);ctx.stroke();ctx.restore()}
 ctx.save();if(invincible>0&&boostTime<=0)ctx.globalAlpha=.55+Math.sin(t*30)*.25;
-drawCraft(ship.x,ship.y,flight.angle,flight.bank,flight.throttle,t);ctx.restore()}
+drawCraft(ship.x,ship.y,flight.angle,flight.bank,flight.throttle,t);ctx.restore();drawOverload()}
 
 
 
