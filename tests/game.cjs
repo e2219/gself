@@ -935,6 +935,58 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V16.1 progression PASS: real emission increases, bounded warnings, map collision geometry, station crossfire, HUD and timed-mode isolation');
 }
 
+// V17: a blade replaces an existing slot, telegraphs its reversal, and never retargets.
+{
+ for(const size of [[360,400],[960,510]]){
+  [width,height]=size;
+  run('state="over";selectRun("endless");selectWorld("classic");resize();start();legIndex=1;hazardWave=4;warnWave()');
+  assert.equal(run('warnings.length'),run('difficulty().count'));assert.equal(run('warnings.filter(w=>w.variant==="boomerang").length'),1);
+  run('legIndex=0;warnings=[];hazardWave=4;warnWave()');assert(run('warnings.every(w=>w.variant!=="boomerang")'));
+  for(const edge of [0,1,2,3]){
+   run(`start();legIndex=1;spawnMeteor({edge:${edge},at:.5,tx:.5,ty:.5,variant:'boomerang'});globalThis.blade=items[0];globalThis.origin={x:blade.x,y:blade.y};blade.worldAge=.7;moveMeteor(blade,.7);globalThis.hold={x:blade.x,y:blade.y};blade.worldAge=2.1;moveMeteor(blade,1.4);draw(1)`);
+   assert(run('Math.hypot(blade.x-hold.x,blade.y-hold.y)<1e-8'));
+   assert(run('blade.x>0&&blade.x<W&&blade.y>0&&blade.y<H'));
+   run('ship.x=24;ship.y=28;blade.worldAge=2.8;moveMeteor(blade,.7)');
+   assert(run('Math.hypot(blade.x-origin.x,blade.y-origin.y)<1e-8'));assert(run('blade.dx===-blade.launchDx&&blade.dy===-blade.launchDy'));
+  }
+  // Real updates: slow time and pause freeze the same clock used for the preview.
+  run('start();legIndex=1;ship.x=ship.target=W*.9;ship.y=ship.targetY=H*.9');isolate();
+  run('spawnMeteor({edge:0,at:.2,tx:.2,ty:.5,variant:"boomerang"});globalThis.blade=items[0];for(let i=0;i<20;i++)update(.05);globalThis.hold=JSON.stringify([blade.x,blade.y,blade.worldAge]);pause();update(5)');assert.equal(run('JSON.stringify([blade.x,blade.y,blade.worldAge])'),run('hold'));
+  run('pause();slowTime=1;globalThis.beforeAge=blade.worldAge;update(.05)');assert(Math.abs(run('blade.worldAge-beforeAge')-.02)<1e-9);
+  run('globalThis.normalized=[blade.x/W,blade.y/H]');[width,height]=[740,320];resizeCallback();assert(run('Math.abs(blade.x/W-normalized[0])+Math.abs(blade.y/H-normalized[1])<1e-9'));run('draw(2)');
+ }
+ // Collision on the return leg still uses swept circles. A boosted interception is rewarded once.
+ run('start()');isolate();run('ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5;items=[{x:ship.x+45,y:ship.y,prevX:ship.x+45,prevY:ship.y,r:12,dx:-1,dy:0,launchDx:1,launchDy:0,speedScale:8,worldAge:2.2,age:2.2,boomerang:true,rock:true,a:0}];update(.05)');assert.equal(run('hp'),2);
+ run('start()');isolate();run('boostTime=.5;items=[{x:ship.x,y:ship.y,r:12,dx:0,dy:1,launchDx:0,launchDy:1,speedScale:.75,worldAge:1,age:1,boomerang:true,rock:true,a:0}];globalThis.blade=items[0];update(.01);shatter(blade)');assert.equal(run('hp'),3);assert.equal(run('score'),50);assert.equal(run('shards.length'),1);
+ run('grazeLock=.5;grazeFlash=.5;elapsed=90;nextLeg()');assert.equal(run('grazeLock+grazeFlash'),0);assert.equal(run('items.length'),0);
+ console.log('V17 blades PASS: replacement/unlock, four edges × two sizes, stationary warning, exact return/no homing, pause/slow/resize, swept damage, one-shot boost rewards and rollover cleanup');
+}
+// Graze rewards require a close pass, separation after the closest point, and no immunity.
+{
+ run('state="over";selectRun("timed");selectWorld("classic");start();powers.graze=1;boostCooldown=3;ship.x=400;ship.y=200;globalThis.near={x:380,y:238,prevX:420,prevY:238,r:12,rock:true};tryGraze(near,400,200,false)');
+ // Equal start/end distance has not yet separated; the next frame completes the pass.
+ assert.equal(run('boostCooldown'),3);
+ run('near.prevX=400;tryGraze(near,400,200,false)');assert.equal(run('boostCooldown'),2.65);assert(run('near.grazed'));assert(run('grazeFlash>0'));
+ run('grazeLock=0;tryGraze(near,400,200,false)');assert.equal(run('boostCooldown'),2.65);
+ for(const protection of ['invincible=1','resumeShield=1','whaleSafe=true','boostTime=1']){
+  run('start();powers.graze=2;boostCooldown=3;ship.x=400;ship.y=200;globalThis.near={x:380,y:238,prevX:400,prevY:238,r:12,rock:true};'+protection+';tryGraze(near,400,200,boostTime>0)');assert.equal(run('boostCooldown'),3);
+ }
+ for(const distance of [20,60]){
+  run(`start();powers.graze=2;boostCooldown=3;ship.x=400;ship.y=200;globalThis.near={x:380,y:200+${distance},prevX:400,prevY:200+${distance},r:12,rock:true};tryGraze(near,400,200,false)`);assert.equal(run('boostCooldown'),3);
+ }
+ run('start();powers.graze=2;boostCooldown=.3;ship.x=400;ship.y=200;globalThis.near={x:380,y:238,prevX:400,prevY:238,r:12,rock:true};tryGraze(near,400,200,false)');assert.equal(run('boostCooldown'),0);
+ run('boostCooldown=3;globalThis.nextRock={...near,grazed:false};tryGraze(nextRock,400,200,false)');assert.equal(run('boostCooldown'),3);assert(run('nextRock.grazed'));
+ // Real near pass via update works with ship sizes and ordinary/star exclusion.
+ for(const size of [[360,400],[960,510]]){
+  [width,height]=size;run('resize();start();powers.graze=2;boostCooldown=3;ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5');isolate();
+  run('items=[{x:ship.x,y:ship.y+38,dx:-1,dy:0,speedScale:1,r:12,rock:true,a:0,age:0}];update(.05);draw(1)');assert(Math.abs(run('boostCooldown')-2.35)<1e-8);assert.equal(run('hp'),3);
+  const frozen=run('[grazeLock,grazeFlash,boostCooldown].join()');run('pause();update(2)');assert.equal(run('[grazeLock,grazeFlash,boostCooldown].join()'),frozen);run('pause()');
+ }
+ run('start();state="upgrade";offers=[powersList.find(p=>p.id==="graze")];chooseUpgrade(0)');assert.equal(run('powers.graze'),1);assert(run('synergyHint("graze").includes("通用强化")'));run('state="upgrade";offers=[powersList.find(p=>p.id==="graze")];chooseUpgrade(0)');assert.equal(run('powers.graze'),2);
+ run('start()');assert.equal(run('powers.graze+grazeLock+grazeFlash'),0);
+ console.log('V17 graze PASS: two tiers, passed-nearest condition, range, immunity exclusion, per-rock idempotency, throttle, floor, real mobile/desktop updates, pause and skill selection/reset');
+}
+
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.
