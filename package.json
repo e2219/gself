@@ -1,0 +1,23 @@
+{
+  "name": "mooncatch",
+  "version": "1.0.2",
+  "private": true,
+  "scripts": {
+    "test": "node tests/game.cjs && node tests/profile.cjs && node tests/mobile.cjs",
+    "build:web": "node .github/scripts/build-pages.cjs",
+    "build:mobile": "node scripts/build-mobile.cjs",
+    "android:sync": "npm run build:mobile && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.0.1",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/preferences": "8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.25.12",
+    "jsdom": "26.1.0"
+  }
+}

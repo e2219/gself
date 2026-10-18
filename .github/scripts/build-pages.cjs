@@ -8,6 +8,10 @@ const jsTag = /<script src="game\.js(?:\?[^"]*)?"><\/script>/;
 assert(cssTag.test(html) && jsTag.test(html), 'Expected game assets not found');
 html = html.replace(cssTag, () => `<style>${css}</style>`);
 html = html.replace(jsTag, () => `<script>${js.replace(/<\/script/gi, '<\\/script')}</script>`);
+for(const name of ['profile-data','profile-ui']){
+ const source=fs.readFileSync('dist/'+name+'.js','utf8');
+ html=html.replace(new RegExp('<script src="'+name+'\\.js[^"]*"></script>'),()=>'<script>'+source.replace(/<\/script/gi,'<\\/script')+'</script>');
+}
 assert(!html.includes('src="game.js') && !html.includes('href="style.css'));
 // Keep branch-based Pages and Actions deployments on the same entry point.
 fs.writeFileSync('index.html', html);

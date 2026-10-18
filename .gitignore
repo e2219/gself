@@ -1,1 +1,11 @@
 _site/
+node_modules/
+mobile/www/
+android/.gradle/
+android/**/build/
+android/local.properties
+android/signing.properties
+.private/
+releases/
+*.jks
+*.keystore

@@ -1,0 +1,55 @@
+月面拾光 Android 工程 / 1.0.2 (versionCode 3)
+
+应用 ID：io.github.e2219.mooncatch
+最低 Android：7.0 / API 24。游戏依赖 Android System WebView；建议保持更新。
+游戏代码、图片和音效都在安装包内。没有远程 server.url；不申请网络、文件读写或账号权限。
+音效在本地合成，文件导入导出使用系统文件选择器。
+
+构建环境
+- Node.js 22.12+ 与 npm
+- 完整 JDK 21（不是只有 java 的 JRE）
+- Android SDK Platform 36、Build Tools 36.0.0、Platform Tools
+- 首次构建需要联网下载依赖；安装后的游戏不需要联网。
+
+首次构建
+1. npm ci
+2. 配置 JAVA_HOME 和 ANDROID_HOME；也可在 android/local.properties 写 sdk.dir=本机SDK绝对路径。
+3. npm run android:sync
+4. 若有本项目签名备份，恢复 .private/mooncatch-release.jks 和 android/signing.properties。
+   仅第一次、尚未分发任何安装包时，才运行 node scripts/create-signing.cjs 生成新密钥。
+5. npm run android:apk
+6. APK 位于 android/app/build/outputs/apk/release/app-release.apk。
+   没有 signing.properties 时 Gradle 只会产生未签名文件，不能直接作为更新包分发。
+
+更新
+- 必须保持应用 ID 和签名密钥不变，并在 android/app/build.gradle 增加 versionCode、更新 versionName。
+- 修改 dist/ 后重新 npm run android:apk。只更新 GitHub Pages 不会更新已安装的 APK。
+- 使用 adb install -r APK路径 或在手机上打开新版 APK 覆盖安装；不要先卸载应用。
+- Preferences 存储与 WebView localStorage 双份保留纪录和设置；不保存进行中的航行。
+- 签名私钥与密码不在公开仓库内。保留单独交付的签名备份，丢失后无法签署兼容更新。
+
+存档迁移
+- 网页版「操作 → 存档备份 → 导出存档」。App「设置 → 导入存档」选 JSON，预览后确认。
+- 相同模式/地图保留更高纪录，已有对应设置按备份替换；未包含的设置保持不变。
+- 文件限制 64 KB，只接受已知纪录与设置，不包含账号、个人文件或可执行代码。
+- 卸载、清除应用数据之前请先导出。系统云备份已关闭，备份由用户自行控制。
+
+测试
+npm test
+npm run build:web
+npm run android:sync
+cd android && ./gradlew assembleRelease lintRelease
+用 SDK build-tools/36.0.0/apksigner verify --verbose --print-certs APK路径 验证签名。
+手机测试应覆盖：离线冷启动、默认全屏、拖动/摇杆/方向键、多指同时加速与切相、
+旋转/刘海区、返回键、后台暂停与音效恢复、存档导入导出、同签名覆盖安装、持续游玩与温度。
+测试结果与具体设备记录在 TEST-REPORT.txt；自动化测试不等于真机性能测试。
+
+真机自动化（需要开启 USB 调试并授权；OPPO 可使用 --no-streaming 安装）
+cd android && ./gradlew assembleRelease assembleReleaseAndroidTest
+adb install --no-streaming -r app/build/outputs/apk/release/app-release.apk
+adb install --no-streaming -r app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
+adb shell am instrument -w -r -e class io.github.e2219.mooncatch.MobileSmokeTest io.github.e2219.mooncatch.test/androidx.test.runner.AndroidJUnitRunner
+默认运行多指、后台、旋转、存档与五分钟持续测试；会保存并恢复游戏原始纪录/设置。
+原生文件选择器测试需要 -e interactiveFiles true，并在系统选择器里保存、选择同一备份文件。
+升级验证可用 profileSnapshot 的 seedRecord / expectedProfile / restoreProfile 参数；seedRecord 专供测试，完成后必须恢复原始快照。
+完成后可 adb uninstall io.github.e2219.mooncatch.test，仅删除辅助测试包。

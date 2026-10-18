@@ -1,0 +1,21 @@
+{
+  "appId": "io.github.e2219.mooncatch",
+  "appName": "月面拾光",
+  "webDir": "mobile/www",
+  "backgroundColor": "#0a1524",
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "server": {
+    "hostname": "localhost",
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SystemBars": {
+      "hidden": true,
+      "insetsHandling": "disable",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

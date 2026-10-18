@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">月面拾光</string>
+    <string name="title_activity_main">月面拾光</string>
+    <string name="package_name">io.github.e2219.mooncatch</string>
+    <string name="custom_url_scheme">io.github.e2219.mooncatch</string>
+</resources>

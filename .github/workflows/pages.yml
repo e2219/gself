@@ -40,6 +40,7 @@ jobs:
         run: |
           node --check dist/game.js
           node tests/game.cjs
+          node tests/profile.cjs
           test -f dist/index.html
       - name: Build standalone game
         run: node .github/scripts/build-pages.cjs

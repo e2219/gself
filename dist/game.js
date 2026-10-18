@@ -1,4 +1,6 @@
 'use strict';
+function storeSetting(key,value){localStorage.setItem(key,value);window.MooncatchSaveChanged?.()}
+
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,document.getElementById(id));return elements.get(id)},canvas=$('sky'),ctx=canvas.getContext('2d');
 const phases=[
   {name:'巡航起步',subtitle:'全场自由移动 · 注意四边红色预警',flight:3.1,interval:3.2,hazards:8,multiplier:1},
@@ -21,7 +23,7 @@ const ringReward=n=>Math.round(n*(activeShip==='falcon'?1.2:1));
 const availablePowers=()=>powersList.filter(p=>!p.owner||p.owner===activeShip);
 function selectShip(id){
  if(!['ready','over'].includes(state)||!fleet.some(f=>f.id===id))return;
- selectedShip=activeShip=id;try{localStorage.setItem('mooncatch-ship',id)}catch{}hudSignature='';hud();
+ selectedShip=activeShip=id;try{storeSetting('mooncatch-ship',id)}catch{}hudSignature='';hud();
 }
 function fleetHud(){
  const signature=state+'|'+selectedShip;if(signature===fleetSignature)return;fleetSignature=signature;
@@ -42,7 +44,7 @@ function renderSettings(){
 }
 function selectRenderMode(mode){
  if(!['auto','smooth','clear'].includes(mode))return;
- renderMode=mode;renderTier=0;frameHealth.cooldown=0;resetFrameWindow();try{localStorage.setItem('mooncatch-render',mode)}catch{}
+ renderMode=mode;renderTier=0;frameHealth.cooldown=0;resetFrameWindow();try{storeSetting('mooncatch-render',mode)}catch{}
  paintCache.clear();glowCache.clear();resize();renderSettings();
 }
 function recordFrame(milliseconds){
@@ -67,6 +69,7 @@ function recordFrame(milliseconds){
 let W=960,H=510,state='ready',score=0,combo=0,hp=3,time=90,best=0,elapsed=0,spawn=0,invincible=0,last=0;
 let phase=0,wave=0,hazardClock=5,boostTime=0,boostCooldown=0,announcementTime=0;
 let items=[],particles=[],pending=[],warnings=[],keys=new Set(),sound=false,audio;
+try{sound=localStorage.getItem('mooncatch-sound')==='true'}catch{}
 let ship={x:480,y:350,target:480,targetY:350,direction:1};
 let bounty=null,bountySeen=false,bountiesWon=0;
 let hazardWave=0,clearChallenge={hits:0,won:false};
@@ -125,7 +128,7 @@ const voyageDepth=()=>activeRun==='endless'?Math.max(0,Math.min(legIndex,5)):0;
 const runName=()=>activeRun==='endless'?'无尽巡航':'90 秒挑战';
 function selectRun(mode){
  if(!['ready','over'].includes(state)||!['timed','endless'].includes(mode))return;
- selectedRun=activeRun=mode;try{localStorage.setItem('mooncatch-run',mode)}catch{}loadWorldBest();hud();
+ selectedRun=activeRun=mode;try{storeSetting('mooncatch-run',mode)}catch{}loadWorldBest();hud();
  $('title').textContent=runName();$('message').textContent=activeRun==='endless'?'每段 90 秒自动续航，强化保留。可在「操作」中结束并结算。':'完成 90 秒旅程，带着星光返航。';
 }
 function runHud(){
@@ -143,7 +146,7 @@ function settleLeg(){
 function nextLeg(){
  if(activeRun!=='endless'||state!=='playing'||elapsed<90||hp<=0||station?.failed)return;
  settleLeg();voyage.cleared++;voyage.challenges+=Number(clearChallenge.won);voyage.rescued+=station?.rescued||0;
- if(score>best){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
+ if(score>best){best=score;try{storeSetting(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  const savedMoon=moonPhase,stationHealth=station?.hp||2;
  legIndex++;elapsed=0;time=90;phase=0;wave=hazardWave=spawn=0;hazardClock=4;
  resetAdventure();overload.pending=false;overload.pulse=null;bounty=null;bountySeen=false;grazeLock=grazeFlash=0;moonPhase=savedMoon;worldEvent=worldNotice=null;worldSlot=worldWins=worldJumps=resonance=resonanceWaves=0;
@@ -164,7 +167,7 @@ function loadWorldBest(){try{best=Number(localStorage.getItem(bestKey()))||0}cat
 function selectWorld(id){
  if(!['ready','over'].includes(state)||!worlds.some(w=>w.id===id))return;
  selectedWorld=activeWorld=id;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;mapSignature='';
- try{localStorage.setItem('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · '+runName();$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
+ try{storeSetting('mooncatch-world',id)}catch{}loadWorldBest();hud();$('title').textContent=worldInfo().name;$('message').textContent=worldInfo().hint+' · '+runName();$('hint').textContent='出发前可换地图与星舰 · 本地图最高 '+best+' 分';
 }
 function worldHud(){
  const sig=[state,activeWorld,selectedWorld].join('|');if(sig===worldSignature)return;worldSignature=sig;
@@ -594,7 +597,7 @@ function pause(){
 function finish(){
  if(state==='over')return;
  settleLeg();
- state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{localStorage.setItem(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
+ state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{storeSetting(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
  show(station?.failed?'空间站失守了。':activeRun==='endless'?'本次巡航结束。':station&&hp&&elapsed>=90?'空间站撤离成功。':hp?'满载星光，返航。':'月舟需要休息了。',`本次 ${score} 分${stormRewarded?" · 终局生还 +200":""} · 抵达「${phaseInfo().name}」${record?' · 新纪录！':' · 本版最佳 '+best+' 分。'}`,'再出发一次 →');
  const itinerary=station?`空间站护盾 ${station.hp}/4 · 运送 ${station.delivered} 能源 · 救援 ${station.rescued}/4 · 拦截 ${station.intercepts}${station.paid?' · 撤离奖励 +'+(station.hp*150+station.rescued*100):''}`:activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 弹射 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
@@ -626,7 +629,7 @@ for(const position of ['edge','raised','inset'])$('float-position-'+position).on
 $('floatReset').onclick=()=>selectFloatingLayout('reset');
 $('canvasOnly').onclick=()=>setCanvasOnly(!canvasOnly);$('fullViewExit').onclick=toggleFullscreen;$('canvasMenu').onclick=()=>openPanel('controls');
 for(const mode of ['drag','stick','dpad'])$('mode-'+mode).onclick=()=>selectControlMode(mode);
-$('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{localStorage.setItem('mooncatch-left-hand',String(leftHand))}catch{}};
+$('hand').onclick=()=>{clearInput();leftHand=!leftHand;applyHand();try{storeSetting('mooncatch-left-hand',String(leftHand))}catch{}};
 // A second touch may not synthesize a click while the driving finger stays down.
 // Act on contact without moving focus; keep keyboard activation and suppress the later pointer click.
 for(const id of ['moonToggle','padMoon']){
@@ -637,7 +640,8 @@ $('upgradeReady').onclick=()=>{if(state==='playing'&&canUpgrade())offerUpgrade(t
 $('wagerReady').onclick=()=>{if(state==='playing'&&wagerInviteUntil>elapsed)maybeOfferWager(true)};
 $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade(1);
 $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$('wagerSkip').onclick=skipWager;
-$('sound').onclick=()=>{sound=!sound;$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
+$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));
+$('sound').onclick=()=>{sound=!sound;try{storeSetting('mooncatch-sound',String(sound))}catch{}$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
 window.addEventListener('keydown',e=>{
  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const k=e.key.toLowerCase();
@@ -1551,7 +1555,7 @@ function virtualDirection(){
 function claimVirtual(){inputMode='virtual';mouseX=mouseY=null;launch=null;ship.target=ship.x;ship.targetY=ship.y}
 function selectControlMode(mode){
  if(!['drag','stick','dpad'].includes(mode))return;
- clearInput();if(canvasOnly){canvasControl=mode;try{localStorage.setItem('mooncatch-canvas-controls',mode)}catch{}}else{controlMode=mode;try{localStorage.setItem('mooncatch-controls',mode)}catch{}}
+ clearInput();if(canvasOnly){canvasControl=mode;try{storeSetting('mooncatch-canvas-controls',mode)}catch{}}else{controlMode=mode;try{storeSetting('mooncatch-controls',mode)}catch{}}
  applyControlMode();hud();
 }
 function applyControlMode(){
@@ -1647,7 +1651,7 @@ function selectFloatingLayout(kind,value){
  else if(kind==='size'&&['normal','large','largest'].includes(value))prefs.size=value;
  else if(kind==='position'&&['edge','raised','inset'].includes(value))prefs.position=value;
  else return;
- try{localStorage.setItem('mooncatch-floating-layout',JSON.stringify(floatingPrefs))}catch{}
+ try{storeSetting('mooncatch-floating-layout',JSON.stringify(floatingPrefs))}catch{}
  applyFloatingLayout();
 }
 function applyCanvasOnly(){
@@ -1662,6 +1666,7 @@ function setCanvasOnly(value){
  prepareLayoutChange();canvasOnly=!!value;applyCanvasOnly();hud();
 }
 async function toggleFullscreen(){
+ if(window.MooncatchNative)return;
  if(fullscreenBusy)return;fullscreenBusy=true;prepareLayoutChange();
  try{
   if(focusMode){
@@ -1721,4 +1726,4 @@ function drawMining(t){
  ctx.restore();
 }
 
-function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
+function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
