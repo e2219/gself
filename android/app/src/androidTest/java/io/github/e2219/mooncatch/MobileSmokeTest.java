@@ -97,6 +97,22 @@ public class MobileSmokeTest {
         js("pause()");SystemClock.sleep(300);js("document.getElementById('resumeCancel').click()");assertEquals("true",js("state==='paused' && document.getElementById('resumeCue').hidden"));
         report("MOONCATCH_PAUSE direct two-finger button, 3s freeze, shield, background cancellation and explicit cancel passed");
     }
+    @Test public void cancelPauseDoesNotReturnHome() throws Exception {
+        open();
+        for(int orientation:new int[]{android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE}){
+            scenario.onActivity(a->a.setRequestedOrientation(orientation));waitFor(orientation==android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT?"H>W":"W>H");
+            js("document.getElementById('nativeStart').click();score=123;pause();pause()");
+            float[] cancel=point("resumeCancel",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,cancel);
+            SystemClock.sleep(200);assertEquals("true",js("state==='resuming' && !document.getElementById('resumeCue').hidden"));
+            touch(down,MotionEvent.ACTION_UP,cancel);waitFor("state==='paused'");SystemClock.sleep(600);
+            assertEquals("true",js("state==='paused' && !MooncatchIsHome() && score===123"));
+            // Inject the compatibility click which used to hit the newly revealed home button.
+            js("document.getElementById('nativeResultHome').dispatchEvent(new MouseEvent('click',{bubbles:true,detail:1}))");
+            assertEquals("true",js("state==='paused' && !MooncatchIsHome() && score===123"));
+            float[] home=point("nativeResultHome",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,home);touch(down,MotionEvent.ACTION_UP,home);waitFor("MooncatchIsHome()");
+        }
+        report("MOONCATCH_CANCEL portrait/landscape real hold-release, delayed click rejection and fresh home tap passed");
+    }
     @Test public void nativeFileRoundTrip() throws Exception {
         org.junit.Assume.assumeTrue("Interactive system picker test", "true".equals(InstrumentationRegistry.getArguments().getString("interactiveFiles")));
         open();js("document.getElementById('nativeSettings').click();storeSetting('mooncatch-best-v6','10731');document.getElementById('saveExport').click()");

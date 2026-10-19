@@ -691,10 +691,12 @@ $('endRun').onclick=endVoyage;
 for(const w of worlds)$('world-'+w.id).onclick=()=>selectWorld(w.id);
 for(const f of fleet)$('ship-'+f.id).onclick=()=>selectShip(f.id);
 $('start').onclick=()=>state==='paused'?pause():state==='resuming'?undefined:start();
-for(const id of ['pause','canvasPause','resumeCancel']){
+for(const id of ['pause','canvasPause']){
  $(id).onclick=e=>{if(!e||e.detail===0)pause()};
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();pause()});
 }
+// Keep the cancel surface until the complete click, so pointer-up cannot hit the newly revealed dialog.
+$('resumeCancel').onclick=e=>{e?.preventDefault?.();e?.stopPropagation?.();if(state==='resuming')pause()};
 $('restart').onclick=start;$('boost').onclick=()=>{boost()};
 for(const id of ['boost','padBoost']){
  $(id).onclick=e=>{if(!e||e.detail===0)boost()};

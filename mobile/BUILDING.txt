@@ -1,4 +1,4 @@
-月面拾光 Android 工程 / 1.2.2 (versionCode 7)
+月面拾光 Android 工程 / 1.2.3 (versionCode 8)
 
 应用 ID：io.github.e2219.mooncatch
 最低 Android：7.0 / API 24。游戏依赖 Android System WebView；建议保持更新。

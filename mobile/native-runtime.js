@@ -22,7 +22,16 @@
   window.MooncatchSaveChanged?.();
  }
  $('nativeStart').onclick=()=>{setHome(false);start();native.files.setAwake({awake:true}).catch(()=>{});};
- $('nativeSettings').onclick=()=>openPanel('controls');$('nativeReturn').onclick=goHome;resultHome.onclick=goHome;
+ $('nativeSettings').onclick=()=>openPanel('controls');
+ // A delayed compatibility click from a disappearing dialog must not end the run.
+ let homePress=null;
+ document.addEventListener('pointerdown',e=>{homePress=[$('nativeReturn'),resultHome].find(b=>b.contains(e.target))||null},true);
+ document.addEventListener('pointercancel',()=>{homePress=null},true);
+ window.addEventListener('blur',()=>{homePress=null});
+ for(const button of [$('nativeReturn'),resultHome])button.onclick=e=>{
+  const fresh=!e||e.detail===0||homePress===button;homePress=null;e?.stopPropagation();
+  if(fresh)goHome();
+ };
  window.MooncatchBack=()=>{
   if(panelOpen){closePanel(false);return}
   if(atHome){window.MooncatchSaveChanged?.().then(()=>native.App.exitApp()).catch(()=>{});return}
@@ -35,7 +44,7 @@
  };
  window.MooncatchLifecycle=active=>{
   if(!active){
-   clearInput();if(state==='playing'||state==='resuming')pause();else if(state==='menuIntro'){menuIntro=null;$('menuCue').hidden=true;state='playing';pause()}
+   homePress=null;clearInput();if(state==='playing'||state==='resuming')pause();else if(state==='menuIntro'){menuIntro=null;$('menuCue').hidden=true;state='playing';pause()}
    resumeSafetyPending=true;window.MooncatchSaveChanged?.();audio?.suspend().catch(()=>{});
    native.files.setAwake({awake:false}).catch(()=>{});
   }else{if(sound)audio?.resume().catch(()=>{});native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{});}

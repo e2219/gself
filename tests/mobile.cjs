@@ -38,6 +38,18 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  el('canvasPause').click();assert.equal(run('state'),'resuming');assert.equal(calls.at(-1).awake,true);
  run('update(1)');assert.equal(el('resumeNumber').textContent,'2');w.MooncatchLifecycle(false);assert.equal(run('state'),'paused');assert(el('resumeCue').hidden);
  w.MooncatchLifecycle(true);assert.equal(run('state'),'paused');el('start').click();run('update(3)');assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
+ // A hold does not replace the cancel surface; late/synthetic pointer clicks cannot go home.
+ run('pause();pause()');const frozenRun=run('JSON.stringify([elapsed,score,hp,ship.x,ship.y])');
+ el('resumeCancel').dispatchEvent(new w.Event('pointerdown',{bubbles:true}));assert.equal(run('state'),'resuming');assert(!el('resumeCue').hidden);
+ el('resumeCancel').dispatchEvent(new w.Event('pointerup',{bubbles:true}));
+ el('resumeCancel').dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));assert.equal(run('state'),'paused');assert(el('resumeCue').hidden);
+ for(const id of ['nativeResultHome','nativeReturn'])el(id).dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));
+ assert(!w.MooncatchIsHome());assert.equal(run('state'),'paused');assert.equal(run('JSON.stringify([elapsed,score,hp,ship.x,ship.y])'),frozenRun);
+ el('resumeCancel').dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));assert.equal(run('state'),'paused');
+ el('nativeResultHome').dispatchEvent(new w.Event('pointerdown',{bubbles:true}));el('nativeResultHome').dispatchEvent(new w.Event('pointercancel',{bubbles:true}));el('nativeResultHome').dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));assert(!w.MooncatchIsHome());
+ el('nativeResultHome').dispatchEvent(new w.Event('pointerdown',{bubbles:true}));el('nativeResultHome').dispatchEvent(new w.Event('pointerup',{bubbles:true}));el('nativeResultHome').dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));assert(w.MooncatchIsHome());
+ el('nativeStart').click();run('pause()');el('nativeResultHome').click();assert(w.MooncatchIsHome()); // Keyboard/accessibility activation remains available.
+ console.log('Native click-through PASS: complete cancel gesture, delayed navigation rejection, duplicate cancel, cancelled pointer, fresh navigation and keyboard activation');
  assert(calls.some(c=>c?.awake===false));assert(calls.some(c=>c?.awake===true));
  dom.window.close();console.log('Native DOM PASS: fullscreen home, selection, back stack, controls, foreground safety, optional upgrade, backup preview/cancel, sound persistence and safe insets');
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close()});
