@@ -13,3 +13,6 @@ for(const k of p.scoreKeys)assert(p.valid(k,'123456'));
 let fail=true;const flaky={...store,setItem:(k,v)=>{if(k==='mooncatch-sound'&&fail){fail=false;throw Error('quota')}store.setItem(k,v)}};
 assert.throws(()=>p.merge(flaky,{app:'mooncatch',format:1,data:{'mooncatch-world':'station','mooncatch-sound':'false'}}));assert.equal(JSON.stringify([...values]),before);
 console.log('Profile PASS: allowlist, bounded format validation, higher-record merge, preference migration, no unrelated data and atomic rollback');
+
+p.merge(store,{app:'mooncatch',format:1,data:{'mooncatch-world':'ion','mooncatch-music':'true','mooncatch-best-ion-v13':'1200','mooncatch-endless-ion-v16':'5500'}});assert.equal(store.getItem('mooncatch-world'),'ion');assert.equal(store.getItem('mooncatch-music'),'true');assert.equal(p.snapshot(store).data['mooncatch-best-ion-v13'],'1200');assert.throws(()=>p.parse(JSON.stringify({app:'mooncatch',format:1,data:{'mooncatch-music':'autoplay'}})));
+console.log('V22 profile PASS: ion records and optional music round-trip, strict music preference validation');

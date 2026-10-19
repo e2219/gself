@@ -47,13 +47,13 @@
    homePress=null;clearInput();if(state==='playing'||state==='resuming')pause();else if(state==='menuIntro'){menuIntro=null;$('menuCue').hidden=true;state='playing';pause()}
    resumeSafetyPending=true;window.MooncatchSaveChanged?.();audio?.suspend().catch(()=>{});
    native.files.setAwake({awake:false}).catch(()=>{});
-  }else{if(sound)audio?.resume().catch(()=>{});native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{});}
+  }else{if(sound||musicEnabled)audio?.resume().catch(()=>{});native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{});}
  };
  function insets(value){for(const side of ['top','right','bottom','left'])document.documentElement.style.setProperty('--native-safe-'+side,Math.max(0,Number(value[side])||0)+'px')}
  window.addEventListener('mooncatchInsets',event=>insets(event.detail));native.files.getInsets().then(insets).catch(()=>{});
  // Physical pause/resume remains explicit, while settings and record writes persist in native storage.
  const originalPause=pause;pause=function(){originalPause();native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{})};
  const originalClose=closePanel;closePanel=function(resume=true){originalClose(resume);native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{})};
- const originalStart=$('start').onclick;$('start').onclick=()=>{setHome(false);originalStart();if(sound)audio?.resume().catch(()=>{});native.files.setAwake({awake:true}).catch(()=>{})};
+ const originalStart=$('start').onclick;$('start').onclick=()=>{setHome(false);originalStart();if(sound||musicEnabled)audio?.resume().catch(()=>{});native.files.setAwake({awake:true}).catch(()=>{})};
  setHome(true);resize();document.getElementById('nativeBoot')?.remove();
 })();

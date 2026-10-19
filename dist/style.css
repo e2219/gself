@@ -67,7 +67,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 /* New maps show an ordered loop rather than the classic forked route diagram. */
 .route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr)) 24px;gap:7px}.route-map[data-layout="steps"] .map-branch{display:contents}.route-map[data-layout="steps"] .map-branch:before,.route-map[data-layout="steps"]>.map-end:last-child:before{content:none}.route-map[data-layout="steps"] .route-node{height:auto;min-height:24px;line-height:1.4;white-space:normal;display:flex;align-items:center;justify-content:center;padding:2px}
 
-.worlds .fleet-options{grid-template-columns:repeat(4,minmax(0,1fr))}.worlds .fleet-card:nth-child(4){background:linear-gradient(135deg,#33424c,#1b2b3d)}@media(max-width:650px){.worlds .fleet-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.worlds .fleet-options{grid-template-columns:repeat(5,minmax(0,1fr))}.worlds .fleet-card:nth-child(4){background:linear-gradient(135deg,#33424c,#1b2b3d)}@media(max-width:650px){.worlds .fleet-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 .run-picker{display:flex;align-items:center;gap:14px;justify-content:space-between;margin:0 0 18px}.run-options{display:flex;gap:7px;flex-shrink:0}.run-options button{padding:10px 14px;border:1px solid #ffffff30;border-radius:8px;background:#162a38;color:var(--ink);touch-action:manipulation}.run-options button[aria-pressed="true"]{background:#234049;border-color:var(--mint);color:var(--mint)}.run-options button:disabled{cursor:default}.run-picker small{color:var(--muted);font-size:10px;line-height:1.6}@media(max-width:650px){.run-picker{align-items:flex-start;flex-direction:column;gap:8px}.run-options{width:100%}.run-options button{flex:1}.panel-actions{flex-wrap:wrap}}
 
@@ -141,3 +141,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .resume-card>span{font-size:14px;letter-spacing:2px}.resume-card>strong{display:grid;place-items:center;width:96px;height:96px;border:2px solid #f3d694;border-radius:50%;font-size:56px;font-weight:500;line-height:1;color:#f3d694;font-variant-numeric:tabular-nums}
 .resume-card>small{font-size:11px;color:#a4bac4}.resume-card>button{pointer-events:auto;min-height:44px;padding:10px 20px;background:#24464c;color:#cce7df;border:1px solid #a6d9c950;border-radius:10px;touch-action:manipulation}
 @media(max-height:420px) and (orientation:landscape){.resume-card{gap:7px;padding:14px 24px}.resume-card>strong{width:66px;height:66px;font-size:40px}}
+
+.worlds #world-ion{order:1;background:linear-gradient(135deg,#38314d,#182b3c)}@media(max-width:650px){.worlds #world-ion{grid-column:1/-1}.worlds #world-ion .chart-art svg{max-height:70px}}
+
+.route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr))}.route-map[data-layout="steps"] #mapFinal{display:none}

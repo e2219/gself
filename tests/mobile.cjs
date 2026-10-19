@@ -50,6 +50,8 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  el('nativeResultHome').dispatchEvent(new w.Event('pointerdown',{bubbles:true}));el('nativeResultHome').dispatchEvent(new w.Event('pointerup',{bubbles:true}));el('nativeResultHome').dispatchEvent(new w.MouseEvent('click',{bubbles:true,detail:1}));assert(w.MooncatchIsHome());
  el('nativeStart').click();run('pause()');el('nativeResultHome').click();assert(w.MooncatchIsHome()); // Keyboard/accessibility activation remains available.
  console.log('Native click-through PASS: complete cancel gesture, delayed navigation rejection, duplicate cancel, cancelled pointer, fresh navigation and keyboard activation');
+ el('world-ion').click();assert.equal(run('selectedWorld'),'ion');el('music').click();assert.equal(w.localStorage.getItem('mooncatch-music'),'true');assert.equal(el('music').getAttribute('aria-pressed'),'true');el('music').click();
+ el('nativeStart').click();run('elapsed=6;stepIon(0,ship.x,ship.y)');assert.equal(run('worldEvent.points.length'),3);w.MooncatchBack();el('nativeReturn').click();assert(w.MooncatchIsHome());
  assert(calls.some(c=>c?.awake===false));assert(calls.some(c=>c?.awake===true));
  dom.window.close();console.log('Native DOM PASS: fullscreen home, selection, back stack, controls, foreground safety, optional upgrade, backup preview/cancel, sound persistence and safe insets');
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close()});

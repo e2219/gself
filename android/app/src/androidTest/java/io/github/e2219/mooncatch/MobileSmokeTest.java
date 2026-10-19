@@ -166,7 +166,7 @@ public class MobileSmokeTest {
         open();
         for(String world:new String[]{"classic","aurora","warp"}){
             js("if(!MooncatchIsHome())document.getElementById('nativeReturn').click();selectedWorld='"+world+"';selectedRun='endless';document.getElementById('nativeStart').click();legIndex=8;elapsed=69.9;invincible=100;inputMode='keyboard';ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.8");
-            waitFor("boss && boss.maxHp===6");
+            waitFor("boss && boss.maxHp===bossDifficulty().hp");
             for(int i=0;i<10;i++){
                 js("activeShip=['collector','falcon','warden']["+i+"%3];ship.target=W*(.25+.5*(1+Math.sin("+i+"))/2)");
                 SystemClock.sleep(1800);
@@ -176,6 +176,20 @@ public class MobileSmokeTest {
             waitFor("state==='dock'",10000);
             assertEquals("true",js("boss===null && storm===null && items.length===0"));
         }
+    }
+    @Test public void ionVoyageAndMusic() throws Exception {
+        open();js("selectedWorld='ion';selectedRun='endless';document.getElementById('nativeStart').click();legIndex=20;invincible=300;selectControlMode('stick');if(musicEnabled)document.getElementById('music').click();openPanel('controls');document.getElementById('music').scrollIntoView({block:'center'})");
+        float[] musicPoint=point("music",.5,.5);long musicDown=SystemClock.uptimeMillis();touch(musicDown,MotionEvent.ACTION_DOWN,musicPoint);touch(musicDown,MotionEvent.ACTION_UP,musicPoint);js("closePanel()");
+        waitFor("musicEnabled && audio && audio.state==='running' && musicVoices.size>0");
+        float[] p=point("stickRing",.8,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);SystemClock.sleep(150);
+        float[] toggle=point("moonToggle",.5,.5);String before=js("moonPhase");touch(down,MotionEvent.ACTION_POINTER_DOWN|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,toggle);SystemClock.sleep(100);assertNotEquals(before,js("moonPhase"));touch(down,MotionEvent.ACTION_POINTER_UP|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,toggle);touch(down,MotionEvent.ACTION_UP,p);
+        js("elapsed=6;stepIon(0,ship.x,ship.y);spawn=hazardClock=100;for(let i=0;i<3;i++){const n=worldEvent.points[worldEvent.index];moonPhase=n.polarity;ship.x=ship.target=n.x*W;ship.y=ship.targetY=n.y*H;stepIon(0,ship.x,ship.y)}");assertEquals("true",js("worldWins===1 && guard>0"));
+        js("elapsed=25;fieldSlot=0;hazardClock=0");SystemClock.sleep(2500);assertEquals("true",js("Number.isFinite(ship.x+ship.y) && musicVoices.size<=10"));
+        js("elapsed=69.9;hazardFields=[];boss=null;bossStarted=false;storm=null");waitFor("boss && boss.maxHp===10");
+        for(int i=0;i<8;i++){SystemClock.sleep(2200);report("MOONCATCH_ION "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier,elapsed,state,voices:musicVoices.size,attack:storm?.event?.kind,items:items.length})"));assertEquals("true",js("hp===3 && Number.isFinite(ship.x+ship.y)"));}
+        waitFor("state==='dock'");assertEquals("0",js("musicVoices.size"));
+        js("departDock();pause();pause()");assertEquals("0",js("musicVoices.size"));waitFor("state==='playing' && musicVoices.size>0");
+        js("document.getElementById('music').click()");assertEquals("true",js("!musicEnabled && musicVoices.size===0"));
     }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");

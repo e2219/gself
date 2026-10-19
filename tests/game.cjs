@@ -882,7 +882,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('state="over";selectRun("endless");selectWorld("station");start();hp=0;elapsed=90;score=0;finish()');assert.equal(run('score'),0);assert.equal(run('legIndex'),0);assert(!run('station.paid'));
  run('start();station.hp=3;station.rescued=2;elapsed=90;nextLeg()');assert.equal(run('score'),650);assert.equal(run('station.hp'),4);assert.equal(run('station.rescued'),0);assert.equal(run('voyage.rescued'),2);assert.equal(run('voyage.cleared'),1);
  run('station.failed=true;station.hp=0;elapsed=90;nextLeg()');assert.equal(run('legIndex'),1);run('finish()');assert.equal(run('score'),650);
- run('start();legIndex=10');const cap=run('JSON.stringify(difficulty(80))');run('legIndex=500');assert.equal(run('JSON.stringify(difficulty(80))'),cap);
+ run('start();legIndex=20');const cap=run('JSON.stringify(difficulty(80))');run('legIndex=500');assert.equal(run('JSON.stringify(difficulty(80))'),cap);
  run('state="over";selectRun("timed");selectWorld("classic");start()');
  console.log('V16 safety PASS: death/failure at boundary, independent station payouts/resupply, accumulated rescue totals and bounded deep-space pressure');
 }
@@ -933,7 +933,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
    assert(run('warpRocks({mirror:false}).every(r=>warpBeacons({route:"risk",mirror:false}).every(p=>Math.hypot((r.x-p.x)*W,(r.y-p.y)*H)>r.r+shipRadius()))'));
   }
   run('activeWorld="station";station=newStation();elapsed=62;warnings=[];stepStation(0,0,0)');assert.equal(run('warnings.length'),2);assert(run('warnings.every(w=>w.total===2)'));
-  run('legIndex=10;hud()');assert(els.pressure.textContent.includes('压力 6/6'));
+  run('legIndex=10;hud()');assert(els.pressure.textContent.includes('压力 6/11'));
  }
  run('state="over";selectRun("timed");selectWorld("classic");start()');assert.equal(run('voyageDepth()'),0);
  console.log('V16.1 progression PASS: real emission increases, bounded warnings, map collision geometry, station crossfire, HUD and timed-mode isolation');
@@ -1215,7 +1215,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   run(`state='over';selectedRun='endless';selectedWorld='classic';start();legIndex=${leg};elapsed=70;updateBoss(0,0,0,true,0)`);
   const p=JSON.parse(run('JSON.stringify(bossDifficulty())')),plan=JSON.parse(run('JSON.stringify(stormSchedule())'));
   rows.push({wave:leg+1,hp:p.hp,attacks:plan.length,warning:p.warning,fan:p.fan});
-  assert.equal(run('boss.hp'),p.hp);assert.equal(run('boss.maxHp'),p.hp);assert(p.hp<=6&&p.warning>=1.4&&p.fan<=7);assert(plan.every(e=>e.at>=72&&e.at+p.warning+.8<=90));
+  assert.equal(run('boss.hp'),p.hp);assert.equal(run('boss.maxHp'),p.hp);assert(p.hp<=10&&p.warning>=1.25&&p.fan<=9);assert(plan.every(e=>e.at>=72&&e.at+p.warning+.8<=90));
   assert.equal(run('stormCaption().includes("装甲 "+boss.hp+"/"+boss.maxHp)'),true);
   for(const kind of ['fragments','core','rift']){
    run(`items=[];boss.warning=0;elapsed=74;storm.event={kind:'${kind}',x:.5,y:.4,gap:.5,fire:75,end:78,fired:false,radius:32,half:bossDifficulty().gap,fan:bossDifficulty().fan,fragments:bossDifficulty().fragments};globalThis.telegraph=stormAngles(storm.event);stepStorm(.01,0,0,true)`);
@@ -1248,7 +1248,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 // V21.1 expanding iris: lower edge/corners must no longer be permanent safe spots.
 {
  let checks=0;
- for(const size of [[320,568],[390,844],[844,390],[960,510]])for(const leg of [0,8])for(const slot of [0,1]){
+ for(const size of [[320,568],[390,844],[844,390],[960,510]])for(const leg of [0,8])for(const slot of (leg>=2?[0,3]:[0,1])){
   [width,height]=size;
   for(const pos of [[.1,.9],[.5,.9],[.9,.9],[.08,.55],[.5,.12]]){
    run(`state='over';selectedRun='endless';selectedWorld='aurora';resize();start();legIndex=${leg};elapsed=70;updateBoss(0,0,0,true,0);boss.warning=0;boss.x=W*.5;boss.y=H*.42;storm.slot=${slot};ship.x=ship.target=W*${pos[0]};ship.y=ship.targetY=H*${pos[1]};elapsed=stormSchedule()[storm.slot].at;hp=3;guard=invincible=resumeShield=0;stepStorm(0,ship.x,ship.y,false);globalThis.irisEvent=storm.event;globalThis.lockedGap=irisEvent.gap;`);
