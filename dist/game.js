@@ -325,7 +325,7 @@ function worldCaption(){
  if(activeWorld==='station')return stationCaption();
  if(state==='ready')return worldInfo().hint;
  if(state==='over')return worldInfo().name+` · 本局${activeWorld==='aurora'?'穿幕':'信标链'}完成 ${worldWins}/${activeWorld==='aurora'?6:4}`;
- if(elapsed>=70)return activeWorld==='aurora'?'极光之眼 · 穿越旋转缺口，或加速击破核心':'折跃核心 · 加速入侧门，再向下攻击核心背部';
+ if(elapsed>=70)return activeWorld==='aurora'?'极光之眼 · 光环扫过全场，转向缺口或加速穿越':'折跃核心 · 加速入侧门，再向下攻击核心背部';
  const e=worldEvent,schedule=activeWorld==='aurora'?auroraTimes:warpTimes,next=schedule[worldSlot];
  const waiting=next===undefined?`终局还有 ${Math.max(0,Math.ceil(70-elapsed))}s`:`下一轮还有 ${Math.max(0,Math.ceil(next-elapsed))}s`;
  if(!e)return (worldNotice&&elapsed<worldNotice.until?worldNotice.text+' · ':`已完成 ${worldWins}/${schedule.length} · `)+waiting;
@@ -925,7 +925,7 @@ function moveToward(o,x,y,speed,dt){
 }
 function updateBoss(dt,worldDt,oldX,protectedByBoost,oldY=ship.y){
  if(activeWorld==='station')return;
- if(!bossStarted&&elapsed>=70){bossStarted=true;const spec=bossDifficulty();boss={x:W/2,y:H*.32,r:40,hp:spec.hp,maxHp:spec.hp,level:spec.level,warning:2,lastBoost:-1};storm={slot:0,event:null};warnings=[];announce(activeWorld==='aurora'?'极光之眼 · 旋转缺口即将开启':activeWorld==='warp'?'折跃核心 · 穿门绕后攻击':'星空风暴将至 · 绿色缺口安全，生还也有奖励')}
+ if(!bossStarted&&elapsed>=70){bossStarted=true;const spec=bossDifficulty();boss={x:W/2,y:H*.32,r:40,hp:spec.hp,maxHp:spec.hp,level:spec.level,warning:2,lastBoost:-1};storm={slot:0,event:null};warnings=[];announce(activeWorld==='aurora'?'极光之眼 · 扩散光环将扫过全场':activeWorld==='warp'?'折跃核心 · 穿门绕后攻击':'星空风暴将至 · 绿色缺口安全，生还也有奖励')}
  if(!boss||boss.hp<=0)return;
  if(boss.warning>0){boss.warning=Math.max(0,boss.warning-dt);return}
  boss.prevX=boss.x;boss.prevY=boss.y;
@@ -1533,7 +1533,7 @@ function stormCaption(){
  const prefix=activeRun==='endless'?`第 ${legIndex+1} 段 · 装甲 ${boss.hp}/${boss.maxHp||3} · `:'';return prefix+stormAttackCaption();
 }
 function stormAttackCaption(){
- if(activeWorld==='aurora')return boss.warning>0?'极光之眼 · 旋转缺口预警':storm?.event?(elapsed<storm.event.fire?'预警 · ':'')+'旋转光环 · 缺口安全 / 加速越过':'极光间隙 · 加速撞核心可破壳';
+ if(activeWorld==='aurora')return boss.warning>0?'极光之眼 · 全场扩散预警':storm?.event?(elapsed<storm.event.fire?'预警 · ':'')+'扩散光环 · 转向缺口 / 加速穿越':'极光间隙 · 加速撞核心可破壳';
  if(activeWorld==='warp')return boss.warning>0?'折跃核心 · 正面装甲，背部弱点':storm?.event?(elapsed<storm.event.fire?'预警 · ':'')+'加速入门绕后 · 核心背部可破壳':'折跃间隙 · 等待下一扇侧翼门';
  if(boss.warning>0)return '星空风暴 · 即将开始 · 生还 +200 / 击破 +'+bossDifficulty().reward;
  const e=storm?.event;
@@ -1549,7 +1549,8 @@ function stepStorm(dt,oldX,oldY,protectedByBoost){
   const base=plan[storm.slot++],spec={...base,kind:activeWorld==='aurora'?'iris':activeWorld==='warp'?'rift':base.kind};
   if(elapsed<spec.at+4){
    const x=boss.x/W,y=boss.y/H,gap=Math.atan2(ship.y-boss.y,ship.x-boss.x);
-   e=storm.event={kind:spec.kind,x,y,gap:spec.kind==='rift'?Math.PI/2:gap,fire:elapsed+specBoss.warning,end:elapsed+Math.min(4,specBoss.interval-.35),fired:false,radius:32,half:specBoss.gap,fan:specBoss.fan,fragments:specBoss.fragments};
+   const turn=storm.slot%2?1:-1;
+   e=storm.event={kind:spec.kind,x,y,gap:spec.kind==='rift'?Math.PI/2:spec.kind==='iris'?gap+turn*1.05:gap,turn,fire:elapsed+specBoss.warning,end:elapsed+Math.min(4,specBoss.interval-.35),fired:false,radius:32,half:specBoss.gap,fan:specBoss.fan,fragments:specBoss.fragments};
   }
  }
  if(!e||elapsed<e.fire)return;
@@ -1624,7 +1625,11 @@ function drawStation(t){
 }
 
 function irisGeometry(e,at=elapsed){
- const age=Math.max(0,at-e.fire),level=bossDifficulty().level;return {x:e.x*W,y:e.y*H,r:Math.min(W,H)*(.27+.025*Math.sin(age*2)),gap:e.gap+age*(.38+.025*level),half:.78-.02*level+.12*Math.sin(age*1.8)};
+ const age=Math.max(0,at-e.fire),level=bossDifficulty().level,x=e.x*W,y=e.y*H;
+ // Sweep past the furthest corner on any aspect ratio, including portrait phones.
+ const reach=Math.hypot(Math.max(x,W-x),Math.max(y,H-y))+40;
+ const duration=Math.max(.5,(e.end??e.fire+2.2)-e.fire),progress=Math.min(1,age/(duration*.9));
+ return {x,y,reach,r:45+(reach-45)*progress,gap:e.gap+(e.turn??1)*age*(.38+.025*level),half:.78-.02*level+.12*Math.sin(age*1.8)};
 }
 function stepIris(e,dt,oldX,oldY,protectedByBoost){
  if(protectedByBoost)return;
@@ -1635,7 +1640,15 @@ function stepIris(e,dt,oldX,oldY,protectedByBoost){
  }
 }
 function drawIris(e){
- const g=irisGeometry(e),warning=elapsed<e.fire;ctx.save();ctx.setLineDash(warning?[5,8]:[]);
+ const g=irisGeometry(e),warning=elapsed<e.fire;ctx.save();
+ if(warning){
+  // Preview the actual gap at the pilot's radius; the attack never re-aims after arming.
+  const duration=Math.max(.5,e.end-e.fire),distance=Math.hypot(ship.x-g.x,ship.y-g.y);
+  const crossing=e.fire+Math.max(0,Math.min(1,(distance-45)/(g.reach-45)))*duration*.9;
+  const preview=irisGeometry(e,crossing);ctx.strokeStyle='#a6d9c966';ctx.lineWidth=1;ctx.setLineDash([4,8]);
+  for(const a of [preview.gap-preview.half,preview.gap+preview.half]){ctx.beginPath();ctx.moveTo(g.x+Math.cos(a)*45,g.y+Math.sin(a)*45);ctx.lineTo(g.x+Math.cos(a)*g.reach,g.y+Math.sin(a)*g.reach);ctx.stroke()}
+ }
+ ctx.setLineDash(warning?[5,8]:[]);
  for(const [width,color] of warning?[[2,'#ffe1a3']]:[[20,'#bda4ff14'],[10,'#b7caff80'],[3,'#e0fff1']]){ctx.lineWidth=width;ctx.strokeStyle=color;ctx.beginPath();ctx.arc(g.x,g.y,g.r,g.gap+g.half,g.gap+Math.PI*2-g.half);ctx.stroke()}
  ctx.setLineDash([]);ctx.fillStyle='#b6ffe0';for(const a of [g.gap-g.half,g.gap+g.half]){ctx.beginPath();ctx.arc(g.x+Math.cos(a)*g.r,g.y+Math.sin(a)*g.r,3,0,Math.PI*2);ctx.fill()}ctx.restore();
 }

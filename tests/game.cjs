@@ -1243,6 +1243,32 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V21 finales PASS:',JSON.stringify(rows),'telegraph/shot alignment, gap collision, rewards, timed isolation, 3 maps × 3 sizes full finale/dock and read-only model drawing');
 }
 
+// V21.1 expanding iris: lower edge/corners must no longer be permanent safe spots.
+{
+ let checks=0;
+ for(const size of [[320,568],[390,844],[844,390],[960,510]])for(const leg of [0,8])for(const slot of [0,1]){
+  [width,height]=size;
+  for(const pos of [[.1,.9],[.5,.9],[.9,.9],[.08,.55],[.5,.12]]){
+   run(`state='over';selectedRun='endless';selectedWorld='aurora';resize();start();legIndex=${leg};elapsed=70;updateBoss(0,0,0,true,0);boss.warning=0;boss.x=W*.5;boss.y=H*.42;storm.slot=${slot};ship.x=ship.target=W*${pos[0]};ship.y=ship.targetY=H*${pos[1]};elapsed=stormSchedule()[storm.slot].at;hp=3;guard=invincible=resumeShield=0;stepStorm(0,ship.x,ship.y,false);globalThis.irisEvent=storm.event;globalThis.lockedGap=irisEvent.gap;`);
+   const fire=run('irisEvent.fire'),end=run('irisEvent.end');
+   run(`elapsed=${fire-.001};stepStorm(.01,ship.x,ship.y,false)`);assert.equal(run('hp'),3,'No hit during telegraph');
+   for(let at=fire;at<end;at+=1/60)run(`elapsed=${at};invincible=0;stepIris(irisEvent,1/60,ship.x,ship.y,false)`);
+   assert(run('hp<3'),`Camping remains safe: ${size}, leg ${leg}, slot ${slot}, pos ${pos}`);
+   assert.equal(run('irisEvent.gap'),run('lockedGap'));
+   assert(run('irisGeometry(irisEvent,irisEvent.end).r>Math.hypot(Math.max(irisEvent.x*W,W-irisEvent.x*W),Math.max(irisEvent.y*H,H-irisEvent.y*H))'));
+   // Following the gap at a reachable inner orbit is safe without boost or damage immunity.
+   run('hp=3;guard=invincible=resumeShield=0;globalThis.orbitRadius=Math.min(W,H)*.28;globalThis.oldPilot=null');
+   for(let at=fire;at<end;at+=1/60)run(`{elapsed=${at};const g=irisGeometry(irisEvent);ship.x=g.x+Math.cos(g.gap)*orbitRadius;ship.y=g.y+Math.sin(g.gap)*orbitRadius;stepIris(irisEvent,1/60,oldPilot?.x??ship.x,oldPilot?.y??ship.y,false);oldPilot={x:ship.x,y:ship.y}}`);
+   assert.equal(run('hp'),3,'Moving through gap must remain safe');
+   // Boost protection works across a large swept frame as the ring reaches the bottom.
+   run(`hp=3;ship.x=W*${pos[0]};ship.y=H*${pos[1]};elapsed=${end-.01};stepIris(irisEvent,2,ship.x,ship.y,true)`);assert.equal(run('hp'),3);
+   run('draw(elapsed)');checks++;
+  }
+ }
+ run("state='over';selectWorld('classic');selectRun('timed');start()");
+ console.log('V21.1 iris PASS:',checks,'stationary-camping / moving-gap scenarios across portrait/landscape, first/late waves, both rotation directions; full-arena reach, warning, locked aim and boost immunity');
+}
+
 run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("drag");start()');
 (async()=>{
  run('start()');isolate();
