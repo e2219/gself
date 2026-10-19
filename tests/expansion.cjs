@@ -71,6 +71,21 @@ for(const size of [[390,844],[844,390],[960,510]])for(const leg of [0,20]){
  trips.push({size,leg,peak:run('ionAudit.peak')});run('departDock()');assert.equal(run('worldSlot'),0);assert.equal(run('worldEvent'),null);
 }
 console.log('V22 full voyages PASS:',JSON.stringify(trips));
+// V23 vector models must not change physics, rewards, collision radii or objective state.
+const modelLabels=[];ctx.fillText=(value)=>modelLabels.push(String(value));
+for(const tier of ['clear','smooth'])for(const size of [[320,568],[390,844],[844,390],[960,510]]){
+ [width,height]=size;start('classic','endless',6);isolate();run(`renderMode='${tier}';elapsed=18;beginObjective({kind:'cargo',duration:12});objective.load=2;hazardFields=[makeField('cross'),makeField('zones')];expedition.chain={index:1,until:36,points:[{x:.22,y:.45},{x:.53,y:.28},{x:.78,y:.48}]}`);
+ const snap=()=>run('JSON.stringify([ship,score,hp,elapsed,objective,hazardFields,expedition.chain,particles,items])');const before=snap();
+ for(let i=0;i<20;i++)run(`drawAdventure(${i/3});drawSupplyChain(${i/3});hazardFields.forEach(drawField);drawMeteor({x:100,y:100,r:14,dx:0,dy:-1,trident:true},${i/3})`);
+ assert.equal(snap(),before);run('navigationHud()');assert.match(els.navigationCue.textContent,/货舱 2\/3/);assert.equal(els.navigationCue.hidden,false);
+ run('beginObjective({kind:"rings",duration:12});objective.index=1;drawAdventure(1);navigationHud()');assert.match(els.navigationCue.textContent,/导航星环 2\/4/);
+ start('ion');run('elapsed=6;stepIon(0,ship.x,ship.y);worldEvent.index=1');const ion=run('JSON.stringify(worldEvent)');run('drawIon(1);drawIon(2);navigationHud()');assert.equal(run('JSON.stringify(worldEvent)'),ion);assert.match(els.navigationCue.textContent,/下一点 2/);
+ run('pause();navigationHud()');assert.equal(els.navigationCue.hidden,true);run('state="playing";boss={hp:3};navigationHud()');assert.equal(els.navigationCue.hidden,true);
+}
+assert(modelLabels.includes('02')&&modelLabels.includes('03')&&modelLabels.includes('✓'));
+let rotations=[];ctx.rotate=a=>rotations.push(a);run('drawMeteor({x:0,y:0,r:14,dx:0,dy:-1,trident:true},0)');assert.equal(rotations[0],-Math.PI/2);delete ctx.rotate;delete ctx.fillText;
+console.log('V23 models/UI PASS: four sizes × two quality tiers, read-only cargo/beacons/hazards, completed/next labels, vertical trident direction and pause/boss cue isolation');
+
 // Media playback regressions, including late promises, blocked playback and source switches.
 class TestAudio{
  constructor(){this.state='running';this.destination={}}

@@ -101,7 +101,11 @@ public class MobileSmokeTest {
         open();
         for(int orientation:new int[]{android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE}){
             scenario.onActivity(a->a.setRequestedOrientation(orientation));waitFor(orientation==android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT?"H>W":"W>H");
+            // Android's screen-rotation animation can outlive WebView's resize event.
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();SystemClock.sleep(750);
             js("document.getElementById('nativeStart').click();score=123;pause();pause()");
+            // Starting and rotating in one script can precede the first visible layout.
+            js("window.cancelLayoutReady=false;requestAnimationFrame(()=>requestAnimationFrame(()=>window.cancelLayoutReady=true))");waitFor("window.cancelLayoutReady===true");
             float[] cancel=point("resumeCancel",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,cancel);
             SystemClock.sleep(200);assertEquals("true",js("state==='resuming' && !document.getElementById('resumeCue').hidden"));
             touch(down,MotionEvent.ACTION_UP,cancel);waitFor("state==='paused'");SystemClock.sleep(600);
@@ -205,6 +209,24 @@ public class MobileSmokeTest {
         }
         scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(500);assertEquals("true",js("musicPlayer.paused"));scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);waitFor("state==='paused'");assertEquals("true",js("musicPlayer.paused"));
         js("document.getElementById('music').click()");assertEquals("true",js("!musicEnabled && musicPlayer.paused"));
+    }
+    @Test public void modelAndUiShowcase() throws Exception {
+        open();assertEquals("true",js("document.getElementById('nativeStart').getBoundingClientRect().bottom<=innerHeight+1"));
+        js("selectedWorld='classic';selectedRun='endless';document.getElementById('nativeStart').click();invincible=300;spawn=hazardClock=100;elapsed=18;beginObjective({kind:'cargo',duration:60});objective.load=2;selectControlMode('stick')");
+        waitFor("!document.getElementById('navigationCue').hidden");
+        assertEquals("true",js("document.querySelector('.hud').getBoundingClientRect().bottom<document.getElementById('navigationCue').getBoundingClientRect().top"));
+        for(String scene:new String[]{"cargo","rings","ion","zones","cross"}){
+            js("objective=null;worldEvent=null;hazardFields=[];activeWorld='classic';worldSlot=99;spawn=hazardClock=100;fieldSlot=99;elapsed=20;invincible=300;ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5");
+            if(scene.equals("cargo")||scene.equals("rings"))js("beginObjective({kind:'"+scene+"',duration:30})");
+            else if(scene.equals("ion"))js("activeWorld='ion';worldSlot=0;elapsed=6;stepIon(0,ship.x,ship.y)");
+            else js("hazardFields=[makeField('"+scene+"')];hazardFields[0].fire=elapsed+.3;hazardFields[0].end=elapsed+8");
+            for(int i=0;i<2;i++){SystemClock.sleep(2300);report("MOONCATCH_MODEL "+scene+" "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier,state,hp})"));assertEquals("true",js("state==='playing' && hp===3 && Number.isFinite(ship.x+ship.y)"));}
+        }
+        js("activeWorld='ion';boss=null;worldSlot=0;worldEvent=null;elapsed=6;stepIon(0,ship.x,ship.y);hud()");
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));waitFor("W>H");js("if(state==='paused'){pause()} ");waitFor("state==='playing'");
+        assertEquals("true",js("document.getElementById('navigationCue').getBoundingClientRect().right<=innerWidth && document.querySelector('.hud').getBoundingClientRect().bottom<document.getElementById('navigationCue').getBoundingClientRect().top"));
+        js("openPanel('controls')");assertEquals("true",js("document.querySelector('.music-settings').contains(document.getElementById('music')) && document.querySelector('.music-settings').contains(document.getElementById('sound')) && document.getElementById('musicTrack').getBoundingClientRect().width<=innerWidth"));
+        report("MOONCATCH_MODEL UI: launch reachable, objective below HUD, landscape bounds and grouped audio controls passed");
     }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");

@@ -149,11 +149,25 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr))}.route-map[data-layout="steps"] #mapFinal{display:none}
 
 .music-settings{margin:18px 0}.music-settings label{display:block;margin:8px 0;font-size:13px;color:var(--muted)}.music-settings select{box-sizing:border-box;width:100%;max-width:100%;min-height:44px;padding:10px;border:1px solid #a6d9c950;border-radius:8px;background:#172c3e;color:var(--ink);font-size:14px}.music-credit{font-size:11px;line-height:1.7;color:var(--muted)}.music-credit a{color:#a6d9c9}
+
+/* V23 cockpit: metrics, current objective and settings have distinct visual groups. */
+.game{--cockpit-top:14px}.hud{top:var(--cockpit-top);left:14px;right:14px;gap:8px;align-items:flex-start}.hud>div{min-width:0;padding:6px 9px;border:1px solid #9ab7bc26;border-radius:9px;background:#0d2033bf;filter:none}.hud span{font-size:9px;letter-spacing:1px}.hud strong{font-size:22px;line-height:1.25}.hud .health strong{font-size:13px;line-height:27px;white-space:nowrap}.hud .time{min-width:76px}.hud .time strong span{font-size:11px}
+.pressure{top:calc(var(--cockpit-top) + 60px);left:16px;max-width:65%;font-size:9px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.combo{top:calc(var(--cockpit-top) + 60px);left:auto;right:16px;max-width:30%;font-size:10px;letter-spacing:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.navigation-cue{display:none;pointer-events:none;position:absolute;z-index:1;top:calc(var(--cockpit-top) + 81px);left:50%;transform:translateX(-50%);max-width:calc(100% - 28px);width:max-content;padding:7px 11px;border:1px solid #a6d9c940;border-radius:7px;background:#0d2234e6;color:#c6e1db;font-size:11px;line-height:1.45;letter-spacing:.2px;text-align:center;font-variant-numeric:tabular-nums}.navigation-cue[data-kind="cargo"],.navigation-cue[data-kind="supply"]{color:#f3d694;border-color:#f3d69455}.navigation-cue[data-kind="warp"],.navigation-cue[data-kind="rings"]{color:#d5c7ed;border-color:#c1aaf050}.immersive.canvas-only .navigation-cue{display:block}.navigation-cue[hidden]{display:none!important}
+.game .bossbar{top:calc(var(--cockpit-top) + 81px);border-radius:7px;padding:7px 11px;max-width:calc(100% - 28px);line-height:1.5;background:#281f31ed}
+.immersive.canvas-only .game{--cockpit-top:max(12px,env(safe-area-inset-top))}.immersive.canvas-only .hud{top:var(--cockpit-top)}.immersive.canvas-only .pressure{top:calc(var(--cockpit-top) + 60px)}.immersive.canvas-only .combo{top:calc(var(--cockpit-top) + 60px)}.immersive.canvas-only .bossbar{top:calc(var(--cockpit-top) + 81px)}
+.panel-sheet{background:#112635;border-color:#789b9e50;border-radius:16px;padding:0 20px 20px}.panel-heading{background:#112635;border-bottom:1px solid #789b9e30;margin-bottom:18px;padding:16px 0}.panel-heading h2{font-size:20px}.settings-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:16px 0 10px}.settings-heading h3{font-size:13px;font-weight:600;letter-spacing:1px;margin:0}.settings-heading button{min-height:40px;border:1px solid #a6d9c94d;border-radius:8px;padding:8px 12px;background:#183644;color:var(--mint);font-size:12px;touch-action:manipulation}.settings-heading button[aria-pressed="true"]{background:#a6d9c9;color:#102635}.settings-heading .audio-toggles{display:flex;gap:6px}
+.control-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.control-options button{min-height:84px;padding:12px 10px;border-radius:10px;background:#173141}.control-options button strong{font-size:14px}.control-options button small{font-size:11px;line-height:1.6;margin-top:6px}.control-options button[aria-pressed="true"]{background:#264749;border-color:#a6d9c9;box-shadow:inset 0 2px 0 #a6d9c9}
+#controlSettings>.music-settings,#controlSettings>.render-settings,#floatingSettings{padding:16px 0 0;border-top:1px solid #789b9e30;margin:18px 0 0}.music-settings .settings-heading{margin-top:0}.music-settings label{font-size:11px}.music-settings select{border-color:#8faea64d;background:#152f40}.render-settings h3{font-size:13px;letter-spacing:1px;margin:0 0 12px}.panel-intro{line-height:1.7}.render-settings .panel-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.render-settings .panel-actions button{padding:10px 5px;min-width:0;font-size:11px;min-height:42px}.session-actions{margin-top:20px;padding-top:16px;border-top:1px solid #789b9e30}.session-actions #restart{border-color:#f08c7950;color:#efc2ae}
+.fleet-card[aria-pressed="true"]:after{content:'✓';position:absolute;right:8px;top:8px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#a6d9c9;color:#112d3a;font-size:12px;font-weight:700}.run-options button{min-height:42px}.intro{margin:24px 0}.fleet-heading strong{letter-spacing:.8px}.primary{border-radius:10px}
+@media(max-width:650px){.panel-sheet{border-radius:0;padding:0 14px 16px}.control-options{grid-template-columns:repeat(3,minmax(0,1fr))}.control-options button{padding:10px 7px;min-height:90px}.control-options button strong{font-size:13px}.control-options button small{font-size:10px}.hud{gap:6px}.hud>div{padding:5px 7px}.hud strong{font-size:20px}.hud .health strong{font-size:12px;line-height:25px}.hud span{font-size:8px}.hud .time{min-width:72px}.navigation-cue{font-size:10px;padding:6px 9px}.settings-heading button{padding:8px 10px}}
+@media(max-width:340px){.control-options{gap:5px}.control-options button{padding:9px 5px}.control-options button strong{font-size:12px}.hud{left:10px;right:10px}.hud>div{padding:5px}.hud .health strong{font-size:11px}.hud .time{min-width:65px}.navigation-cue{max-width:calc(100% - 20px);font-size:9px}}
+@media(orientation:landscape) and (max-height:520px){.game{--cockpit-top:8px}.hud>div{padding:3px 8px}.hud strong{font-size:18px}.hud .health strong{line-height:22px}.hud span{font-size:8px}.immersive.canvas-only .navigation-cue,.immersive.canvas-only .bossbar{top:calc(var(--cockpit-top) + 56px);max-width:60%;font-size:10px;padding:5px 10px}.immersive.canvas-only .combo{top:calc(var(--cockpit-top) + 46px)}.panel-sheet{max-width:760px}.control-options button{min-height:70px}}
 </style></head>
 <body>
 <audio id="backgroundMusic" preload="none" loop hidden></audio>
 <main>
-<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 22</span></header>
+<header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 23</span></header>
 <section class="intro"><div><div class="eyebrow">远航整备 · 新航程</div><h1>驶入星海，<em>在月港重逢。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><svg id="harborArt" class="harbor-art" viewBox="0 0 240 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><g fill="#d5e6e9"><circle cx="18" cy="22" r="1.3"/><circle cx="208" cy="18" r="1.2"/><circle cx="189" cy="77" r="1"/><circle cx="75" cy="16" r="1"/></g><path d="M0 94Q80 35 240 90" fill="#1d3544"/><path d="M0 96Q80 41 240 94" stroke="#668b94"/><circle cx="145" cy="35" r="24" fill="#f3d694"/><circle cx="155" cy="29" r="22" fill="#102536"/><path d="m53 49 59-15-19 12-7 13-10-12-23 2Z" fill="#cce7df"/><path d="m29 63 40-15" stroke="#91bfb7" stroke-dasharray="2 6"/><path d="m184 82 0-18 16-7 16 7v20m-16-27v33m-21-15h42" stroke="#a6d9c9" stroke-width="2"/></svg><div class="best"><span id="bestLabel">本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
 <section class="run-picker" aria-label="选择航行模式"><div class="run-options"><button id="run-timed" aria-pressed="true">90 秒挑战</button><button id="run-endless" aria-pressed="false">∞ 无尽巡航</button></div><small id="runHint">90 秒一局 · 五张地图独立纪录</small></section>
 <section class="fleet worlds" aria-label="选择本局地图"><div class="fleet-heading"><strong>选择一片新星空</strong><span id="worldHint">每张地图独立玩法与最高分</span></div><div class="fleet-options">
@@ -186,6 +200,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <div id="wager" class="upgrade wager" role="dialog" aria-modal="true" aria-labelledby="wagerTitle" hidden><div class="upgrade-panel"><div class="eyebrow">A LITTLE RISK, A NEW POSSIBILITY</div><h2 id="wagerTitle">和星空打个赌？</h2><p>时间已暂停。成功获得额外一次二选一强化，失败不扣分。<br>选择或跳过后，准备好再继续；恢复享有 1.5 秒无敌。</p><div class="choices"><button id="wager0" class="choice"></button><button id="wager1" class="choice"></button></div><button id="wagerSkip" class="skip">这次跳过 →</button><small>键盘 1 / 2 选择 · Esc 跳过</small></div></div>
 <button id="boost" aria-label="月相加速：1.2秒内双倍移动速度和无敌，由你控制方向" disabled><span class="boost-icon">↯</span><span id="boostLabel">加速</span><span class="charge"><i id="charge"></i></span></button>
 <div class="phase-track" aria-label="旅程进度"><span id="phase0" class="active">01 巡航起步</span><span id="phase1">02 流星雨</span><span id="phase2">03 终幕星雨 ×2</span></div><div id="announcement" class="announcement" role="status"></div>
+<div id="navigationCue" class="navigation-cue" aria-label="当前航行目标" hidden></div>
 <div id="bossStatus" class="bossbar" role="status" hidden></div>
 <div id="menuCue" class="menu-cue" role="status" hidden></div>
 <div id="obstacleStatus" class="obstacle-status" role="status" hidden></div>
@@ -209,9 +224,9 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </div>
 <div id="gamePanel" class="game-panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
 <div class="panel-sheet"><header class="panel-heading"><h2 id="panelTitle">驾驶设置</h2><button id="panelClose">返回游戏</button></header>
-<section id="controlSettings"><div id="fullViewSettings" class="full-view-settings" hidden><div class="panel-actions"><button id="canvasOnly" aria-pressed="false">铺满屏幕 · 悬浮操作</button><button id="fullViewExit">退出全屏</button></div><p class="panel-intro">铺满模式中，可在下面选择直接拖动、悬浮摇杆或方向键。操作区覆盖在画面上，不占屏幕高度；支持移动时同时加速和切换形态。关闭后恢复原来的控制方式。</p></div><p id="controlIntro" class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
-<button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动；抬手可换位置。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>轻推微调，重推快飞；大幅拖动后反向也跟手。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住持续移动，支持八向与斜向。</small></button>
-</div><section id="floatingSettings" class="floating-settings" hidden aria-label="悬浮控件布局"><h3 id="floatingTitle">悬浮控件布局</h3><p class="panel-intro">控制区与动作按钮会一起调整，左右手设置仍然生效。</p><div class="panel-actions" role="group" aria-label="控件大小"><button id="float-size-normal" aria-pressed="true">标准</button><button id="float-size-large" aria-pressed="false">加大</button><button id="float-size-largest" aria-pressed="false">超大</button></div><div class="panel-actions" role="group" aria-label="控件位置"><button id="float-position-edge" aria-pressed="true">贴边</button><button id="float-position-raised" aria-pressed="false">抬高</button><button id="float-position-inset" aria-pressed="false">靠内</button><button id="floatReset">恢复本方向默认</button></div><p id="floatingHint" class="panel-intro">横屏、竖屏分别保存。</p></section><section class="render-settings" aria-label="画面性能"><h3>画面与流畅度</h3><div class="panel-actions" role="group" aria-label="画质选择"><button id="render-auto" aria-pressed="true">自动（推荐）</button><button id="render-smooth" aria-pressed="false">流畅优先</button><button id="render-clear" aria-pressed="false">画质优先</button></div><p id="renderHint" class="panel-intro">航行后检测帧率</p><p class="panel-intro">自动模式会在持续掉帧时降低画面精细度和装饰特效，稳定后再逐步恢复。流畅优先适合长时间游玩；三种设置不影响操作、难度与奖励。</p></section><section class="music-settings" aria-label="背景音乐"><h3>背景音乐</h3><label for="musicTrack">纯音乐曲目</label><select id="musicTrack"><option value="floating-cities">Floating Cities · 太空氛围</option><option value="dream-culture">Dream Culture · 梦幻钢琴</option></select><p id="musicStatus" class="panel-intro" role="status"></p><p class="music-credit">音乐：Kevin MacLeod（<a href="https://incompetech.com/" target="_blank" rel="noopener">incompetech.com</a>）· <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · 原曲未剪辑</p></section><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="music" aria-pressed="false">音乐：关</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="endRun" hidden>结束并结算</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
+<section id="controlSettings"><div id="fullViewSettings" class="full-view-settings" hidden><div class="panel-actions"><button id="canvasOnly" aria-pressed="false">铺满屏幕 · 悬浮操作</button><button id="fullViewExit">退出全屏</button></div><p class="panel-intro">铺满模式中，可在下面选择直接拖动、悬浮摇杆或方向键。操作区覆盖在画面上，不占屏幕高度；支持移动时同时加速和切换形态。关闭后恢复原来的控制方式。</p></div><p id="controlIntro" class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="settings-heading"><h3>驾驶方式</h3><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button></div><div class="control-options" role="group" aria-label="手机控制方式">
+<button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>轻推微调，松手即停。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住航行，支持八向。</small></button>
+</div><section id="floatingSettings" class="floating-settings" hidden aria-label="悬浮控件布局"><h3 id="floatingTitle">悬浮控件布局</h3><p class="panel-intro">控制区与动作按钮会一起调整，左右手设置仍然生效。</p><div class="panel-actions" role="group" aria-label="控件大小"><button id="float-size-normal" aria-pressed="true">标准</button><button id="float-size-large" aria-pressed="false">加大</button><button id="float-size-largest" aria-pressed="false">超大</button></div><div class="panel-actions" role="group" aria-label="控件位置"><button id="float-position-edge" aria-pressed="true">贴边</button><button id="float-position-raised" aria-pressed="false">抬高</button><button id="float-position-inset" aria-pressed="false">靠内</button><button id="floatReset">恢复本方向默认</button></div><p id="floatingHint" class="panel-intro">横屏、竖屏分别保存。</p></section><section class="music-settings" aria-label="背景音乐"><div class="settings-heading"><h3>声音与音乐</h3><div class="audio-toggles"><button id="music" aria-pressed="false">音乐：关</button><button id="sound" aria-pressed="false">音效：关</button></div></div><label for="musicTrack">纯音乐曲目</label><select id="musicTrack"><option value="floating-cities">Floating Cities · 太空氛围</option><option value="dream-culture">Dream Culture · 梦幻钢琴</option></select><p id="musicStatus" class="panel-intro" role="status"></p><p class="music-credit">音乐：Kevin MacLeod（<a href="https://incompetech.com/" target="_blank" rel="noopener">incompetech.com</a>）· <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · 原曲未剪辑</p></section><section class="render-settings" aria-label="画面性能"><h3>画面与流畅度</h3><div class="panel-actions" role="group" aria-label="画质选择"><button id="render-auto" aria-pressed="true">自动（推荐）</button><button id="render-smooth" aria-pressed="false">流畅优先</button><button id="render-clear" aria-pressed="false">画质优先</button></div><p id="renderHint" class="panel-intro">航行后检测帧率</p><p class="panel-intro">自动适应设备性能；流畅优先减少装饰特效。画质设置不改变操作、难度与奖励。</p></section><div class="panel-actions session-actions"><button id="restart" title="立即开始新一局">重新开始</button><button id="endRun" hidden>结束并结算</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
 <section id="gameRules" hidden><section class="guide"><article><span class="symbol mint">ϟ</span><div><h3>磁暴熔炉 · 双极导流</h3><p>按编号依次接触节点，☀ 需明月、☾ 需暗月；用 Q 或月相按钮切换。接通回路可获得星屑、护甲并清除雷暴。最后 20 秒，同频月相能穿过首领脉冲并攻击核心，交叉光束仍须躲避。</p></div></article><article><span class="symbol coral">⋈</span><div><h3>深空压力 · 三向夹击</h3><p>无尽压力上限提高到 11，第 21 段达到上限。第 3 段起会出现锁定预警时位置、同时抵达的三向陨石，以及交叉光束和雷暴落点；第 15 段起常规星雨持续三向来袭。金色虚线与圆圈先预警，再转为危险光束和落雷。</p></div></article></section><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">⌖</span><div><h3>无尽远航 · 月港整备</h3><p>每段结束修复 2 点护盾、补充 2 星屑并充满加速。停靠时可升级远航模块，准备好再启航。第 18 秒出现限时信标链，依次回收三枚可在下一站额外整备一次。</p></div></article></section><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。第 24 秒选择货运港或引力遗迹，第 54 秒选择星鲸带或矿场。左路更安全，右路星光 ×1.4、陨石略增；忽略航门自动走左路。</p></div></article><article><span class="symbol gold">✺</span><div><h3>连锁过载</h3><p>用三次不同的加速撞碎或精准反射陨石，自动释放清障脉冲，每次加速最多充能一次。脉冲清除附近最多 8 颗飞行障碍，照常掉落星屑；不触发连爆、不充能、不伤害首领，也不能消除激光、光幕或水雷。船旁显示进度，充能保留到下一段，新一局重置。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>星光货运</h3><p>靠近方箱装货，飞到金色空间站交付。最多 3 件，满载奖励更高，键盘／触控最多减速 24%；鼠标保持跟手；到期未交货不扣分。</p></div></article><article><span class="symbol mint">↗</span><div><h3>反射护盾</h3><p>加速起手 0.18 秒内（守望者 0.26 秒）接触陨石，可沿来路反弹；绿色弹体能碎星、破巨陨外壳。普通陨石每次加速反射一次，紫色核心弹在加速护盾期间均可反射。</p></div></article></section>
 <section class="guide"><article><span class="symbol mint">◉</span><div><h3>引力弹弓</h3><p>靠近紫环，点加速入轨，再点沿切线弹射；蓄力 1.3 秒也会自动弹出。沿预览轨迹连穿三枚星环，移动可接管弹射。</p></div></article><article><span class="symbol gold">≈</span><div><h3>追逐星鲸</h3><p>蓝色尾流内免受伤害并可收集星光，累计同行 5 秒获得奖励。提前显示航线，跟随尾流可安全穿越激光闸门；星鲸离开时有短暂保护。</p></div></article><article><span class="symbol coral">ϟ</span><div><h3>激光闸门</h3><p>虚线预警 1.8 秒后开启；绿色缺口始终安全，也可用加速护盾穿越。</p></div></article></section>
@@ -221,7 +236,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V22.1</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V23</span></footer>
 </main><script>'use strict';
 // Portable records/settings only; never import executable code or an in-progress run.
 (function(root){
@@ -453,10 +468,12 @@ function stepSupplyChain(dt,oldX,oldY){
  if(c.index===3){expedition.completed++;expedition.credits=1;expedition.chain=null;dust+=2;announce('信标链回收 · 下站额外整备 +1')}
 }
 function drawSupplyChain(t){
- const c=expedition.chain;if(!c||state==='dock')return;ctx.save();ctx.lineWidth=1;ctx.setLineDash([4,7]);ctx.strokeStyle='#f3d69445';ctx.beginPath();
- c.points.slice(c.index).forEach((p,i)=>{const {x,y}=supplyPoint(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([]);
- c.points.forEach((p,i)=>{if(i<c.index)return;const {x,y}=supplyPoint(p),active=i===c.index;ctx.strokeStyle=active?'#f3d694':'#8a9aa8';ctx.lineWidth=active?2:1;ctx.beginPath();ctx.arc(x,y,active?20:12,0,Math.PI*2);ctx.stroke();ctx.fillStyle=active?'#f3d694':'#8a9aa8';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText(String(i+1),x,y+4);if(active){ctx.font='11px sans-serif';ctx.fillText(`补给信标 · ${Math.max(0,Math.ceil(c.until-elapsed))}s`,x,y+36)}});ctx.restore();
+ const c=expedition.chain;if(!c||state==='dock')return;
+ const points=c.points.map(supplyPoint);
+ for(let i=1;i<points.length;i++)drawRouteLink(points[i-1],points[i],t,'#f3d694',i===c.index);
+ points.forEach((p,i)=>drawNavBeacon(p.x,p.y,i+1,t,{color:'#f3d694',active:i===c.index,done:i<c.index,progress:i===c.index?Math.max(0,(c.until-elapsed)/(18+expedition.modules.chart*3)):null}));
 }
+
 function nextLeg(){
  if(activeRun!=='endless'||state!=='playing'||elapsed<90||hp<=0||station?.failed)return;
  settleLeg();voyage.cleared++;voyage.challenges+=Number(clearChallenge.won);voyage.rescued+=station?.rescued||0;
@@ -634,7 +651,7 @@ function drawWorld(t){
   ctx.strokeStyle='#c1a2fa18';ctx.lineWidth=2;for(let i=0;i<4;i++){ctx.beginPath();ctx.ellipse(W*.5,H*.5,W*(.12+i*.11),H*(.1+i*.1),-.4,0,Math.PI*2);ctx.stroke()}
   const e=worldEvent;if(e){
    const flip=x=>e.mirror?1-x:x;
-   if(!e.used){drawWarpChoices(e,t);   }else{if(e.route==='risk')for(const r of warpRocks(e)){ctx.strokeStyle='#ffbc9f';ctx.fillStyle='#66404e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x*W,r.y*H,r.r,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.strokeStyle='#d9c1ff35';ctx.setLineDash([4,7]);ctx.beginPath();ctx.moveTo(ship.x,ship.y);for(const p of warpBeacons(e).slice(e.index))ctx.lineTo(p.x*W,p.y*H);ctx.stroke();ctx.setLineDash([]);warpBeacons(e).forEach((p,i)=>{if(i<e.index)return;ctx.globalAlpha=i===e.index?1:.25;ctx.strokeStyle='#d9c1ff';ctx.fillStyle='#e5d4ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x*W,p.y*H,22,0,Math.PI*2);ctx.stroke();ctx.fillText(String(i+1),p.x*W,p.y*H+4)});}
+   if(!e.used){drawWarpChoices(e,t);   }else{if(e.route==='risk')for(const r of warpRocks(e)){ctx.strokeStyle='#ffbc9f';ctx.fillStyle='#66404e';ctx.lineWidth=2;ctx.beginPath();ctx.arc(r.x*W,r.y*H,r.r,0,Math.PI*2);ctx.fill();ctx.stroke()}ctx.strokeStyle='#d9c1ff35';ctx.setLineDash([4,7]);ctx.beginPath();ctx.moveTo(ship.x,ship.y);for(const p of warpBeacons(e).slice(e.index))ctx.lineTo(p.x*W,p.y*H);ctx.stroke();ctx.setLineDash([]);warpBeacons(e).forEach((p,i)=>drawNavBeacon(p.x*W,p.y*H,i+1,t,{color:'#c1aaf0',active:i===e.index,done:i<e.index}));}
   }
  }
  ctx.restore();
@@ -857,6 +874,7 @@ function resize(){
 new ResizeObserver(resize).observe(canvas);
 function tone(f=600,d=.09){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f,audio.currentTime);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+d)}catch{}}
 function hud(){
+ navigationHud();
  const controlSignature=state+'|'+panelOpen;
  if(controlSignature!==controlHudSignature){
   controlHudSignature=controlSignature;
@@ -1540,7 +1558,7 @@ function updateAdventure(dt,oldX,oldY){
   if(whaleSafe){o.follow+=dt;if(o.follow>=5&&!o.rewarded){o.rewarded=true;whaleWins++;score+=150;adventureResult='追鲸同行 · +150 分';tone(950,.14)}}
   o.drop-=dt;if(o.drop<=0){o.drop=.5;items.push({x:o.x*W,y:o.y*H,v:0,r:7,rock:false,a:0,age:0})}
  }else if(o.kind==='cargo'){
-  for(const c of o.crates)if(!c.taken&&o.load<3&&segmentDistance(c.x*W,c.y*H,oldX,oldY,ship.x,ship.y)<20){c.taken=true;o.load++;tone(500+o.load*100,.08)}
+  for(const c of o.crates)if(!c.taken&&o.load<3&&segmentDistance(c.x*W,c.y*H,oldX,oldY,ship.x,ship.y)<20){c.taken=true;o.load++;burst(c.x*W,c.y*H,'#f3d694');tone(500+o.load*100,.08)}
   if(o.load>0&&segmentDistance(o.station.x*W,o.station.y*H,oldX,oldY,ship.x,ship.y)<30){
    const reward=cargoReward(o.load);cargoDelivered+=o.load;score+=reward;o.load=0;boostCooldown=Math.max(0,boostCooldown-1);burst(o.station.x*W,o.station.y*H,'#ffdca0');adventureResult=`货物已交付 · +${reward} 分，加速充能 1 秒`;
    if(o.crates.every(c=>c.taken)){if(o.port){guard++;adventureResult+=' · 港口补给：护甲 +1'}objective=null;}
@@ -1588,10 +1606,8 @@ function drawAdventure(t){
  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='11px sans-serif';
  const o=objective;
  if(o?.kind==='rings'){
-  for(let i=o.index;i<o.points.length;i++){
-   const p=o.points[i],x=p.x*W,y=p.y*H,active=i===o.index;
-   ctx.globalAlpha=active?.9:.25;ctx.strokeStyle=active?'#efd2ff':'#c1aaf0';ctx.lineWidth=active?3:1;ctx.beginPath();ctx.arc(x,y,22+(active?Math.sin(t*3)*2:0),0,Math.PI*2);ctx.stroke();ctx.fillStyle='#f5e7ff';ctx.fillText(String(i+1),x,y);
-  }
+  for(let i=1;i<o.points.length;i++)drawRouteLink({x:o.points[i-1].x*W,y:o.points[i-1].y*H},{x:o.points[i].x*W,y:o.points[i].y*H},t,'#c1aaf0',i===o.index);
+  o.points.forEach((p,i)=>drawNavBeacon(p.x*W,p.y*H,i+1,t,{active:i===o.index,done:i<o.index}));
  }
  if(o?.kind==='escort'){
   ctx.globalAlpha=.85;ctx.strokeStyle='#a9daff';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(o.home.x*W,o.home.y*H,32,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#c6eaff';ctx.fillText('归航',o.home.x*W,o.home.y*H);
@@ -1599,10 +1615,9 @@ function drawAdventure(t){
   ctx.globalAlpha=1;ctx.shadowColor='#b6deff';ctx.shadowBlur=effectBlur(13);ctx.fillStyle='#c6eaff';ctx.beginPath();ctx.arc(o.x,o.y,9,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#16384c';ctx.beginPath();ctx.arc(o.x-3,o.y-1,1.3,0,7);ctx.arc(o.x+3,o.y-1,1.3,0,7);ctx.fill();
  }
  if(o?.kind==='cargo'){
-  ctx.globalAlpha=.9;ctx.strokeStyle='#ffdca0';ctx.fillStyle='#ffdca0';ctx.lineWidth=2;
-  const x=o.station.x*W,y=o.station.y*H;ctx.beginPath();ctx.arc(x,y,28,0,Math.PI*2);ctx.stroke();ctx.strokeRect(x-19,y-19,38,38);ctx.fillText('交货',x,y);
-  for(const c of o.crates)if(!c.taken){const cx=c.x*W,cy=c.y*H;ctx.fillStyle='#705333';ctx.fillRect(cx-9,cy-9,18,18);ctx.strokeRect(cx-9,cy-9,18,18);ctx.beginPath();ctx.moveTo(cx,cy-8);ctx.lineTo(cx,cy+8);ctx.stroke()}
-  for(let i=0;i<o.load;i++){ctx.fillStyle='#ffdca0';ctx.fillRect(ship.x-11+i*8,ship.y+22,6,6)}
+  drawCargoPort(o,t);
+  for(const c of o.crates)if(!c.taken)drawCargoCrate(c.x*W,c.y*H,t);
+  for(let i=0;i<o.load;i++)drawCargoCrate(ship.x+(i-(o.load-1)/2)*11,ship.y+26,t,.32);
  }
  if(fork){
   sectorPairs[forkStage()].forEach((id,i)=>{
@@ -1657,16 +1672,84 @@ const hullShapes={
 };
 function modelPath(points,scale=1){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0]*scale,p[1]*scale):ctx.moveTo(p[0]*scale,p[1]*scale));ctx.closePath()}
 function modelPanel(points,fill,stroke){modelPath(points);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke()}}
+// V23: bounded vector props. All animation reads time; collision geometry stays in gameplay code.
+function drawRouteLink(a,b,t,color,active=true){
+ const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);if(len<58)return;
+ const ux=dx/len,uy=dy/len,start={x:a.x+ux*29,y:a.y+uy*29},end={x:b.x-ux*29,y:b.y-uy*29};
+ ctx.save();ctx.globalAlpha=active?.42:.16;ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([3,7]);ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(end.x,end.y);ctx.stroke();ctx.setLineDash([]);
+ if(active){const u=effectiveTier()<2?(t*.24)%1:.5;ctx.translate(start.x+(end.x-start.x)*u,start.y+(end.y-start.y)*u);ctx.rotate(Math.atan2(dy,dx));ctx.globalAlpha=.75;ctx.beginPath();ctx.moveTo(-4,-3);ctx.lineTo(0,0);ctx.lineTo(-4,3);ctx.stroke()}
+ ctx.restore();
+}
+function drawNavBeacon(x,y,number,t,{color='#c1aaf0',active=false,done=false,polarity=null,progress=null}={}){
+ ctx.save();ctx.translate(x,y);ctx.globalAlpha=done?.28:active?1:.48;ctx.lineWidth=1;
+ // Hexagonal chassis, shaded top panel and a stationary, high-contrast number plate.
+ modelPanel([[0,-19],[17,-10],[17,10],[0,19],[-17,10],[-17,-10]],'#152b3b',color);
+ modelPanel([[0,-19],[17,-10],[0,-4],[-17,-10]],'#2c4756');
+ ctx.fillStyle='#0b1b29';ctx.fillRect(-11,-11,22,23);
+ ctx.strokeStyle=color;ctx.lineWidth=active?2:1;
+ for(let i=0;i<3;i++){const a=i*Math.PI*2/3+(active&&effectiveTier()<2?t*.22:0);ctx.beginPath();ctx.arc(0,0,24,a+.2,a+1.5);ctx.stroke()}
+ if(active){
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(-4,-34);ctx.lineTo(4,-34);ctx.lineTo(0,-28);ctx.closePath();ctx.fill();
+  if(progress!==null){ctx.strokeStyle=color+'45';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,29,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=color;ctx.beginPath();ctx.arc(0,0,29,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,Math.min(1,progress)));ctx.stroke()}
+ }
+ ctx.fillStyle=done?color:'#eef4ed';ctx.font='600 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(done?'✓':String(number).padStart(2,'0'),0,1);
+ if(polarity){ctx.fillStyle='#0b1b29';ctx.strokeStyle=color;ctx.lineWidth=1;ctx.beginPath();ctx.arc(20,-20,9,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle=color;ctx.font='13px sans-serif';ctx.fillText(polarity==='bright'?'☀':'☾',20,-19)}
+ ctx.restore();
+}
+function drawCargoCrate(x,y,t,scale=1){
+ ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.lineWidth=1;
+ modelPanel([[-13,-8],[8,-8],[8,12],[-13,12]],'#6c5740','#ebc98c');
+ modelPanel([[-13,-8],[-7,-14],[14,-14],[8,-8]],'#b08b5c','#e7c992');
+ modelPanel([[8,-8],[14,-14],[14,6],[8,12]],'#3e4144','#c49f68');
+ ctx.fillStyle='#31424b';ctx.fillRect(-8,-5,12,13);ctx.strokeStyle='#a98962';ctx.lineWidth=1;
+ for(const bx of [-10,5]){ctx.beginPath();ctx.moveTo(bx,-7);ctx.lineTo(bx,11);ctx.stroke()}
+ ctx.fillStyle='#e9d1a0';for(const bx of [-11,6])for(const by of [-6,9])ctx.fillRect(bx,by,2,2);
+ ctx.fillStyle='#aeddd0';ctx.fillRect(-6,-3,8,2);ctx.fillStyle='#deba7b';ctx.fillRect(-5,3,6,4);
+ if(effectiveTier()<2){ctx.fillStyle='#a6d9c9'+(Math.sin(t*2)>0?'65':'35');ctx.fillRect(-6,0,8,1)}
+ ctx.restore();
+}
+function drawCargoPort(o,t){
+ const x=o.station.x*W,y=o.station.y*H,color=o.load?'#a6d9c9':'#f3d694';
+ ctx.save();ctx.translate(x,y);ctx.lineWidth=1.5;
+ modelPanel([[-26,-15],[0,-30],[26,-15],[26,15],[0,30],[-26,15]],'#182d3c',color+'80');
+ ctx.strokeStyle=color;ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.stroke();
+ for(let i=0;i<4;i++){const a=i*Math.PI/2;ctx.save();ctx.rotate(a);modelPanel([[-6,-31],[6,-31],[8,-23],[-8,-23]],'#39515c',color);ctx.fillStyle=color;ctx.fillRect(-3,-29,6,2);ctx.restore()}
+ ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,6);ctx.moveTo(-6,0);ctx.lineTo(0,6);ctx.lineTo(6,0);ctx.moveTo(-8,11);ctx.lineTo(8,11);ctx.stroke();
+ if(o.load&&effectiveTier()<2){ctx.strokeStyle='#a6d9c955';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,33+(t%1)*5,0,Math.PI*2);ctx.stroke()}
+ ctx.fillStyle=color;ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(o.load?'交付 '+o.load+'/3':'货运港',0,-43);ctx.restore();
+}
+function drawFieldEmitter(x,y,angle,active){
+ ctx.save();ctx.translate(Math.max(7,Math.min(W-7,x)),Math.max(7,Math.min(H-7,y)));ctx.rotate(angle);ctx.lineWidth=1;
+ const c=active?'#f08c79':'#f3d694';modelPanel([[-8,-9],[4,-9],[9,-5],[9,5],[4,9],[-8,9]],'#28414f',c);
+ modelPanel([[-8,-9],[4,-9],[4,-3],[-8,-3]],'#4c5960');ctx.fillStyle=c;ctx.fillRect(4,-4,5,8);ctx.fillStyle='#f6e7d1';ctx.fillRect(7,-2,2,4);
+ ctx.restore();
+}
+function navigationHud(){
+ const cue=$('navigationCue');let text='',kind='';
+ if(state==='playing'&&!panelOpen&&!boss){
+  const e=worldEvent,o=objective;
+  if(activeWorld==='ion'&&e?.points[e.index]){kind='ion';text=`回路 ${worldSlot}/5 · 下一点 ${e.index+1} · ${e.points[e.index].polarity==='bright'?'☀ 明月':'☾ 暗月'} · ${Math.max(0,Math.ceil(e.at+10-elapsed))}s`}
+  else if(activeWorld==='warp'&&e?.used&&e.index<3){kind='warp';text=`折跃信标 ${e.index+1}/3 · ${Math.max(0,Math.ceil(e.at+12-elapsed))}s`}
+  else if(o?.kind==='cargo'){kind='cargo';text=`货舱 ${o.load}/3 · ${o.load?'送往货运港':'靠近箱体收集'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`}
+  else if(o?.kind==='rings'){kind='rings';text=`导航星环 ${o.index+1}/${o.points.length} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`}
+  else if(expedition.chain){kind='supply';text=`补给信标 ${expedition.chain.index+1}/3 · ${Math.max(0,Math.ceil(expedition.chain.until-elapsed))}s`}
+ }
+ if(cue.textContent!==text)cue.textContent=text;cue.hidden=!text;cue.setAttribute('data-kind',kind);
+}
+
 function drawMeteor(o,t){
  const accent=o.trident?'#ff6f91':o.boomerang?'#ed9cb7':o.probe?'#c1aaf0':o.splitter?'#f3d694':o.core?'#c1aaf0':'#f08c79';
  ctx.save();ctx.translate(o.x,o.y);
  if(o.dx!==undefined){ctx.strokeStyle=accent+'55';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-o.dx*o.r,-o.dy*o.r);ctx.lineTo(-o.dx*(o.r+16),-o.dy*(o.r+16));ctx.stroke()}
- ctx.rotate(o.a||0);ctx.lineWidth=1.25;
+ ctx.rotate(o.trident?Math.atan2(o.dy??0,o.dx??1):o.a||0);ctx.lineWidth=1.25;
  if(o.core){
   modelPanel([[o.r,0],[o.r*.5,-o.r*.86],[-o.r*.5,-o.r*.86],[-o.r,0],[-o.r*.5,o.r*.86],[o.r*.5,o.r*.86]],'#3f3859',accent);
   ctx.strokeStyle='#e5d9fa';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,o.r*.65,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#e5d9fa';star(0,0,o.r*.4,0);
  }else if(o.trident){
-  modelPanel([[o.r,0],[-o.r*.65,-o.r*.85],[-o.r*.3,0],[-o.r*.65,o.r*.85]],'#743e59',accent);ctx.strokeStyle='#ffd1d6';ctx.beginPath();ctx.moveTo(-o.r*.3,-o.r*.4);ctx.lineTo(o.r*.35,0);ctx.lineTo(-o.r*.3,o.r*.4);ctx.stroke();
+  modelPanel([[o.r,0],[-o.r*.7,-o.r*.8],[-o.r*.42,-o.r*.2],[-o.r*.85,0],[-o.r*.42,o.r*.2],[-o.r*.7,o.r*.8]],'#693b52',accent);
+  modelPanel([[o.r,0],[-o.r*.7,-o.r*.8],[-o.r*.22,-o.r*.05]],'#ad6376');
+  ctx.strokeStyle='#ffd8cd';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-o.r*.55,0);ctx.lineTo(o.r*.45,0);ctx.stroke();
+  if(effectiveTier()<2){ctx.strokeStyle='#ff6f9160';ctx.lineWidth=1;for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(-o.r*.7,side*o.r*.6);ctx.lineTo(-o.r*1.5,side*o.r*.6);ctx.stroke()}}
  }else if(o.probe){
   modelPanel([[o.r,0],[0,-o.r],[-o.r,0],[0,o.r]],'#354052',accent);
   modelPanel([[o.r*.72,0],[0,-o.r*.7],[-o.r*.25,0],[0,o.r*.7]],'#736684');
@@ -2237,12 +2320,29 @@ function stepFields(dt,oldX,oldY,protectedByBoost){
  hazardFields=hazardFields.filter(e=>elapsed<e.end);
 }
 function drawField(e){
- const active=elapsed>=e.fire;
- if(e.kind==='cross'){for(const s of crossSegments(e))drawBeamSegment(s,active);return}
- ctx.save();ctx.strokeStyle=active?'#f08c79':'#f3d694';ctx.lineWidth=active?3:1.5;ctx.setLineDash(active?[]:[5,7]);
- for(const p of e.points){const x=p.x*W,y=p.y*H,r=Math.min(W,H)*.105;ctx.fillStyle=active?'#f08c7935':'#f3d6940a';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(x-8,y);ctx.lineTo(x+8,y);ctx.moveTo(x,y-8);ctx.lineTo(x,y+8);ctx.stroke()}
+ const active=elapsed>=e.fire,t=elapsed,detail=effectiveTier()<2;
+ if(e.kind==='cross'){
+  const segments=crossSegments(e);
+  for(const line of segments){
+   drawBeamSegment(line,active);const angle=Math.atan2(line[3]-line[1],line[2]-line[0]);
+   drawFieldEmitter(line[0],line[1],angle,active);drawFieldEmitter(line[2],line[3],angle+Math.PI,active);
+  }
+  if(!active){ctx.save();ctx.translate(e.x*W,e.y*H);ctx.strokeStyle='#f3d694';ctx.lineWidth=1;ctx.setLineDash([]);const r=14+Math.min(1,Math.max(0,e.fire-elapsed))*7;for(let i=0;i<4;i++){const a=i*Math.PI/2;ctx.beginPath();ctx.arc(0,0,r,a+.12,a+.65);ctx.stroke()}ctx.restore()}
+  return;
+ }
+ ctx.save();
+ for(const p of e.points){
+  const x=p.x*W,y=p.y*H,r=Math.min(W,H)*.105,c=active?'#f08c79':'#f3d694';
+  ctx.save();ctx.translate(x,y);ctx.strokeStyle=c;ctx.lineWidth=active?2.5:1.5;ctx.fillStyle=active?'#f08c791c':'#f3d69408';ctx.setLineDash(active?[]:[5,7]);ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+  if(!active){ctx.strokeStyle='#f3d69480';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,r-4,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,1-(e.fire-elapsed)/1.7));ctx.stroke()}
+  if(active&&detail){ctx.strokeStyle='#ffd4b5a0';ctx.lineWidth=1.3;for(let i=0;i<3;i++){const a=i*Math.PI*2/3+t*.3;ctx.beginPath();ctx.moveTo(Math.cos(a)*8,Math.sin(a)*8);ctx.lineTo(Math.cos(a+.12)*r*.45,Math.sin(a+.12)*r*.45);ctx.lineTo(Math.cos(a-.08)*r*.58,Math.sin(a-.08)*r*.58);ctx.lineTo(Math.cos(a)*r*.9,Math.sin(a)*r*.9);ctx.stroke()}}
+  ctx.lineWidth=1;modelPanel([[0,-10],[9,-5],[9,5],[0,10],[-9,5],[-9,-5]],'#32404c',c);modelPanel([[0,-10],[9,-5],[0,0],[-9,-5]],'#6b6260');ctx.fillStyle=c;ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();
+  for(let i=0;i<3;i++){const a=i*Math.PI*2/3;ctx.strokeStyle=c;ctx.beginPath();ctx.moveTo(Math.cos(a)*12,Math.sin(a)*12);ctx.lineTo(Math.cos(a)*17,Math.sin(a)*17);ctx.stroke()}
+  ctx.restore();
+ }
  ctx.restore();
 }
+
 function warnTrident(d,edge){
  const target={x:Math.max(.08,Math.min(.92,ship.x/W)),y:Math.max(.08,Math.min(.92,ship.y/H))};
  const shots=Array.from({length:3},(_,i)=>({edge:(edge+i)%4,at:.2+(hazardWave%3)*.3,tx:target.x,ty:target.y}));
@@ -2280,13 +2380,8 @@ function drawIon(t){
  for(let i=0;i<5;i++){const x=(i/5)*W;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x-H*.2,H);ctx.stroke()}
  const e=worldEvent;
  if(e){
-  ctx.setLineDash([4,9]);ctx.strokeStyle='#a6d9c940';ctx.beginPath();for(let i=0;i<e.points.length;i++){const p=e.points[i];i?ctx.lineTo(p.x*W,p.y*H):ctx.moveTo(p.x*W,p.y*H)}ctx.stroke();ctx.setLineDash([]);
-  for(let i=0;i<e.points.length;i++){
-   const p=e.points[i],x=p.x*W,y=p.y*H,color=p.polarity==='bright'?'#a6efdc':'#c1aaf0';ctx.globalAlpha=i<e.index?.3:i===e.index?1:.45;
-   ctx.strokeStyle=color;ctx.fillStyle='#172c3e';ctx.lineWidth=i===e.index?2.5:1;ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.fill();ctx.stroke();
-   ctx.fillStyle=color;ctx.font='18px sans-serif';ctx.textAlign='center';ctx.fillText(i<e.index?'✓':p.polarity==='bright'?'☀':'☾',x,y+6);ctx.font='11px sans-serif';ctx.fillText(String(i+1),x,y-30);
-   if(i===e.index){ctx.beginPath();ctx.arc(x,y,29,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0,1-(elapsed-e.at)/10));ctx.stroke()}
-  }
+  for(let i=1;i<e.points.length;i++)drawRouteLink({x:e.points[i-1].x*W,y:e.points[i-1].y*H},{x:e.points[i].x*W,y:e.points[i].y*H},t,'#a6d9c9',i===e.index);
+  e.points.forEach((p,i)=>drawNavBeacon(p.x*W,p.y*H,i+1,t,{color:p.polarity==='bright'?'#a6efdc':'#c1aaf0',active:i===e.index,done:i<e.index,polarity:p.polarity,progress:i===e.index?1-(elapsed-e.at)/10:null}));
  }
  ctx.restore();
 }
