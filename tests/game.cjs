@@ -9,7 +9,7 @@ vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8')
 const run=x=>vm.runInContext(x,sandbox);
 // Existing gameplay scenarios advance through the real resume preparation.
 run('function pauseAndWait(){pause();if(state==="resuming")update(3)}');
-const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length');
+const isolate=()=>run('environment.nextWreck=environment.nextGate=Infinity;spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length');
 const hit=rock=>run(`items=[{x:ship.x,y:shipY(),r:9,v:0,rock:${rock},a:0}];update(.01)`);
 run('start()');isolate();for(let i=0;i<10;i++)hit(false);assert.equal(run('score'),170);
 run('items=[{x:0,y:H+21,r:9,v:0,rock:false,a:0}];update(.01)');assert.equal(run('combo'),0);

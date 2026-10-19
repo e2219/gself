@@ -43,6 +43,7 @@ jobs:
           node --check dist/game.js
           node tests/game.cjs
           node tests/expansion.cjs
+          node tests/voyages.cjs
           node tests/profile.cjs
           node tests/mobile.cjs
           test -f dist/index.html

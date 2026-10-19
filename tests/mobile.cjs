@@ -52,6 +52,15 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  console.log('Native click-through PASS: complete cancel gesture, delayed navigation rejection, duplicate cancel, cancelled pointer, fresh navigation and keyboard activation');
  el('world-ion').click();assert.equal(run('selectedWorld'),'ion');el('music').click();assert.equal(w.localStorage.getItem('mooncatch-music'),'true');assert.equal(el('music').getAttribute('aria-pressed'),'true');el('music').click();
  el('nativeStart').click();run('elapsed=6;stepIon(0,ship.x,ship.y)');assert.equal(run('worldEvent.points.length'),3);w.MooncatchBack();el('nativeReturn').click();assert(w.MooncatchIsHome());
+ for(const mode of ['relax','adventure']){
+  el('run-'+mode).click();assert.equal(run('selectedRun'),mode);assert(w.document.body.classList.contains('special-run'));assert(el('runHint').textContent.length>10);
+  el('nativeStart').click();assert.equal(run('state'),'playing');assert.equal(run('activeRun'),mode);assert(!el('endRun').hidden);
+  assert.equal(run('boss'),null);assert(!el('moonToggle').disabled);const moon=run('moonPhase');el('moonToggle').click();assert.notEqual(run('moonPhase'),moon);run('dust=10;hud()');assert(!el('upgradeReady').hidden);w.MooncatchBack();const frozen=run('JSON.stringify([environment,researchTrip,meadow,elapsed])');run('update(10)');assert.equal(run('JSON.stringify([environment,researchTrip,meadow,elapsed])'),frozen);
+  el('endRun').click();assert.equal(run('state'),'over');assert(!run('panelOpen'));assert.equal(run('bestKey()'),'mooncatch-'+mode+'-v25');
+  el('nativeResultHome').click();assert(w.MooncatchIsHome());
+ }
+ el('run-timed').click();assert(!w.document.body.classList.contains('special-run'));assert.equal(run('activeWorld'),'ion');
+ console.log('V25 native DOM PASS: mode selection, descriptions, pause freezes new entities, manual results and return to original map');
  assert(calls.some(c=>c?.awake===false));assert(calls.some(c=>c?.awake===true));
  dom.window.close();console.log('Native DOM PASS: fullscreen home, selection, back stack, controls, foreground safety, optional upgrade, backup preview/cancel, sound persistence and safe insets');
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close()});

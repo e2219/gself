@@ -241,6 +241,35 @@ public class MobileSmokeTest {
         js("pause()");String frozen=js("JSON.stringify([ship,elapsed,worldEvent])");SystemClock.sleep(500);assertEquals(frozen,js("JSON.stringify([ship,elapsed,worldEvent])"));
         report("MOONCATCH_BLACKHOLE lunar/supply separation and pause passed");
     }
+    @Test public void newModesAndEnvironmentalPlay() throws Exception {
+        open();js("document.getElementById('run-relax').click();document.getElementById('nativeStart').click()");
+        assertEquals("true",js("activeRun==='relax' && meadow!==null && !document.getElementById('endRun').hidden"));
+        for(String mode:new String[]{"drag","stick","dpad"}){
+            js("selectControlMode('"+mode+"');clearInput();objective=null;environment=newEnvironment();items=[];spawn=hazardClock=100;boostTime=boostCooldown=0;ship.x=ship.target=W*.35;ship.y=ship.targetY=H*.4;spawnWreck(.35,.4);environment.wrecks[0].born=elapsed-1;window.previousThrows=environment.thrown");
+            waitFor("environment.tow!==null");
+            float[] p=point(mode.equals("drag")?"sky":mode.equals("stick")?"stickRing":"dir-r",mode.equals("stick")?.85:.5,.5);
+            double before=Double.parseDouble(js("ship.x"));long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);
+            if(mode.equals("drag")){p[0]+=55;touch(down,MotionEvent.ACTION_MOVE,p);}SystemClock.sleep(150);
+            assertTrue("Tow movement "+mode,Double.parseDouble(js("ship.x"))>before);
+            float[] b=point("boost",.5,.5);touch(down,MotionEvent.ACTION_POINTER_DOWN|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,b);SystemClock.sleep(80);
+            assertEquals("true",js("environment.tow===null && environment.thrown===previousThrows+1 && boostTime>0 && !document.getElementById('moonToggle').disabled"));
+            touch(down,MotionEvent.ACTION_POINTER_UP|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,b);touch(down,MotionEvent.ACTION_UP,p);
+            report("MOONCATCH_V25 real held "+mode+" and second-finger throw passed");
+        }
+        js("elapsed=46;stepMeadow(0,ship.x,ship.y);boostTime=0;elapsed=49;const h=blackHoleGeometry();for(let i=0;i<3;i++)environmentalMeteor({rock:true,r:12,prevX:h.x-h.r,prevY:h.y,x:h.x+h.r,y:h.y},.01)");
+        waitFor("environment.loot.length===3",4000);assertEquals("true",js("hp===3 && state==='playing' && boss===null"));
+        js("pause()");String frozen=js("JSON.stringify([environment,elapsed,meadow])");SystemClock.sleep(500);assertEquals(frozen,js("JSON.stringify([environment,elapsed,meadow])"));
+        js("endVoyage()");assertEquals("true",js("state==='over' && document.getElementById('message').textContent.includes('星种')"));
+        js("document.getElementById('nativeResultHome').click();document.getElementById('run-adventure').click();document.getElementById('nativeStart').click()");
+        assertEquals("true",js("activeRun==='adventure' && researchTrip.chapter===0 && time>179 && environment.gate===null"));
+        js("invincible=200;elapsed=4;ship.x=ship.target=W*.72;ship.y=ship.targetY=H*.44;stepJourney(0,ship.x,ship.y)");assertEquals("true",js("researchTrip.choice===1 && environment.gate.kind==='data'"));
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));waitFor("W>H");
+        assertEquals("true",js("environment.gate.points.every(p=>Number.isFinite(p.x*W+p.y*H)) && document.getElementById('navigationCue').getBoundingClientRect().width<=innerWidth"));
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));waitFor("H>W");
+        js("elapsed=120;stepJourney(0,ship.x,ship.y);elapsed=173;ship.x=ship.target=W*.82;ship.y=ship.targetY=H*.43;stepJourney(0,ship.x,ship.y)");
+        assertEquals("true",js("state==='over' && researchTrip.extracted && document.getElementById('title').textContent==='孤舟生还'"));
+        report("MOONCATCH_V25 relax nonfailure, hole swallow/reward, frozen pause, adventure entry/route, rotation and extraction passed");
+    }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");
         long end=SystemClock.uptimeMillis()+300000;int tick=0;

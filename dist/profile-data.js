@@ -3,11 +3,11 @@
 (function(root){
  const choices={
   'mooncatch-ship':['collector','falcon','warden'], 'mooncatch-world':['classic','aurora','warp','station','ion'],
-  'mooncatch-run':['timed','endless'], 'mooncatch-music-track':['floating-cities','dream-culture'], 'mooncatch-controls':['drag','stick','dpad'],
+  'mooncatch-run':['timed','endless','relax','adventure'], 'mooncatch-music-track':['floating-cities','dream-culture'], 'mooncatch-controls':['drag','stick','dpad'],
   'mooncatch-canvas-controls':['drag','stick','dpad'], 'mooncatch-render':['auto','smooth','clear'],
   'mooncatch-left-hand':['true','false'], 'mooncatch-sound':['true','false'], 'mooncatch-music':['true','false']
  };
- const scoreKeys=['mooncatch-best-v6',...['aurora','warp','station','ion'].map(w=>'mooncatch-best-'+w+'-v13'),...['classic','aurora','warp','station','ion'].map(w=>'mooncatch-endless-'+w+'-v16')];
+ const scoreKeys=['mooncatch-relax-v25','mooncatch-adventure-v25','mooncatch-best-v6',...['aurora','warp','station','ion'].map(w=>'mooncatch-best-'+w+'-v13'),...['classic','aurora','warp','station','ion'].map(w=>'mooncatch-endless-'+w+'-v16')];
  const keys=[...Object.keys(choices),'mooncatch-floating-layout',...scoreKeys];
  function valid(key,value){
   if(typeof value!=='string'||value.length>1000)return false;

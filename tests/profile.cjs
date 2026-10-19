@@ -19,3 +19,11 @@ console.log('V22 profile PASS: ion records and optional music round-trip, strict
 
 assert(p.valid('mooncatch-music-track','floating-cities'));assert(p.valid('mooncatch-music-track','dream-culture'));assert(!p.valid('mooncatch-music-track','https://example.com/a.mp3'));
 p.merge(store,{app:'mooncatch',format:1,data:{'mooncatch-music-track':'dream-culture'}});assert.equal(p.snapshot(store).data['mooncatch-music-track'],'dream-culture');
+for(const mode of ['relax','adventure']){
+ const key=`mooncatch-${mode}-v25`;
+ p.merge(store,{app:'mooncatch',format:1,data:{'mooncatch-run':mode,[key]:'720'}});
+ p.merge(store,{app:'mooncatch',format:1,data:{[key]:'100'}});
+ assert.equal(p.snapshot(store).data[key],'720');assert.equal(p.snapshot(store).data['mooncatch-run'],mode);
+ assert.equal(store.getItem('mooncatch-best-v6'),'900');
+}
+assert(!p.valid('mooncatch-run','story'));console.log('V25 profile PASS: two new modes round-trip, separate higher records and old records preserved');

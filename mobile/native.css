@@ -19,3 +19,6 @@ html,body.native-app{height:100%;overscroll-behavior:none;background:#0a1524}
 .native-app .game{--cockpit-top:calc(var(--native-safe-top,0px) + 10px)}.native-app .hud{top:var(--cockpit-top)!important}.native-app .pressure,.native-app .combo{top:calc(var(--cockpit-top) + 60px)}.native-app .navigation-cue,.native-app .bossbar{top:calc(var(--cockpit-top) + 81px)}
 .native-home .native-start-row{position:sticky;bottom:calc(-1 * (var(--native-safe-bottom,0px) + 20px));z-index:2;padding:14px 0 calc(var(--native-safe-bottom,0px) + 16px);background:#102536;border-top:1px solid #789b9e35;box-shadow:0 -8px 16px #102536e6}.native-home .native-start-row .primary{border-radius:10px}.native-app .panel-heading{padding-top:12px}
 @media(orientation:landscape) and (max-height:520px){.native-app .navigation-cue,.native-app .bossbar{top:calc(var(--cockpit-top) + 56px)}.native-app .combo{top:calc(var(--cockpit-top) + 46px)}.native-home .native-start-row{padding-top:8px;padding-bottom:calc(var(--native-safe-bottom,0px) + 8px);margin-top:8px}.native-home .native-start-row .primary{min-height:42px;padding:10px 18px}}
+
+/* V25: explain both authored modes before departure on small screens. */
+.native-home #runHint{display:block;font-size:11px;line-height:1.6;margin-top:8px;color:#a4bac4}

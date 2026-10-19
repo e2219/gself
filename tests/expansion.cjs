@@ -7,7 +7,7 @@ let seed=22;const seededMath=Object.create(Math);seededMath.random=()=>((seed=(s
 const sandbox={document:{hidden:false,body:{classList:classes()},getElementById:el,querySelector:()=>({classList:classes()}),addEventListener:noop},window:{addEventListener:(k,f)=>events[k]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{observe(){}},requestAnimationFrame:noop,devicePixelRatio:1,Math:seededMath,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);const run=s=>vm.runInContext(s,sandbox);
 function start(world='classic',mode='timed',leg=0){run(`state='over';selectedWorld='${world}';selectedRun='${mode}';resize();start();legIndex=${leg}`)}
-function isolate(){run('spawn=hazardClock=100;items=[];warnings=[];pending=[];wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length;bountySeen=true;expedition.seen=true')}
+function isolate(){run('environment.nextWreck=environment.nextGate=Infinity;spawn=hazardClock=100;items=[];warnings=[];pending=[];wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length;bountySeen=true;expedition.seen=true')}
 // Higher cap is real: both emission and flight speed continue beyond the old level-6 cap.
 const pressure=[];
 for(const leg of [0,10,14,20,100]){
