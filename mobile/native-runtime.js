@@ -5,12 +5,14 @@
  const home=document.createElement('section');home.id='nativeHome';home.className='native-home';
  home.innerHTML='<header><div><span class="eyebrow">MOONCATCH</span><h1>月面拾光</h1></div><button id="nativeSettings">设置</button></header><div id="nativePicks"></div><div class="native-start-row"><button id="nativeStart" class="primary">开始航行 →</button><span>离线版 __APP_VERSION__</span></div>';
  $('playShell').appendChild(home);
+ const art=$('harborArt');if(art){art.classList.add('native-harbor');home.querySelector('header').after(art)}
  const picks=home.querySelector('#nativePicks');
  for(const selector of ['.run-picker','.worlds','.fleet:not(.worlds)']){const el=document.querySelector(selector);if(el)picks.appendChild(el)}
  const returnButton=document.createElement('button');returnButton.id='nativeReturn';returnButton.textContent='结束本局并返回主菜单';$('controlSettings').appendChild(returnButton);
  const resultHome=document.createElement('button');resultHome.id='nativeResultHome';resultHome.textContent='返回主菜单';document.querySelector('#overlay .dialog').appendChild(resultHome);
  let atHome=true;
  window.MooncatchIsHome=()=>atHome;
+ window.MooncatchDockChanged=()=>native.files.setAwake({awake:!atHome&&state==='playing'}).catch(()=>{});
  function setHome(value){atHome=value;home.hidden=!value;document.body.classList.toggle('native-at-home',value);$('nativeReturn').hidden=value;native.files.setAwake({awake:!value&&state==='playing'}).catch(()=>{});}
  function goHome(){
   if(panelOpen)closePanel(false);
@@ -24,6 +26,7 @@
   if(panelOpen){closePanel(false);return}
   if(atHome){window.MooncatchSaveChanged?.().then(()=>native.App.exitApp()).catch(()=>{});return}
   if(state==='over'){goHome();return}
+  if(state==='dock'){openPanel('controls');return}
   if(state==='wager'){skipWager();return}
   if(state==='upgrade'){$('upgrade').hidden=true;offers=[];state='paused';resumeSafetyPending=true;show('已暂停','强化仍可稍后选择。','继续航行 →');hud();return}
   if(state==='menuIntro'){menuIntro=null;$('menuCue').hidden=true;state='playing'}

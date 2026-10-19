@@ -124,24 +124,75 @@ let selectedWorld='classic',activeWorld='classic',worldEvent=null,worldSlot=0,wo
 try{const saved=localStorage.getItem('mooncatch-world');if(worlds.some(w=>w.id===saved))selectedWorld=activeWorld=saved}catch{}
 let selectedRun='timed',activeRun='timed',legIndex=0,runHudSignature='',voyage={cleared:0,bonus:0,challenges:0,rescued:0};
 try{if(localStorage.getItem('mooncatch-run')==='endless')selectedRun=activeRun='endless'}catch{}
-const voyageDepth=()=>activeRun==='endless'?Math.max(0,Math.min(legIndex,5)):0;
+const voyageDepth=()=>activeRun==='endless'?Math.max(0,Math.min(legIndex/2,5)):0;
 const runName=()=>activeRun==='endless'?'无尽巡航':'90 秒挑战';
 function selectRun(mode){
  if(!['ready','over'].includes(state)||!['timed','endless'].includes(mode))return;
  selectedRun=activeRun=mode;try{storeSetting('mooncatch-run',mode)}catch{}loadWorldBest();hud();
- $('title').textContent=runName();$('message').textContent=activeRun==='endless'?'每段 90 秒自动续航，强化保留。可在「操作」中结束并结算。':'完成 90 秒旅程，带着星光返航。';
+ $('title').textContent=runName();$('message').textContent=activeRun==='endless'?'每段 90 秒，段间停靠补给站。修复护盾、选择远航模块，准备好再出发。':'完成 90 秒旅程，带着星光返航。';
 }
 function runHud(){
  const sig=[activeRun,state,legIndex].join('|');if(sig===runHudSignature)return;runHudSignature=sig;
  for(const mode of ['timed','endless']){const b=$('run-'+mode);b.setAttribute('aria-pressed',String(selectedRun===mode));b.disabled=!['ready','over'].includes(state)}
- $('runHint').textContent=activeRun==='endless'?`第 ${legIndex+1} 段 · 压力 ${voyageDepth()+1}/6${voyageDepth()===5?"（上限）":""} · 强化保留 / 换段补盾`:'90 秒一局 · 四张地图独立纪录';
+ $('runHint').textContent=activeRun==='endless'?`第 ${legIndex+1} 段 · 压力 ${voyageDepth()+1}/6${voyageDepth()===5?"（上限）":""} · 段间补给 / 自主整备`:'90 秒一局 · 四张地图独立纪录';
  $('timeLabel').textContent=activeRun==='endless'?`第 ${legIndex+1} 段剩余`:'剩余时间';$('bestLabel').textContent=activeRun==='endless'?'无尽纪录':'本版最佳';
- $('endRun').hidden=activeRun!=='endless';$('endRun').disabled=!['playing','paused'].includes(state);
+ $('endRun').hidden=activeRun!=='endless';$('endRun').disabled=!['playing','paused','dock'].includes(state);
 }
 function settleLeg(){
  if(hp<=0||station?.failed||elapsed<90)return;
  if(station&&!station.paid){station.paid=true;const reward=station.hp*150+station.rescued*100;score+=reward;voyage.bonus+=reward}
  if(bossStarted&&boss?.hp>0&&!stormRewarded){score+=200;voyage.bonus+=200;stormRewarded=true}
+}
+const expeditionModules=[
+ {id:'coil',name:'脉冲线圈',icon:'ϟ',detail:'每拾取一枚信标，加速冷却缩短 0.8 秒 / 级。'},
+ {id:'chart',name:'引航星盘',icon:'⌖',detail:'信标链期限延长 3 秒 / 级，回收半径扩大 8 像素 / 级。'},
+ {id:'ward',name:'护航阵列',icon:'◇',detail:'每次离港额外获得 1 层护甲 / 级，上限 4 层。'}
+];
+const newExpedition=()=>({modules:{coil:0,chart:0,ward:0},chain:null,seen:false,completed:0,credits:0,picks:0,selected:-1});
+let expedition=newExpedition();
+function renderDock(){
+ $('dockTitle').textContent=`第 ${legIndex} 段完成，靠港整备`;
+ $('dockSummary').textContent=`护盾修复 +2 · 星屑 +2 · 加速已充满${expedition.credits?' · 信标奖励 +1 次整备':''}`;
+ $('dockBudget').textContent=expedition.picks>0?`剩余 ${expedition.picks} 次整备 · 选好后点击确认`:'整备完成，准备好再离港';
+ expeditionModules.forEach((m,i)=>{const level=expedition.modules[m.id],max=level>=3,b=$('module'+i);b.innerHTML=`<span class="module-icon">${m.icon}</span><strong>${max?'应急物资':m.name}</strong><span>${max?'护甲 +1、星屑 +2（模块已满级）':m.detail}</span><small>${max?'可重复领取':`当前 ${level} / 3 级`}</small>`;b.setAttribute('aria-pressed',String(expedition.selected===i));b.disabled=expedition.picks<=0});
+ $('dockApply').disabled=expedition.selected<0||expedition.picks<=0;$('dockApply').textContent='确认整备';
+ $('dockLaunch').textContent=`启航 · 第 ${legIndex+1} 段`;
+ $('dockLoadout').textContent=expeditionModules.map(m=>`${m.name} ${expedition.modules[m.id]}/3`).join('　');
+}
+function selectModule(index){if(state!=='dock'||panelOpen||expedition.picks<=0||!expeditionModules[index])return;expedition.selected=index;renderDock()}
+function grantDockArmor(amount){guard+=Math.max(0,Math.min(amount,4-guard))}
+function applyModule(){
+ if(state!=='dock'||panelOpen||expedition.picks<=0||expedition.selected<0)return;
+ const m=expeditionModules[expedition.selected];if(expedition.modules[m.id]<3)expedition.modules[m.id]++;else{grantDockArmor(1);dust+=2}
+ expedition.picks--;expedition.selected=-1;renderDock();hud();$(expedition.picks>0?'module0':'dockLaunch').focus({preventScroll:true});
+}
+function departDock(){
+ if(state!=='dock'||panelOpen)return;
+ // Unspent choices are converted to supplies, so skipping never stalls a run.
+ grantDockArmor(1+expedition.modules.ward+expedition.picks);dust+=expedition.picks;
+ expedition.picks=expedition.credits=0;expedition.selected=-1;
+ $('dock').hidden=true;state='playing';clearInput();resumeShield=Math.max(resumeShield,3);invincible=0;hazardClock=6;
+ $('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('overlay').hidden=true;
+ hudSignature=runHudSignature='';announce(`第 ${legIndex+1} 段 · 启航保护 3 秒`);hud();focusGame();window.MooncatchDockChanged?.(false);
+}
+const supplyPoint=p=>({x:p.x*W,y:Math.max(Math.min(126,H*.4),Math.min(H-90,p.y*H))});
+function stepSupplyChain(dt,oldX,oldY){
+ if(activeRun!=='endless')return;
+ if(!expedition.seen&&elapsed>=18&&elapsed<30){
+  expedition.seen=true;const flip=legIndex%2===0;
+  expedition.chain={index:0,until:elapsed+18+expedition.modules.chart*3,armed:elapsed+1.2,points:(flip?[[.22,.45],[.53,.28],[.78,.48]]:[[.78,.45],[.47,.28],[.22,.48]]).map(([x,y])=>({x,y}))};
+ }
+ const c=expedition.chain;if(!c)return;
+ if(elapsed>c.until){expedition.chain=null;return}
+ const {x,y}=supplyPoint(c.points[c.index]);
+ if(elapsed<c.armed||segmentDistance(x,y,oldX,oldY,ship.x,ship.y)>24+expedition.modules.chart*8)return;
+ c.index++;score+=35;boostCooldown=Math.max(0,boostCooldown-expedition.modules.coil*.8);burst(x,y,'#f3d694');tone(660+c.index*100,.08);
+ if(c.index===3){expedition.completed++;expedition.credits=1;expedition.chain=null;dust+=2;announce('信标链回收 · 下站额外整备 +1')}
+}
+function drawSupplyChain(t){
+ const c=expedition.chain;if(!c||state==='dock')return;ctx.save();ctx.lineWidth=1;ctx.setLineDash([4,7]);ctx.strokeStyle='#f3d69445';ctx.beginPath();
+ c.points.slice(c.index).forEach((p,i)=>{const {x,y}=supplyPoint(p);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke();ctx.setLineDash([]);
+ c.points.forEach((p,i)=>{if(i<c.index)return;const {x,y}=supplyPoint(p),active=i===c.index;ctx.strokeStyle=active?'#f3d694':'#8a9aa8';ctx.lineWidth=active?2:1;ctx.beginPath();ctx.arc(x,y,active?20:12,0,Math.PI*2);ctx.stroke();ctx.fillStyle=active?'#f3d694':'#8a9aa8';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText(String(i+1),x,y+4);if(active){ctx.font='11px sans-serif';ctx.fillText(`补给信标 · ${Math.max(0,Math.ceil(c.until-elapsed))}s`,x,y+36)}});ctx.restore();
 }
 function nextLeg(){
  if(activeRun!=='endless'||state!=='playing'||elapsed<90||hp<=0||station?.failed)return;
@@ -153,14 +204,16 @@ function nextLeg(){
  station=activeWorld==='station'?newStation():null;if(station)station.hp=Math.min(4,stationHealth+1);
  clearChallenge={hits:0,won:false};boss=null;bossStarted=false;
  items=[];pending=[];warnings=[];shards=[];particles=[];echoes=[];rings=[];skillWake=[];flight.trail=[];
- boostTime=boostCooldown=slowTime=perfectWindow=0;perfectReady=false;hp=Math.min(3,hp+1);resumeShield=Math.max(resumeShield,1.5);
+ boostTime=boostCooldown=slowTime=perfectWindow=0;perfectReady=false;hp=Math.min(3,hp+2);dust+=2;resumeShield=Math.max(resumeShield,3);
  wagerSlot=0;activeWager=null;wagerResult='';wagerOffers=[];menuIntro=null;resumeSafetyPending=false;
  if(availablePowers().filter(p=>(powers[p.id]||0)<2).length>=2)bonusCredits++;
  if(activeWorld!=='classic'){adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length}
  hudSignature=worldSignature=adventureSignature=runHudSignature='';
- announce(`第 ${legIndex+1} 段 · 压力 ${voyageDepth()+1}/6 · 护盾补给`);$('status').textContent=phaseInfo().subtitle;hud();
+ expedition.chain=null;expedition.seen=false;expedition.picks=1+expedition.credits;expedition.selected=-1;
+ state='dock';clearInput();$('overlay').hidden=true;$('upgrade').hidden=true;$('wager').hidden=true;$('menuCue').hidden=true;$('dock').hidden=false;$('pause').disabled=true;
+ renderDock();hud();$('module0').focus({preventScroll:true});window.MooncatchDockChanged?.(true);
 }
-function endVoyage(){if(activeRun!=='endless'||!['playing','paused'].includes(state))return;if(panelOpen)closePanel(false);finish()}
+function endVoyage(){if(activeRun!=='endless'||!['playing','paused','dock'].includes(state))return;if(panelOpen)closePanel(false);finish()}
 const worldInfo=()=>worlds.find(w=>w.id===activeWorld);
 const bestKey=()=>activeRun==='endless'?'mooncatch-endless-'+activeWorld+'-v16':activeWorld==='classic'?'mooncatch-best-v6':'mooncatch-best-'+activeWorld+'-v13';
 function loadWorldBest(){try{best=Number(localStorage.getItem(bestKey()))||0}catch{best=0}$('best').textContent=String(best).padStart(3,'0')}
@@ -464,7 +517,7 @@ let floatingPrefs=normalizeFloatingPrefs(null),floatingSignature='';
 try{floatingPrefs=normalizeFloatingPrefs(JSON.parse(localStorage.getItem('mooncatch-floating-layout')||'null'))}catch{}
 try{const mode=localStorage.getItem('mooncatch-canvas-controls');if(['drag','stick','dpad'].includes(mode))canvasControl=mode}catch{}
 const driverMode=()=>canvasOnly?canvasControl:controlMode;
-let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0};
+let controlMode='drag',directionPointers=new Map(),stickPointer=null,stickOrigin=null,stickVector={x:0,y:0},stickMotion={x:0,y:0};
 let panelOpen=false,panelResume=false,panelTrigger=null,focusMode=false,canvasOnly=false,nativeScreen=false,fullscreenBusy=false,controlHudSignature='';
 const directions={ul:[-1,-1],u:[0,-1],ur:[1,-1],l:[-1,0],r:[1,0],dl:[-1,1],d:[0,1],dr:[1,1]};
 try{const saved=localStorage.getItem('mooncatch-controls');if(['drag','stick','dpad'].includes(saved))controlMode=saved}catch{}
@@ -488,11 +541,11 @@ const clamp=x=>Math.max(24,Math.min(W-24,x));
 const clampY=y=>Math.max(28,Math.min(H-28,y));
 const moveKeys=['arrowleft','arrowright','arrowup','arrowdown','a','d','w','s'];
 function difficulty(t=elapsed){
- const depth=voyageDepth(),floor=Math.min(.85,depth*.4),p=floor+(1-floor)*Math.max(0,Math.min(1,t/90));
+ const depth=voyageDepth(),floor=Math.min(.5,depth*.1),p=floor+(1-floor)*Math.max(0,Math.min(1,t/90));
  const speedScale=activeRoute?.id==='calm'?.9:activeRoute?.id==='rich'?1.05:1;
  const intervalScale=activeRoute?.id==='calm'?1.25:activeRoute?.id==='rich'?.9:1;
  const pressure=Math.max(0,(p*90-20)/70);
- return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure)*(1+.12*depth),interval:(2.1-p)*intervalScale/((1+.2*pressure)*(1+.14*depth)),warning:1.65-.4*p,count:1+(p>=.5||depth>0?1:0)+(depth>=3&&p>=.85?1:0),level:1+depth*6+Math.min(5,Math.floor(p*6))};
+ return {speed:Math.min(W,H)*(.24+.32*p)*speedScale*(1+.14*pressure)*(1+.08*depth),interval:(2.1-p)*intervalScale/((1+.2*pressure)*(1+.08*depth)),warning:1.65-.4*p,count:1+(p>=.5||depth>=2?1:0)+(depth>=3&&p>=.85?1:0),level:1+depth*6+Math.min(5,Math.floor(p*6))};
 }
 function segmentDistance(px,py,ax,ay,bx,by){
  const dx=bx-ax,dy=by-ay,d=dx*dx+dy*dy;
@@ -578,7 +631,7 @@ function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
  if(panelOpen)closePanel(false);
- overload=newOverload();
+ overload=newOverload();expedition=newExpedition();$('dock').hidden=true;
  activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
  activeShip=selectedShip;skillWake=[];activeWorld=selectedWorld;worldEvent=null;worldNotice=null;resonance=resonanceWaves=0;worldSlot=worldWins=worldJumps=0;station=activeWorld==='station'?newStation():null;loadWorldBest();
  resetAdventure();bounty=null;bountySeen=false;bountiesWon=0;grazeLock=grazeFlash=0;menuIntro=null;resumeShield=0;resumeSafetyPending=false;$('menuCue').hidden=true;
@@ -596,6 +649,7 @@ function pause(){
 }
 function finish(){
  if(state==='over')return;
+ $('dock').hidden=true;expedition.chain=null;
  settleLeg();
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{storeSetting(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
  $('pause').disabled=true;$('tag').textContent=record?'A NEW PERSONAL RECORD':'EVERY LITTLE LIGHT COUNTS';
@@ -638,6 +692,7 @@ for(const id of ['moonToggle','padMoon']){
 }
 $('upgradeReady').onclick=()=>{if(state==='playing'&&canUpgrade())offerUpgrade(true)};
 $('wagerReady').onclick=()=>{if(state==='playing'&&wagerInviteUntil>elapsed)maybeOfferWager(true)};
+for(let i=0;i<3;i++)$('module'+i).onclick=()=>selectModule(i);$('dockApply').onclick=applyModule;$('dockLaunch').onclick=departDock;$('dockEnd').onclick=endVoyage;
 $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade(1);
 $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$('wagerSkip').onclick=skipWager;
 $('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));
@@ -653,6 +708,11 @@ window.addEventListener('keydown',e=>{
    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}
    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}
   }
+  return;
+ }
+ if(state==='dock'){
+  if(!e.repeat&&['1','2','3'].includes(k)){e.preventDefault();selectModule(Number(k)-1)}
+  if(k==='tab'){const focusable=[$('module0'),$('module1'),$('module2'),$('dockApply'),$('dockLaunch'),$('dockEnd')].filter(b=>!b.disabled);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
   return;
  }
  if(k==='escape'&&focusMode&&!document.fullscreenElement){e.preventDefault();toggleFullscreen();return}
@@ -1001,7 +1061,7 @@ function update(dt){
  let oldX=ship.x,oldY=ship.y;
  const keyboardX=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a'));
  const keyboardY=Number(keys.has('arrowdown')||keys.has('s'))-Number(keys.has('arrowup')||keys.has('w'));
- const virtual=inputMode==='virtual'?virtualDirection():{x:0,y:0};
+ const virtual=inputMode==='virtual'?virtualDirection(dt):{x:0,y:0};
  const dx=keyboardX||keyboardY?keyboardX:virtual.x,dy=keyboardX||keyboardY?keyboardY:virtual.y;
  const length=Math.hypot(dx,dy),moveStep=Math.min(W,H)*.9*(boostTime>0?BOOST_SPEED:1)*cargoSpeed()*dt;
  const special=stepSpecialMovement(dt);
@@ -1011,7 +1071,7 @@ function update(dt){
  else{moveToward(ship,ship.target,ship.targetY,moveStep/(dt||1),dt);ship.x=clamp(ship.x);ship.y=clampY(ship.y)}
  }
  if(stepWorld(dt,oldX,oldY)){oldX=ship.x;oldY=ship.y}if(state==='over')return;
- updateFlight(dt,oldX,oldY);updateAdventure(dt,oldX,oldY);if(state==='over')return;stepFleet(dt,oldX,oldY);
+ stepSupplyChain(dt,oldX,oldY);updateFlight(dt,oldX,oldY);updateAdventure(dt,oldX,oldY);if(state==='over')return;stepFleet(dt,oldX,oldY);
  const chargingBoost=boostTime>0,protectedByBoost=chargingBoost||!!launch;boostTime=Math.max(0,boostTime-dt);
  spawn-=dt;if(spawn<=0){starWave();spawn=phases[phase].interval}
  hazardClock-=dt;if(activeWorld==='station')hazardClock=Math.max(hazardClock,100);if(storm&&boss?.hp>0)hazardClock=Math.max(hazardClock,1.5);if(hazardClock<=0){warnWave();hazardClock=difficulty().interval*(activeWorld==='classic'?1:elapsed<20?1.6:1.45)*(objective?.kind==='mining'?1.5:laser?1.3:1)}
@@ -1318,7 +1378,7 @@ function draw(t){ctx.clearRect(0,0,W,H);const bg=cachedPaint('background-'+activ
 for(const s of stars){ctx.globalAlpha=.25+(Math.sin(t*.6+s.p)+1)*.22;ctx.fillStyle='#dde8ec';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
 ctx.strokeStyle='#adcbd30c';for(let i=0;i<3;i++){ctx.beginPath();ctx.ellipse(W*.52,H*1.06,W*(.45+i*.15),H*(.55+i*.15),-.12,Math.PI,Math.PI*2);ctx.stroke()}
 ctx.fillStyle='#b8cec617';ctx.beginPath();ctx.arc(W*.83,H*.25,30,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17283c';ctx.beginPath();ctx.arc(W*.83+12,H*.25-7,27,0,Math.PI*2);ctx.fill();
-drawWorld(t);drawBounty(t);drawAdventure(t);drawSpecialSpace(t);drawMining(t);drawFleet();drawStorm();drawNavigation();drawThreatDetails();
+drawWorld(t);drawSupplyChain(t);drawBounty(t);drawAdventure(t);drawSpecialSpace(t);drawMining(t);drawFleet();drawStorm();drawNavigation();drawThreatDetails();
 for(const r of reflections){ctx.save();ctx.strokeStyle='#9cffe6';ctx.lineWidth=4;ctx.shadowColor='#9cffe6';ctx.shadowBlur=effectBlur(12);ctx.beginPath();ctx.moveTo(r.x-r.dx*24,r.y-r.dy*24);ctx.lineTo(r.x,r.y);ctx.stroke();ctx.fillStyle='#e1fff2';star(r.x,r.y,r.r,t*5);ctx.restore()}
 for(const w of warnings){
  const v=warningVector(w),x=Math.max(7,Math.min(W-7,v.x)),y=Math.max(7,Math.min(H-7,v.y));
@@ -1541,14 +1601,19 @@ function drawNavigation(){
 function clearVirtualInput(){
  if(!directionPointers.size&&stickPointer===null)return;
  const held=[...directionPointers.entries()];directionPointers.clear();
- const stick=stickPointer;stickPointer=null;stickOrigin=null;stickVector={x:0,y:0};
+ const stick=stickPointer;stickPointer=null;stickOrigin=null;stickVector={x:0,y:0};stickMotion={x:0,y:0};
  for(const [id,p] of held){try{p.surface?.releasePointerCapture?.(id)}catch{}}
  if(stick!==null){try{$('joystick').releasePointerCapture(stick)}catch{}}
  $('stickKnob').style.transform='translate(0px,0px)';$('joystick').setAttribute('data-active','false');
  for(const id of Object.keys(directions))$('dir-'+id).setAttribute('data-active','false');
 }
-function virtualDirection(){
- if(driverMode()==='stick')return stickVector;
+function virtualDirection(dt=1/60){
+ if(driverMode()==='stick'){
+  if(stickPointer===null)return {x:0,y:0};
+  const blend=1-Math.exp(-Math.max(0,dt)/.028);
+  stickMotion.x+=(stickVector.x-stickMotion.x)*blend;stickMotion.y+=(stickVector.y-stickMotion.y)*blend;
+  return stickMotion;
+ }
  let x=0,y=0;for(const p of directionPointers.values()){x+=p.x;y+=p.y}
  return {x,y};
 }
@@ -1592,8 +1657,10 @@ for(const [id,[x,y]] of Object.entries(directions)){
 }
 function moveStick(e){
  if(state!=='playing'||panelOpen||e.pointerId!==stickPointer||!stickOrigin)return;
- e.preventDefault();const x=e.clientX-stickOrigin.x,y=e.clientY-stickOrigin.y,d=Math.hypot(x,y),radius=36*(canvasOnly?floatingGeometry().scale:1);
- const strength=Math.max(0,Math.min(1,(d/radius-.12)/.88));
+ e.preventDefault();let x=e.clientX-stickOrigin.x,y=e.clientY-stickOrigin.y,d=Math.hypot(x,y);const radius=36*(canvasOnly?floatingGeometry().scale:1);
+ // A soft leash follows an overextended thumb, so reversing never requires a long return trip.
+ if(d>radius+12){const shift=(d-radius-12)/d;stickOrigin.x+=x*shift;stickOrigin.y+=y*shift;x=e.clientX-stickOrigin.x;y=e.clientY-stickOrigin.y;d=Math.hypot(x,y)}
+ const strength=Math.pow(Math.max(0,Math.min(1,(d/radius-.025)/.975)),1.15);
  stickVector=d?{x:x/d*strength,y:y/d*strength}:{x:0,y:0};
  const scale=d?Math.min(d,radius)/d:0;$('stickKnob').style.transform=`translate(${x*scale}px,${y*scale}px)`;
  claimVirtual();

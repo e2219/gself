@@ -9,3 +9,5 @@ android/signing.properties
 releases/
 *.jks
 *.keystore
+
+.build-tools/

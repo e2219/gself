@@ -27,5 +27,12 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  assert.equal(w.document.documentElement.style.getPropertyValue('--native-safe-top'),'32px');
  // Insets are delivered in the event's detail and never change the selected control scheme.
  w.dispatchEvent(new w.CustomEvent('mooncatchInsets',{detail:{top:0,right:34,left:0,bottom:10}}));assert.equal(w.document.documentElement.style.getPropertyValue('--native-safe-right'),'34px');assert.equal(run('driverMode()'),'stick');
+ // Dock survives native back/settings and background without starting the next leg.
+ el('nativeStart').click();run("activeRun=selectedRun='endless';elapsed=90;expedition.credits=1;nextLeg()");
+ assert.equal(run('state'),'dock');assert(!el('dock').hidden);assert.equal(run('expedition.picks'),2);
+ w.MooncatchBack();assert(run('panelOpen'));w.MooncatchLifecycle(false);w.MooncatchLifecycle(true);w.MooncatchBack();assert.equal(run('state'),'dock');assert(!run('panelOpen'));
+ el('module2').click();el('dockApply').click();assert.equal(run('expedition.modules.ward'),1);assert.equal(run('state'),'dock');
+ el('dockLaunch').click();assert.equal(run('state'),'playing');assert(run('resumeShield>=3'));assert(run('guard>=2'));
+ assert(calls.some(c=>c?.awake===false));assert(calls.some(c=>c?.awake===true));
  dom.window.close();console.log('Native DOM PASS: fullscreen home, selection, back stack, controls, foreground safety, optional upgrade, backup preview/cancel, sound persistence and safe insets');
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close()});

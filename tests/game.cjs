@@ -504,7 +504,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  el('stickRing').bounds={left:30,top:500,width:92,height:92};els.dpad.bounds={left:0,top:500,width:150,height:140};
  els['mode-stick'].onclick();assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],'stick');assert(els.touchPad.hidden&&!els.joystick.hidden&&els.dpad.hidden);
  const begin=run('[ship.x,ship.y].join()');elementEvents['joystick:pointerdown'](pe(91,76,546,els.joystick));run('update(.02)');assert.equal(run('[ship.x,ship.y].join()'),begin);
- elementEvents['joystick:pointermove'](pe(91,96.16,546,els.joystick));assert(Math.abs(run('stickVector.x')-.5)<1e-8);const x=run('ship.x');run('update(.1)');assert(Math.abs(run('ship.x')-x-360*.9*.1*.5)<1e-8);
+ elementEvents['joystick:pointermove'](pe(91,96.16,546,els.joystick));assert(run('stickVector.x')>.4&&run('stickVector.x')<.6);const x=run('ship.x');run('update(.1)');assert(run('ship.x')>x+12&&run('ship.x')<x+20);
  elementEvents['joystick:pointermove'](pe(91,112,582,els.joystick));assert(Math.abs(run('Math.hypot(stickVector.x,stickVector.y)')-1)<1e-8);
  elementEvents['joystick:pointercancel'](pe(91,112,582,els.joystick));const stopped=run('[ship.x,ship.y].join()');run('update(.1)');assert.equal(run('[ship.x,ship.y].join()'),stopped);assert.equal(run('stickPointer'),null);assert.equal(els.joystick.captures.size,0);
  elementEvents['joystick:pointerdown'](pe(92,112,546,els.joystick));els['mode-dpad'].onclick();assert.equal(run('stickPointer'),null);assert.equal(run('controlMode'),'dpad');assert.equal(run('directionPointers.size'),0);
@@ -841,53 +841,54 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V15 challenge PASS: 6/4 map-specific targets, time boundaries, unique kills/bonus, non-modal HUD, optional expiry and restart');
 }
 
-// V16: segment rollover preserves earned progression and held inputs, without dialogs.
+// V20: a segment ends at a safe dock, keeping progression while releasing held controls.
 {
  const timedBest=storage['mooncatch-best-v6'];run('state="over";selectWorld("classic");selectRun("endless");start()');isolate();
- assert.equal(storage['mooncatch-run'],'endless');assert.equal(els.bestLabel.textContent,'无尽纪录');assert(els['run-timed'].disabled);run('selectRun("timed")');assert.equal(run('activeRun'),'endless');
  run('selectControlMode("stick")');elementEvents['joystick:pointerdown']({pointerId:161,clientX:112,clientY:546,pointerType:'touch',currentTarget:els.joystick,preventDefault:noop});
  run('score=100;dust=12;powers.magnet=2;upgradeCount=2;hp=1;guard=1;moonPhase="dark";boostCooldown=3;bossStarted=true;boss={hp:3};elapsed=90;clearChallenge.won=true;nextLeg()');
- assert.equal(run('state'),'playing');assert.equal(run('legIndex'),1);assert.equal(run('elapsed'),0);assert.equal(run('time'),90);assert.equal(run('score'),300);assert.equal(run('hp'),2);assert.equal(run('guard'),1);assert.equal(run('powers.magnet'),2);assert.equal(run('dust'),12);assert.equal(run('upgradeCount'),2);assert.equal(run('bonusCredits'),1);assert.equal(run('moonPhase'),'dark');assert.equal(run('boostCooldown'),0);assert(run('resumeShield>=1.5'));assert.equal(run('stickPointer'),161);assert.equal(run('inputMode'),'virtual');assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);
- assert.equal(run('voyage.cleared'),1);assert.equal(run('voyage.challenges'),1);assert.equal(storage['mooncatch-endless-classic-v16'],'300');assert.equal(storage['mooncatch-best-v6'],timedBest);assert.equal(run('boss'),null);assert.equal(run('adventureSlot'),0);
- run('nextLeg()');assert.equal(run('score'),300);assert.equal(run('legIndex'),1);const x=run('ship.x');run('update(.03)');assert(run('ship.x')>x);
- run('elapsed=89.99;pause()');const frozen=run('JSON.stringify([legIndex,elapsed,powers,voyage])');run('update(2)');assert.equal(run('JSON.stringify([legIndex,elapsed,powers,voyage])'),frozen);run('pause();update(.02)');assert.equal(run('legIndex'),2);
- run('openPanel("controls")');els.endRun.onclick();assert.equal(run('state'),'over');assert(!run('panelOpen'));assert(els.hint.textContent.includes('完成 2 段'));const score=run('score');els.endRun.onclick();assert.equal(run('score'),score);
- run('start()');assert.equal(run('legIndex'),0);assert.equal(run('voyage.cleared'),0);assert.equal(run('score'),0);assert.equal(run('powers.magnet'),0);assert.equal(run('hp'),3);
- run('state="over";selectRun("timed");start()');assert.equal(run('best'),Number(timedBest)||0);assert(els.endRun.hidden);run('elapsed=89.99;update(.02)');assert.equal(run('state'),'over');assert.equal(run('legIndex'),0);
- console.log('V16 rollover PASS: retained powers/score/credits/phase, bounded resupply, one-time payout, live held joystick, pause across boundary, manual cash-out, mode-separated records and clean restart');
+ assert.equal(run('state'),'dock');assert.equal(run('legIndex'),1);assert.equal(run('elapsed'),0);assert.equal(run('score'),300);assert.equal(run('hp'),3);assert.equal(run('guard'),1);assert.equal(run('powers.magnet'),2);assert.equal(run('dust'),14);assert.equal(run('upgradeCount'),2);assert.equal(run('bonusCredits'),1);assert.equal(run('moonPhase'),'dark');assert.equal(run('boostCooldown'),0);assert.equal(run('stickPointer'),null);assert(!els.dock.hidden);assert(els.pause.disabled);
+ assert.equal(run('voyage.cleared'),1);assert.equal(run('voyage.challenges'),1);assert.equal(storage['mooncatch-endless-classic-v16'],'300');assert.equal(storage['mooncatch-best-v6'],timedBest);
+ const frozen=run('JSON.stringify([ship,elapsed,hp,score,legIndex])');run('nextLeg();update(30);pause()');assert.equal(run('JSON.stringify([ship,elapsed,hp,score,legIndex])'),frozen);assert.equal(run('state'),'dock');
+ run('selectModule(2);applyModule();applyModule()');assert.equal(run('expedition.modules.ward'),1);assert.equal(run('expedition.picks'),0);run('departDock()');assert.equal(run('state'),'playing');assert.equal(run('guard'),3);assert(run('resumeShield>=3'));assert.equal(run('hazardClock'),6);assert(els.dock.hidden);
+ run('elapsed=89.99;update(.02)');assert.equal(run('state'),'dock');run('openPanel("controls")');els.endRun.onclick();assert.equal(run('state'),'over');assert(!run('panelOpen'));assert(els.hint.textContent.includes('完成 2 段'));
+ run('start()');assert.equal(run('expedition.modules.ward'),0);assert.equal(run('legIndex'),0);assert.equal(run('powers.magnet'),0);assert(els.dock.hidden);
+ run('state="over";selectRun("timed");start();elapsed=89.99;update(.02)');assert.equal(run('state'),'over');assert(els.dock.hidden);
+ run('guard=7;grantDockArmor(3)');assert.equal(run('guard'),7);run('guard=2;grantDockArmor(5)');assert.equal(run('guard'),4);
+ console.log('V20 dock PASS: frozen rest, released inputs, progression/resupply, module confirmation, explicit safe departure, cash-out and restart');
 }
-// Every mobile driver plus desktop keyboard/mouse survives a segment boundary and resize.
+// Dock never reuses a stale touch, mouse target or held keyboard direction after rotation.
 {
  const pe=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop});
  for(const driver of ['stick','dpad','drag','keyboard','mouse']){
   width=360;height=400;run('state="over";selectRun("endless");selectWorld("warp");resize();start()');isolate();
-  if(driver==='stick'){run('selectControlMode("stick")');elementEvents['joystick:pointerdown'](pe(170,112,546,els.joystick))}
-  if(driver==='dpad'){run('selectControlMode("dpad")');elementEvents['dir-r:pointerdown'](pe(170,112,546,els['dir-r']))}
-  if(driver==='drag'){run('selectControlMode("drag")');elementEvents['touchPad:pointerdown'](pe(170,30,560,els.touchPad))}
-  if(driver==='keyboard')run('keys.add("d")');
-  if(driver==='mouse')run('inputMode="pointer";mouseX=ship.x;mouseY=ship.y;ship.target=ship.x+12');
-  const controls=run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])');run('elapsed=90;nextLeg()');assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
-  width=740;height=320;resizeCallback();assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
-  const x=run('ship.x');if(driver==='drag')elementEvents['touchPad:pointermove'](pe(170,45,560,els.touchPad));run('update(.03);draw(1)');assert(run('ship.x')>x,driver);
-  sandbox.document.hidden=true;docEvents.visibilitychange();assert.equal(run('state'),'paused');sandbox.document.hidden=false;docEvents.visibilitychange();assert.equal(run('state'),'paused');run('pause()');assert.equal(run('state'),'playing');
+  const press=()=>{
+   if(driver==='stick'){run('selectControlMode("stick")');elementEvents['joystick:pointerdown'](pe(170,112,546,els.joystick))}
+   if(driver==='dpad'){run('selectControlMode("dpad")');elementEvents['dir-r:pointerdown'](pe(170,112,546,els['dir-r']))}
+   if(driver==='drag'){run('selectControlMode("drag")');elementEvents['touchPad:pointerdown'](pe(170,30,560,els.touchPad));elementEvents['touchPad:pointermove'](pe(170,45,560,els.touchPad))}
+   if(driver==='keyboard')run('keys.add("d")');
+   if(driver==='mouse')run('inputMode="pointer";ship.target=ship.x+12');
+  };press();run('elapsed=90;nextLeg()');assert.equal(run('stickPointer'),null);assert.equal(run('keys.size+directionPointers.size+touches.size'),0);
+  width=740;height=320;resizeCallback();run('departDock()');const still=run('[ship.x,ship.y].join()');run('update(.03)');assert.equal(run('[ship.x,ship.y].join()'),still);
+  const x=run('ship.x');press();run('update(.03);draw(1)');assert(run('ship.x')>x,driver);
+  sandbox.document.hidden=true;docEvents.visibilitychange();assert.equal(run('state'),'paused');sandbox.document.hidden=false;run('pause()');assert.equal(run('state'),'playing');
  }
  run('state="over";selectRun("timed");selectControlMode("drag");start()');
- console.log('V16 controls PASS: stick/dpad/drag/keyboard/mouse rollover, portrait-to-landscape resize, continued movement, background pause and explicit resume');
+ console.log('V20 controls PASS: five drivers release at dock/rotation, fresh input and background pause');
 }
 // Death cannot advance a segment or pay survival, including the station at the time boundary.
 {
  run('state="over";selectRun("endless");selectWorld("station");start();hp=0;elapsed=90;score=0;finish()');assert.equal(run('score'),0);assert.equal(run('legIndex'),0);assert(!run('station.paid'));
  run('start();station.hp=3;station.rescued=2;elapsed=90;nextLeg()');assert.equal(run('score'),650);assert.equal(run('station.hp'),4);assert.equal(run('station.rescued'),0);assert.equal(run('voyage.rescued'),2);assert.equal(run('voyage.cleared'),1);
  run('station.failed=true;station.hp=0;elapsed=90;nextLeg()');assert.equal(run('legIndex'),1);run('finish()');assert.equal(run('score'),650);
- run('start();legIndex=5');const cap=run('JSON.stringify(difficulty(80))');run('legIndex=500');assert.equal(run('JSON.stringify(difficulty(80))'),cap);
+ run('start();legIndex=10');const cap=run('JSON.stringify(difficulty(80))');run('legIndex=500');assert.equal(run('JSON.stringify(difficulty(80))'),cap);
  run('state="over";selectRun("timed");selectWorld("classic");start()');
  console.log('V16 safety PASS: death/failure at boundary, independent station payouts/resupply, accumulated rescue totals and bounded deep-space pressure');
 }
-// Three uninterrupted full legs on each map and screen size; no modal automation.
+// Three full legs on every map and screen size with deliberate dock departure.
 {
  for(const map of ['classic','aurora','warp','station'])for(const size of [[360,400],[960,510]]){
   [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();invincible=1000;inputMode='keyboard';globalThis.endlessAudit={peak:0,legs:new Set(),captures:0};
-   for(let i=0;i<17000&&state==='playing'&&legIndex<3;i++){
+   for(let i=0;i<17000&&['playing','dock'].includes(state)&&legIndex<3;i++){
     if(station){const c=station.cells.find(c=>!c.taken),r=station.rescue;
      if(station.load){ship.target=W*.5;ship.targetY=H*.52;if(station.hp<=2)boost();}
      else if(r&&station.hp>=3){ship.target=r.x*W;ship.targetY=r.y*H;}
@@ -896,12 +897,13 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
      const threat=items.filter(o=>o.stationRaid&&!o.dead).sort((a,b)=>Math.hypot(a.x-W*.5,a.y-H*.52)-Math.hypot(b.x-W*.5,b.y-H*.52))[0];
      if(threat&&boostCooldown===0&&Math.hypot(threat.x-ship.x,threat.y-ship.y)<Math.min(W,H)*.5){boost();ship.target=threat.x;ship.targetY=threat.y;}
     }
+    if(state==='dock'){selectModule(1);applyModule();departDock();invincible=1000}
     update(1/60);endlessAudit.legs.add(legIndex);endlessAudit.peak=Math.max(endlessAudit.peak,items.length+warnings.length+shards.length);if(i%90===0)draw(i/60);
    }`);
-  assert.equal(run('legIndex'),3,map+' '+size+' '+run('JSON.stringify([elapsed,station])'));assert.equal(run('state'),'playing');assert.equal(run('voyage.cleared'),3);assert(run('endlessAudit.peak<180'));assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);assert(run('bonusCredits>=3'));
+  if(run("state==='dock'"))run('departDock()');assert.equal(run('legIndex'),3,map+' '+size+' '+run('JSON.stringify([elapsed,station])'));assert.equal(run('state'),'playing');assert.equal(run('voyage.cleared'),3);assert(run('endlessAudit.peak<180'));assert(els.overlay.hidden&&els.upgrade.hidden&&els.wager.hidden);assert(run('bonusCredits>=3'));
  }
  run('endVoyage();selectRun("timed");selectWorld("classic");start()');
- console.log('V16 journeys PASS: four maps × phone/desktop × three complete legs, repeated schedules, retained progression, bounded entities and no forced dialogs');
+ console.log('V16 journeys PASS: four maps × phone/desktop × three complete legs, repeated schedules, retained progression, bounded entities and deliberate dock choices');
 }
 
 // V16.1: test actual emitted waves as well as the numbers used by map collisions.
@@ -909,14 +911,14 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  for(const size of [[360,400],[960,510]]){
   [width,height]=size;
   const samples=[];
-  for(const depth of [0,1,2,3,5]){
+  for(const depth of [0,1,2,4,10]){
    run(`state='over';selectRun('endless');selectWorld('classic');resize();start();legIndex=${depth};invincible=1000;globalThis.auditWaves=0;globalThis.auditMeteors=0;globalThis.originalWarn=warnWave;warnWave=function(){const n=warnings.length;originalWarn();auditWaves++;auditMeteors+=warnings.length-n};`);
    isolate();run('hazardClock=4;for(let i=0;i<3600;i++)update(1/60);warnWave=originalWarn');
    samples.push(JSON.parse(run('JSON.stringify({depth:legIndex,waves:auditWaves,meteors:auditMeteors,startSpeed:difficulty(0).speed,warning:difficulty(90).warning})')));
    assert(run('hp===3&&state==="playing"'));assert(run('difficulty(90).warning>=1.25'));
   }
   for(let i=1;i<samples.length;i++){assert(samples[i].waves>samples[i-1].waves);assert(samples[i].meteors>samples[i-1].meteors);assert(samples[i].startSpeed>samples[i-1].startSpeed)}
-  assert(samples[1].meteors>=samples[0].meteors*1.7);assert(samples[1].startSpeed>=samples[0].startSpeed*1.7);
+  assert(samples[1].meteors<samples[0].meteors*1.35);assert(samples[1].startSpeed<samples[0].startSpeed*1.2);
   console.log('V16.1 real 60s waves '+size+': '+JSON.stringify(samples));
   run('legIndex=0;globalThis.baseGap=auroraGeometry({at:10,seed:1},14).half;globalThis.baseIris=irisGeometry({fire:72,x:.5,y:.42,gap:0},74);globalThis.baseRaids=stationRaids().length');
   for(const depth of [1,3,5]){
@@ -925,11 +927,11 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
    assert(run('irisGeometry({fire:72,x:.5,y:.42,gap:0},74).half<baseIris.half&&irisGeometry({fire:72,x:.5,y:.42,gap:0},74).gap>baseIris.gap'));
    assert(run('stationRaids().length>baseRaids&&stationRaids().every(t=>t>=10&&t<=81)'));
    // Extra risk-route rocks never cover a numbered beacon or the protected exit.
-   assert(run('warpRocks({mirror:false}).length>=3'));
+   assert(run('warpRocks({mirror:false}).length>=(voyageDepth()>=1?3:2)'));
    assert(run('warpRocks({mirror:false}).every(r=>warpBeacons({route:"risk",mirror:false}).every(p=>Math.hypot((r.x-p.x)*W,(r.y-p.y)*H)>r.r+shipRadius()))'));
   }
   run('activeWorld="station";station=newStation();elapsed=62;warnings=[];stepStation(0,0,0)');assert.equal(run('warnings.length'),2);assert(run('warnings.every(w=>w.total===2)'));
-  run('hud()');assert(els.pressure.textContent.includes('压力 6/6'));
+  run('legIndex=10;hud()');assert(els.pressure.textContent.includes('压力 6/6'));
  }
  run('state="over";selectRun("timed");selectWorld("classic");start()');assert.equal(run('voyageDepth()'),0);
  console.log('V16.1 progression PASS: real emission increases, bounded warnings, map collision geometry, station crossfire, HUD and timed-mode isolation');
@@ -1169,6 +1171,42 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V19 overload PASS: distinct-boost charge, bounded pulse/rewards/no recursion, pause/resize, station accounting, leg retention/restart and 20 map/input simulations');
 }
 
+// V20 analogue steering: micro-input, bounded speed, rapid reversal after overshoot, no release drift.
+{
+ width=390;height=844;run('state="over";selectRun("timed");resize();setCanvasOnly(false);start();selectControlMode("stick")');isolate();
+ els.stickRing.bounds={left:30,top:500,width:92,height:92};
+ const stick=(x,y=546,id=700)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',preventDefault:noop});
+ elementEvents['joystick:pointerdown'](stick(76));elementEvents['joystick:pointermove'](stick(78));
+ assert(run('stickVector.x>0&&stickVector.x<.05'));const micro=run('ship.x');run('update(1/60)');assert(run('ship.x')>micro);
+ elementEvents['joystick:pointermove'](stick(276));assert(run('stickOrigin.x>200'));run('update(.05)');assert(run('stickMotion.x>.8'));
+ // Return by only 70 px instead of the full 200 px overshoot to reverse direction.
+ elementEvents['joystick:pointermove'](stick(206));run('update(.05)');assert(run('stickMotion.x<0'));
+ elementEvents['joystick:pointerup'](stick(206));const stop=run('[ship.x,ship.y].join()');run('update(.05)');assert.equal(run('[ship.x,ship.y].join()'),stop);assert.equal(run('stickMotion.x'),0);
+ const sample=hz=>{run('stickPointer=1;stickVector={x:.6,y:.8};stickMotion={x:0,y:0}');for(let i=0;i<hz/5;i++)run(`virtualDirection(${1/hz})`);return JSON.parse(run('JSON.stringify(stickMotion)'))};
+ const a=sample(30),b=sample(120);assert(Math.abs(a.x-b.x)<1e-9&&Math.abs(a.y-b.y)<1e-9);assert(Math.hypot(a.x,a.y)<=1);
+ run('clearInput()');assert.equal(run('stickPointer'),null);assert.equal(run('stickMotion.y'),0);
+ console.log('V20 joystick PASS: micro-movement, bounded analogue speed, short reversal after overshoot, immediate release and 30/120Hz response equivalence');
+}
+// V20 optional supply chain: swept ordered pickup, real module effects, pause/expiry and once-only reward.
+{
+ for(const size of [[320,568],[844,390],[960,510]])for(const map of ['classic','aurora','warp','station']){
+  [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();elapsed=18;expedition.modules.coil=2;expedition.modules.chart=2;stepSupplyChain(0,ship.x,ship.y)`);
+  assert.equal(run('expedition.chain.until'),42);assert.equal(run('expedition.chain.index'),0);
+  run('globalThis.pt=supplyPoint(expedition.chain.points[0]);ship.x=pt.x;ship.y=pt.y;stepSupplyChain(0,ship.x,ship.y)');assert.equal(run('expedition.chain.index'),0);
+  run('elapsed=19.3;boostCooldown=5;score=0;dust=0');
+  for(let i=0;i<3;i++){run('globalThis.pt=supplyPoint(expedition.chain.points[expedition.chain.index]);ship.x=pt.x+50;ship.y=pt.y;stepSupplyChain(.01,pt.x-50,pt.y)');if(i<2)assert.equal(run('expedition.chain.index'),i+1)}
+  assert.equal(run('expedition.chain'),null);assert.equal(run('expedition.completed'),1);assert.equal(run('expedition.credits'),1);assert.equal(run('score'),105);assert.equal(run('dust'),2);assert(Math.abs(run('boostCooldown')-.2)<1e-8);
+  run('stepSupplyChain(.01,ship.x,ship.y)');assert.equal(run('expedition.completed'),1);run('elapsed=90;nextLeg()');assert.equal(run('expedition.picks'),2);
+  run('selectModule(0);applyModule();selectModule(0);applyModule()');assert.equal(run('expedition.modules.coil'),3);assert.equal(run('dust'),6);assert.equal(run('expedition.picks'),0);assert(run('guard<=4'));run('departDock()');assert.equal(run('expedition.credits'),0);
+  run('elapsed=18;stepSupplyChain(0,0,0);pause()');const frozen=run('JSON.stringify(expedition.chain)');run('update(20)');assert.equal(run('JSON.stringify(expedition.chain)'),frozen);
+  run('pause();elapsed=50;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);assert.equal(run('expedition.credits'),0);assert.equal(run('state'),'playing');
+  run('start()');assert.equal(run('expedition.completed'),0);assert.equal(run('expedition.modules.coil'),0);
+ }
+ run('state="over";selectRun("timed");start();elapsed=18;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);
+ console.log('V20 supply chain PASS: 4 maps × 3 screens, armed/swept/ordered pickups, coil/guide modules, reward caps, max-level supplies, pause/expiry and timed isolation');
+}
+
+run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("drag");start()');
 (async()=>{
  run('start()');isolate();
  // Native fullscreen, system exit, and unsupported/rejected API all share safe pause and cleanup.

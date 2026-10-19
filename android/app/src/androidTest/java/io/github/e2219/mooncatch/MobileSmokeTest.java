@@ -117,11 +117,25 @@ public class MobileSmokeTest {
         waitFor("H>W");assertEquals("true",js("focusMode && canvasOnly && driverMode()==='stick' && ship.x>=0 && ship.y>=0"));
         js("MooncatchBack()");waitFor("panelOpen");assertEquals("true",js("document.getElementById('gamePanel').getBoundingClientRect().width<=innerWidth"));
     }
+    @Test public void endlessDockAndStickResponse() throws Exception {
+        open();js("selectedRun='endless';document.getElementById('nativeStart').click();selectControlMode('stick');spawn=hazardClock=100;ship.x=ship.target=W*.35;ship.y=ship.targetY=H*.5");
+        float[] center=point("stickRing",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,center);
+        float[] right=new float[]{center[0]+180,center[1]};touch(down,MotionEvent.ACTION_MOVE,right);SystemClock.sleep(100);
+        double origin=Double.parseDouble(js("stickOrigin.x"));assertTrue("Overextended thumb must move the anchor",origin>Double.parseDouble(js("document.getElementById('stickRing').getBoundingClientRect().left")));
+        float density=Float.parseFloat(js("devicePixelRatio"));float[] reverse=new float[]{(float)(origin-26)*density,center[1]};touch(down,MotionEvent.ACTION_MOVE,reverse);SystemClock.sleep(100);assertEquals("true",js("stickMotion.x<0"));touch(down,MotionEvent.ACTION_UP,reverse);
+        String stopped=js("JSON.stringify([ship.x,ship.y])");SystemClock.sleep(120);assertEquals(stopped,js("JSON.stringify([ship.x,ship.y])"));
+        js("hp=1;expedition.credits=1;elapsed=90;nextLeg()");assertEquals("\"dock\"",js("state"));assertEquals("3",js("hp"));assertEquals("2",js("expedition.picks"));
+        SystemClock.sleep(500);assertEquals("0",js("elapsed"));
+        float[] choice=point("module2",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,choice);touch(down,MotionEvent.ACTION_UP,choice);
+        float[] confirm=point("dockApply",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,confirm);touch(down,MotionEvent.ACTION_UP,confirm);waitFor("expedition.modules.ward===1");
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("panelOpen");InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("!panelOpen && state==='dock'");
+        float[] launch=point("dockLaunch",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,launch);touch(down,MotionEvent.ACTION_UP,launch);waitFor("state==='playing' && resumeShield>2");assertEquals("true",js("guard>=2 && stickPointer===null"));
+    }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");
         long end=SystemClock.uptimeMillis()+300000;int tick=0;
         while(SystemClock.uptimeMillis()<end){
-            js("if(state==='over')start();if(state==='paused')pause();inputMode='pointer';ship.target=W*(.2+.6*(1+Math.sin("+tick+"*.21))/2);ship.targetY=H*(.25+.5*(1+Math.cos("+tick+"*.17))/2);if(boostCooldown<=0)boost()");
+            js("if(state==='over')start();if(state==='paused')pause();if(state==='dock'){selectModule(1);applyModule();departDock()}inputMode='pointer';ship.target=W*(.2+.6*(1+Math.sin("+tick+"*.21))/2);ship.targetY=H*(.25+.5*(1+Math.cos("+tick+"*.17))/2);if(boostCooldown<=0)boost()");
             if(tick%30==0)report("MOONCATCH_SOAK "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier,elapsed,score,hp})"));
             SystemClock.sleep(500);tick++;
         }
