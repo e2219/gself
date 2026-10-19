@@ -53,7 +53,7 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  el('world-ion').click();assert.equal(run('selectedWorld'),'ion');el('music').click();assert.equal(w.localStorage.getItem('mooncatch-music'),'true');assert.equal(el('music').getAttribute('aria-pressed'),'true');el('music').click();
  el('nativeStart').click();run('elapsed=6;stepIon(0,ship.x,ship.y)');assert.equal(run('worldEvent.points.length'),3);w.MooncatchBack();el('nativeReturn').click();assert(w.MooncatchIsHome());
  for(const mode of ['relax','adventure']){
-  el('run-'+mode).click();assert.equal(run('selectedRun'),mode);assert(w.document.body.classList.contains('special-run'));assert(el('runHint').textContent.length>10);
+  el('run-'+mode).click();assert.equal(run('selectedRun'),mode);assert(w.document.body.classList.contains('special-run'));assert(el('runHint').textContent.length>10);if(run('state')==='ready')assert.equal(el('time').textContent,mode==='adventure'?'180s':'0s');
   el('nativeStart').click();assert.equal(run('state'),'playing');assert.equal(run('activeRun'),mode);assert(!el('endRun').hidden);
   assert.equal(run('boss'),null);assert(!el('moonToggle').disabled);const moon=run('moonPhase');el('moonToggle').click();assert.notEqual(run('moonPhase'),moon);run('dust=10;hud()');assert(!el('upgradeReady').hidden);w.MooncatchBack();const frozen=run('JSON.stringify([environment,researchTrip,meadow,elapsed])');run('update(10)');assert.equal(run('JSON.stringify([environment,researchTrip,meadow,elapsed])'),frozen);
   el('endRun').click();assert.equal(run('state'),'over');assert(!run('panelOpen'));assert.equal(run('bestKey()'),'mooncatch-'+mode+'-v25');

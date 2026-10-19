@@ -127,11 +127,14 @@ let environment=newEnvironment(),researchTrip=null,meadow=null;
 const runModes=['timed','endless','relax','adventure'];
 let selectedRun='timed',activeRun='timed',legIndex=0,runHudSignature='',voyage={cleared:0,bonus:0,challenges:0,rescued:0};
 try{const saved=localStorage.getItem('mooncatch-run');if(runModes.includes(saved))selectedRun=activeRun=saved}catch{}
+if(specialRun())activeWorld='classic';
 const voyageDepth=()=>activeRun==='endless'?Math.max(0,Math.min(legIndex/2,10)):0;
 const runName=()=>({timed:'90 秒挑战',endless:'无尽巡航',relax:'星海漫游',adventure:'遗迹远征'})[activeRun];
 function selectRun(mode){
  if(!['ready','over'].includes(state)||!runModes.includes(mode))return;
- selectedRun=activeRun=mode;activeWorld=specialRun()?'classic':selectedWorld;station=activeWorld==='station'?newStation():null;worldSignature=mapSignature='';try{storeSetting('mooncatch-run',mode)}catch{}loadWorldBest();hud();
+ selectedRun=activeRun=mode;activeWorld=specialRun()?'classic':selectedWorld;station=activeWorld==='station'?newStation():null;worldSignature=mapSignature='';try{storeSetting('mooncatch-run',mode)}catch{}loadWorldBest();hud();readyModeCopy();
+}
+function readyModeCopy(){
  $('title').textContent=runName();$('message').textContent=activeRun==='relax'?'没有倒计时和失败。收集星种，回到月港种下星座，随时返航。':activeRun==='adventure'?'三个章节，180 秒撤离。驾驶选择救援、档案、采能或运输路线，收获会改变结局。':activeRun==='endless'?'每段 90 秒，段间停靠补给站。修复护盾、选择远航模块，准备好再出发。':'完成 90 秒旅程，带着星光返航。';
 }
 function runHud(){
@@ -627,11 +630,12 @@ function hud(){
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
  fleetHud();worldHud();runHud();mapHud();adventureHud();
- const signature=[score,Math.ceil(activeRun==='relax'?elapsed:time),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,bounty?.stage,bounty?.hp,Math.ceil(bounty?.until-elapsed),Math.ceil(resumeShield*10),!!environment.tow].join('|');
+ const displayTime=state==='ready'?(activeRun==='relax'?0:voyageLength()):activeRun==='relax'?elapsed:time;
+ const signature=[score,Math.ceil(displayTime),hp,guard,combo,phase,state,Math.ceil(boostCooldown*10),boostTime>0,dust,upgradeCount,...powersList.map(p=>powers[p.id]||0),announcementTime>0,boss?.hp,boss?.warning>0,storm?.event?.kind,storm?.event&&elapsed<storm.event.fire,activeWager?.id,Math.ceil(activeWager?.remaining||0),activeWager?.progress,wagerResult,bonusCredits,bonusUpgradeCount,difficulty().level,bounty?.stage,bounty?.hp,Math.ceil(bounty?.until-elapsed),Math.ceil(resumeShield*10),!!environment.tow].join('|');
  if(signature===hudSignature)return;hudSignature=signature;
  $('skillTip').textContent=`${hull().name} · 加速 ${boostDuration()} 秒 / 冷却 ${boostLimit()} 秒 · ${hull().trait}`;
  for(const id of ['boost','padBoost'])$(id).setAttribute('aria-label',`加速：${boostDuration()} 秒护盾与双倍移速，鼠标保持跟随`);
- $('score').textContent=String(score).padStart(3,'0');$('time').innerHTML=Math.ceil(activeRun==='relax'?elapsed:time)+'<span>s</span>';
+ $('score').textContent=String(score).padStart(3,'0');$('time').innerHTML=Math.ceil(displayTime)+'<span>s</span>';
  $('health').textContent='● '.repeat(hp)+'○ '.repeat(3-hp)+(guard?` +◇${guard}`:'');$('health').setAttribute('aria-label',hp+'点护盾，'+guard+'层护甲');
  $('combo').textContent=combo>=5?`${combo} 连击 · 星光 ×${Math.min(3,1+Math.floor(combo/5))*phases[phase].multiplier}`:'';
  $('pressure').textContent=activeRun==='relax'?'悠然航行 · 碰撞不扣血':activeRun==='adventure'?`遗迹远征 · 第 ${(researchTrip?.chapter||0)+1}/3 章`:resumeShield>0?`恢复保护 ${resumeShield.toFixed(1)}s · 可安全调整位置`:(activeRun==='endless'?`压力 ${voyageDepth()+1}/11 · ${activeWorld==='station'?'袭击加强':difficulty().count+' 向来袭'}`:`威胁 Lv.${difficulty().level} · 四面来袭`);
@@ -2344,4 +2348,4 @@ $('musicTrack').onchange=()=>{
 };
 musicSettings();
 
-function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
+function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();if(specialRun())readyModeCopy();requestAnimationFrame(frame);

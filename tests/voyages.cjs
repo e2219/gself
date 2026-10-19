@@ -86,3 +86,6 @@ for(const size of [[390,844],[960,510]])for(const route of [0,1,2,3]){
  assert.equal(run('journeyEnding()'),route%2?'文明火种':'载光归航');assert(run('elapsed>=150&&elapsed<180'));assert(run('maxStep<Math.min(W,H)*.02'));
  console.log('Continuous mission PASS',size,route,run('JSON.stringify({elapsed,route:researchTrip.route,energy:researchTrip.energy,data:researchTrip.data,rescued:researchTrip.rescued,maxStep})'));
 }
+
+for(const mode of ['relax','adventure']){reset(mode);run("state='ready';time=90;elapsed=0;hud();readyModeCopy()");assert.match(els.time.innerHTML,mode==='adventure'?/^180</:/^0</);assert.equal(els.title.textContent,mode==='adventure'?'遗迹远征':'星海漫游')}
+console.log('V25 entry PASS: mode-specific ready clock and description');
