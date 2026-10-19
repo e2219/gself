@@ -7,45 +7,41 @@
   },
   {
     "id": 2,
-    "path": "DDD",
-    "minimum": 3,
-    "visited": 14
+    "path": "RDDDXUUUL",
+    "minimum": 9,
+    "visited": 1272
   },
   {
     "id": 3,
+    "replayIndex": 0
+  },
+  {
+    "id": 4,
     "path": "RRRRD",
     "minimum": 5,
     "visited": 60
   },
   {
-    "id": 4,
-    "path": "UR",
-    "minimum": 2,
-    "visited": 14
-  },
-  {
     "id": 5,
-    "path": "RRRRRRDD",
-    "minimum": 8,
-    "visited": 36
+    "path": "LLLLLDRRDRURRR",
+    "minimum": 14,
+    "visited": 1685
   },
   {
     "id": 6,
-    "path": "RDRRURRD",
-    "minimum": 8,
-    "visited": 465
+    "path": "RDXUURRRXDRXUURXRRDD",
+    "minimum": 20,
+    "visited": 2355
   },
   {
     "id": 7,
-    "path": "RDDDRULURURR",
-    "minimum": 12,
-    "visited": 1682
+    "path": "RDL",
+    "minimum": 3,
+    "visited": 7
   },
   {
     "id": 8,
-    "path": "RDDRRURRD",
-    "minimum": 9,
-    "visited": 465
+    "replayIndex": 2
   },
   {
     "id": 9,
@@ -55,81 +51,75 @@
   },
   {
     "id": 10,
-    "path": "RDDRURRRR",
-    "minimum": 9,
-    "visited": 346
+    "path": "RDXDLDLLDDRRDXRRDDDDLL",
+    "minimum": 22,
+    "visited": 4002
   },
   {
     "id": 11,
-    "path": "RRDDDRURRDRURRRL",
-    "minimum": 16,
-    "visited": 1076
+    "replayIndex": 3
   },
   {
     "id": 12,
-    "path": "DRURDDRRRDRURRUULDLR",
-    "minimum": 20,
-    "visited": 19218
+    "path": "RDRDDXULLUU",
+    "minimum": 11,
+    "visited": 12694
   },
   {
     "id": 13,
-    "path": "RRDDDRURRDRURUULL",
-    "minimum": 17,
-    "visited": 1158
+    "path": "RDDDRUUUUULURDL",
+    "minimum": 15,
+    "visited": 271
   },
   {
     "id": 14,
-    "path": "RRDDDRURRDRURRRD",
-    "minimum": 16,
-    "visited": 1074
+    "path": "RRRDRRURRRXULLLLLDLLL",
+    "minimum": 21,
+    "visited": 5583
   },
   {
     "id": 15,
-    "path": "RDRDDRURRDRURULULDUURR",
-    "minimum": 22,
-    "visited": 35629
+    "replayIndex": 4
   },
   {
     "id": 16,
-    "path": "RDRRURR",
-    "minimum": 7,
-    "visited": 622
+    "path": "RRRRRRDD",
+    "minimum": 8,
+    "visited": 36
   },
   {
     "id": 17,
-    "path": "RDRRDUDRUUUR",
-    "minimum": 12,
-    "visited": 16578
+    "path": "RRRDDDLDLDDXUUUUUUL",
+    "minimum": 19,
+    "visited": 61534
   },
   {
     "id": 18,
-    "path": "RDRRRDDRUURR",
-    "minimum": 12,
-    "visited": 12720
+    "path": "RDRD",
+    "minimum": 4,
+    "visited": 169
   },
   {
     "id": 19,
-    "path": "RDRRDUDRRUUU",
-    "minimum": 12,
-    "visited": 43631
+    "replayIndex": 6
   },
   {
     "id": 20,
-    "path": "RDRRRRDLLRUU",
-    "minimum": 12,
-    "visited": 22783
-  },
-  {
-    "id": 21,
     "path": "RRRDDDLLRRDDULLLD",
     "minimum": 17,
     "visited": 1666
   },
   {
-    "id": 22,
+    "id": 21,
     "path": "RRDDDRRRURDLDR",
     "minimum": 14,
     "visited": 1588
+  },
+  {
+    "id": 22,
+    "path": "RDRRRRDLLRUU",
+    "minimum": 12,
+    "visited": 20353
   },
   {
     "id": 23,

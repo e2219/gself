@@ -165,6 +165,36 @@ public class MobileSmokeTest {
         js("MooncatchSuite.home()");tap(point("chooseClassic",.5,.5));assertEquals("\"classic\"",js("MooncatchSuite.mode"));tap(point("nativeStart",.5,.5));assertEquals("\"playing\"",js("state"));
         report("MOONCATCH_ECHO shared board, opposite movement, real dpad/hold/swipe, hints, undo, cancel, lifecycle, back, rotation and classic return passed");
     }
+    private void echoWalk(int x,int y) throws Exception {
+        for(int i=0;i<80;i++){
+            if("true".equals(js("eg.game.puzzle.player.x==="+x+"&&eg.game.puzzle.player.y==="+y)))return;
+            tap(echoPoint("board0",(x+.5)/17,(y+.5)/11));
+        }
+        fail("Map taps did not reach "+x+","+y);
+    }
+    private void echoWaitEnd() throws Exception {
+        for(int i=0;i<100;i++){
+            if("true".equals(js("eg.game.puzzle.cursor===eg.game.puzzle.trace.length-1")))return;
+            tap(echoPoint("wait",.5,.5));
+        }
+        fail("Explicit waits did not finish replay");
+    }
+    @Test public void varietyRealTouch() throws Exception {
+        open();js("MooncatchSuite.select('echo')");waitFor("document.getElementById('echoFrame')?.contentWindow.MoonEcho!==undefined");js("window.ew=document.getElementById('echoFrame').contentWindow;window.eg=ew.MoonEcho");
+        js("eg.choose(1)");SystemClock.sleep(350);echoShot("variety-relay-portrait");assertEquals("true",js("ew.document.getElementById('right').getBoundingClientRect().bottom<=ew.innerHeight"));String shadow=js("eg.game.state.p[1]");tap(echoPoint("right",.5,.5));assertEquals(shadow,js("eg.game.state.p[1]"));String body=js("eg.game.state.p[0]");tap(echoPoint("switchActor",.5,.5));assertEquals("1",js("eg.game.state.active"));tap(echoPoint("left",.5,.5));assertEquals(body,js("eg.game.state.p[0]"));assertNotEquals(shadow,js("eg.game.state.p[1]"));
+        js("eg.choose(4)");tap(echoPoint("right",.5,.5));assertEquals("true",js("eg.game.state.p[0]===11&&eg.game.state.p[1]===52"));
+        js("eg.choose(2)");SystemClock.sleep(250);tap(echoPoint("record",.5,.5));waitFor("eg.game.puzzle.mode==='recording'");String idleTrace=js("eg.game.puzzle.trace.length");SystemClock.sleep(900);assertEquals(idleTrace,js("eg.game.puzzle.trace.length"));tap(echoPoint("pauseReplay",.5,.5));String frozen=js("eg.game.puzzle.time");SystemClock.sleep(700);assertEquals(frozen,js("eg.game.puzzle.time"));tap(echoPoint("pauseReplay",.5,.5));
+        echoWalk(5,3);echoShot("variety-record-portrait");tap(echoPoint("replay",.5,.5));waitFor("eg.game.puzzle.mode==='playing'");String idleCursor=js("eg.game.puzzle.cursor");SystemClock.sleep(900);assertEquals(idleCursor,js("eg.game.puzzle.cursor"));tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.puzzle.cursor"));echoWaitEnd();
+        tap(echoPoint("hint",.5,.5));waitFor("ew.document.getElementById('help').open");frozen=js("eg.game.puzzle.time");SystemClock.sleep(600);assertEquals(frozen,js("eg.game.puzzle.time"));tap(echoPoint("closeHelp",.5,.5));
+        echoWalk(10,7);waitFor("eg.game.puzzle.latched");echoWalk(15,5);waitFor("eg.game.won&&ew.document.getElementById('victory').open");
+        js("eg.choose(14)");SystemClock.sleep(300);scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));waitFor("innerWidth>innerHeight");SystemClock.sleep(500);echoShot("variety-replay-landscape");
+        assertEquals("true",js("['right','record','replay','guard','interact','pauseReplay'].every(id=>{const r=ew.document.getElementById(id).getBoundingClientRect();return r.width>=44&&r.height>=44&&r.bottom<=ew.innerHeight&&r.right<=ew.innerWidth})"));tap(echoPoint("record",.5,.5));waitFor("eg.game.puzzle.mode==='recording'");
+        frozen=js("eg.game.puzzle.time");scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(600);scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);assertEquals(frozen,js("eg.game.puzzle.time"));assertEquals("true",js("eg.game.puzzle.paused"));
+        js("eg.choose(9)");SystemClock.sleep(300);echoShot("variety-relay-landscape");assertEquals("true",js("(()=>{const r=ew.document.getElementById('right').getBoundingClientRect();return r.bottom<=ew.innerHeight&&r.height>=44})()"));tap(echoPoint("switchActor",.5,.5));assertEquals("1",js("eg.game.state.active"));
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));waitFor("innerHeight>innerWidth");js("eg.choose(2)");SystemClock.sleep(250);assertEquals("true",js("(()=>{const r=ew.document.getElementById('right').getBoundingClientRect();return r.bottom<=ew.innerHeight})()"));
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("ew.document.getElementById('menu').open");tap(echoPoint("closeMenu",.5,.5));js("MooncatchSuite.home();MooncatchSuite.select('classic')");tap(point("nativeStart",.5,.5));assertEquals("\"playing\"",js("state"));
+        report("MOONCATCH_VARIETY real role switch, parallel movement, full step-synchronized twin-moon solution, idle freeze, explicit waits, modal pause, background freeze, portrait/landscape controls and classic return passed");
+    }
     @Test public void profileSnapshot() throws Exception {
         open();
         if("true".equals(InstrumentationRegistry.getArguments().getString("seedRecord"))){

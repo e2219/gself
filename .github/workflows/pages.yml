@@ -47,6 +47,7 @@ jobs:
           node tests/profile.cjs
           node tests/mobile.cjs
           node tests/echo.cjs
+          node tests/replay.cjs
           node tests/suite.cjs
           test -f dist/index.html
       - name: Build standalone game
