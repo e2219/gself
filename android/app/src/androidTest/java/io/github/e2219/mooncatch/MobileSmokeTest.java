@@ -143,23 +143,27 @@ public class MobileSmokeTest {
         open();js("MooncatchSuite.home()");tap(point("chooseEcho",.5,.5));
         waitFor("document.getElementById('echoFrame')?.contentWindow.MoonEcho!==undefined");
         js("window.ew=document.getElementById('echoFrame').contentWindow;window.eg=ew.MoonEcho");
-        tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));assertEquals("true",js("eg.game.state.p[0]===eg.game.state.p[1]"));
+        tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));assertEquals("true",js("eg.game.state.p[0]===11 && eg.game.state.p[1]===69"));
         tap(echoPoint("undo",.5,.5));assertEquals("0",js("eg.game.state.moves"));
         float[] p=echoPoint("right",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);SystemClock.sleep(900);touch(down,MotionEvent.ACTION_UP,p);waitFor("eg.game.won");
         js("eg.choose(1)");SystemClock.sleep(250);assertEquals("0",js("eg.game.state.moves"));
         p=echoPoint("board0",.3,.5);float[] q=echoPoint("board0",.7,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);touch(down,MotionEvent.ACTION_MOVE,q);touch(down,MotionEvent.ACTION_UP,q);SystemClock.sleep(200);assertEquals("1",js("eg.game.state.moves"));
-        js("eg.choose(8)");SystemClock.sleep(250);echoShot("echo-portrait");tap(echoPoint("board0",3.5/7,3.5/7));assertEquals("1",js("eg.game.state.flags[0].length"));tap(echoPoint("check",.5,.5));assertEquals("true",js("eg.game.state.safe[0]"));tap(echoPoint("undo",.5,.5));assertEquals("false",js("eg.game.state.safe[0]"));
+        js("eg.choose(24)");SystemClock.sleep(250);echoShot("shared-portrait");
+        assertEquals("1",js("ew.document.querySelectorAll('canvas').length"));assertEquals("true",js("!ew.document.getElementById('check') && !('flag' in eg.game)"));
+        js("ew.tapLog=[];ew.errorLog=[];for(const t of ['pointerdown','pointerup','click'])ew.document.addEventListener(t,e=>ew.tapLog.push(t+':'+e.target.id),true);ew.addEventListener('error',e=>ew.errorLog.push(e.message))");
+        tap(echoPoint("hint",.5,.5));SystemClock.sleep(500);report("SHARED_HINT "+js("JSON.stringify({events:ew.tapLog,errors:ew.errorLog,open:ew.document.getElementById('help').open})"));echoShot("shared-hint");waitFor("ew.document.getElementById('help').open");tap(echoPoint("closeHelp",.5,.5));
+
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("ew.document.getElementById('menu').open");tap(echoPoint("closeMenu",.5,.5));
         js("eg.choose(0)");p=echoPoint("right",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);touch(down,MotionEvent.ACTION_CANCEL,p);String saved=js("eg.game.state.moves");SystemClock.sleep(700);assertEquals(saved,js("eg.game.state.moves"));
         scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(500);assertEquals(saved,js("eg.game.state.moves"));scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
-        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));waitFor("innerWidth>innerHeight");SystemClock.sleep(400);echoShot("echo-landscape");
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));waitFor("innerWidth>innerHeight");SystemClock.sleep(400);echoShot("shared-landscape");
         assertEquals("true",js("(()=>{const d=ew.document,b=d.getElementById('right').getBoundingClientRect();return b.width>=44&&b.height>=44&&b.bottom<=ew.innerHeight&&b.right<=ew.innerWidth})()"));
         tap(echoPoint("reset",.5,.5));tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));
         scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));waitFor("innerHeight>innerWidth");
-        js("window.echoTimes=[];window.echoPulse=setInterval(()=>eg.step(eg.game.state.p[0]===22?'R':'L'),150);window.echoLast=performance.now();function sample(t){echoTimes.push(t-echoLast);echoLast=t;if(echoTimes.length<90)requestAnimationFrame(sample)}requestAnimationFrame(sample)");
+        js("window.echoTimes=[];window.echoPulse=setInterval(()=>eg.step(eg.game.state.p[0]===10?'R':'L'),150);window.echoLast=performance.now();function sample(t){echoTimes.push(t-echoLast);echoLast=t;if(echoTimes.length<90)requestAnimationFrame(sample)}requestAnimationFrame(sample)");
         waitFor("echoTimes.length>=90");js("clearInterval(echoPulse)");report("MOONCATCH_ECHO "+js("JSON.stringify({frames:echoTimes.length,medianMs:echoTimes.slice(5).sort((a,b)=>a-b)[42],maxMs:Math.max(...echoTimes.slice(5)),level:eg.index+1})"));
         js("MooncatchSuite.home()");tap(point("chooseClassic",.5,.5));assertEquals("\"classic\"",js("MooncatchSuite.mode"));tap(point("nativeStart",.5,.5));assertEquals("\"playing\"",js("state"));
-        report("MOONCATCH_ECHO real dpad, hold, swipe, flags, undo, cancel, lifecycle, back, rotation and classic return passed");
+        report("MOONCATCH_ECHO shared board, opposite movement, real dpad/hold/swipe, hints, undo, cancel, lifecycle, back, rotation and classic return passed");
     }
     @Test public void profileSnapshot() throws Exception {
         open();
