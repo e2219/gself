@@ -3,7 +3,7 @@
 (function(root){
  const choices={
   'mooncatch-ship':['collector','falcon','warden'], 'mooncatch-world':['classic','aurora','warp','station','ion'],
-  'mooncatch-run':['timed','endless'], 'mooncatch-controls':['drag','stick','dpad'],
+  'mooncatch-run':['timed','endless'], 'mooncatch-music-track':['floating-cities','dream-culture'], 'mooncatch-controls':['drag','stick','dpad'],
   'mooncatch-canvas-controls':['drag','stick','dpad'], 'mooncatch-render':['auto','smooth','clear'],
   'mooncatch-left-hand':['true','false'], 'mooncatch-sound':['true','false'], 'mooncatch-music':['true','false']
  };

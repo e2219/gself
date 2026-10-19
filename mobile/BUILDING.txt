@@ -1,9 +1,9 @@
-月面拾光 Android 工程 / 1.3.0 (versionCode 9)
+月面拾光 Android 工程 / 1.3.1 (versionCode 10)
 
 应用 ID：io.github.e2219.mooncatch
 最低 Android：7.0 / API 24。游戏依赖 Android System WebView；建议保持更新。
 游戏代码、图片和音效都在安装包内。没有远程 server.url；不申请网络、文件读写或账号权限。
-音效在本地合成，文件导入导出使用系统文件选择器。
+背景音乐随包提供 MP3，署名及授权见 dist/audio/CREDITS.txt。音效在本地合成，文件导入导出使用系统文件选择器。
 
 构建环境
 - Node.js 22.12+ 与 npm

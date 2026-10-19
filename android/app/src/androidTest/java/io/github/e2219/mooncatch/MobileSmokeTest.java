@@ -180,16 +180,31 @@ public class MobileSmokeTest {
     @Test public void ionVoyageAndMusic() throws Exception {
         open();js("selectedWorld='ion';selectedRun='endless';document.getElementById('nativeStart').click();legIndex=20;invincible=300;selectControlMode('stick');if(musicEnabled)document.getElementById('music').click();openPanel('controls');document.getElementById('music').scrollIntoView({block:'center'})");
         float[] musicPoint=point("music",.5,.5);long musicDown=SystemClock.uptimeMillis();touch(musicDown,MotionEvent.ACTION_DOWN,musicPoint);touch(musicDown,MotionEvent.ACTION_UP,musicPoint);js("closePanel()");
-        waitFor("musicEnabled && audio && audio.state==='running' && musicVoices.size>0");
+        waitFor("musicEnabled && audio && audio.state==='running' && musicPlayer && !musicPlayer.paused && musicPlayer.currentTime>0");
         float[] p=point("stickRing",.8,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);SystemClock.sleep(150);
         float[] toggle=point("moonToggle",.5,.5);String before=js("moonPhase");touch(down,MotionEvent.ACTION_POINTER_DOWN|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,toggle);SystemClock.sleep(100);assertNotEquals(before,js("moonPhase"));touch(down,MotionEvent.ACTION_POINTER_UP|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,toggle);touch(down,MotionEvent.ACTION_UP,p);
         js("elapsed=6;stepIon(0,ship.x,ship.y);spawn=hazardClock=100;for(let i=0;i<3;i++){const n=worldEvent.points[worldEvent.index];moonPhase=n.polarity;ship.x=ship.target=n.x*W;ship.y=ship.targetY=n.y*H;stepIon(0,ship.x,ship.y)}");assertEquals("true",js("worldWins===1 && guard>0"));
-        js("elapsed=25;fieldSlot=0;hazardClock=0");SystemClock.sleep(2500);assertEquals("true",js("Number.isFinite(ship.x+ship.y) && musicVoices.size<=10"));
+        js("elapsed=25;fieldSlot=0;hazardClock=0");SystemClock.sleep(2500);assertEquals("true",js("Number.isFinite(ship.x+ship.y) && musicPlayer && !musicPlayer.error"));
         js("elapsed=69.9;hazardFields=[];boss=null;bossStarted=false;storm=null");waitFor("boss && boss.maxHp===10");
-        for(int i=0;i<8;i++){SystemClock.sleep(2200);report("MOONCATCH_ION "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier,elapsed,state,voices:musicVoices.size,attack:storm?.event?.kind,items:items.length})"));assertEquals("true",js("hp===3 && Number.isFinite(ship.x+ship.y)"));}
-        waitFor("state==='dock'");assertEquals("0",js("musicVoices.size"));
-        js("departDock();pause();pause()");assertEquals("0",js("musicVoices.size"));waitFor("state==='playing' && musicVoices.size>0");
-        js("document.getElementById('music').click()");assertEquals("true",js("!musicEnabled && musicVoices.size===0"));
+        for(int i=0;i<8;i++){SystemClock.sleep(2200);report("MOONCATCH_ION "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier,elapsed,state,musicTime:musicPlayer?.currentTime,attack:storm?.event?.kind,items:items.length})"));assertEquals("true",js("hp===3 && Number.isFinite(ship.x+ship.y)"));}
+        waitFor("state==='dock'");assertEquals("true",js("musicPlayer.paused"));
+        js("departDock();pause();pause()");assertEquals("true",js("musicPlayer.paused"));waitFor("state==='playing' && musicPlayer && !musicPlayer.paused && musicPlayer.currentTime>0");
+        js("document.getElementById('music').click()");assertEquals("true",js("!musicEnabled && musicPlayer.paused"));
+    }
+    @Test public void recordedMusicTracks() throws Exception {
+        open();js("document.getElementById('nativeStart').click();invincible=300;spawn=hazardClock=100;if(musicEnabled)document.getElementById('music').click();sound=false;openPanel('controls');document.getElementById('music').scrollIntoView({block:'center'})");
+        float[] point=point("music",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,point);touch(down,MotionEvent.ACTION_UP,point);js("closePanel()");
+        for(String track:new String[]{"floating-cities","dream-culture"}){
+            js("document.getElementById('musicTrack').value='"+track+"';document.getElementById('musicTrack').dispatchEvent(new Event('change'))");
+            waitFor("musicPlayer && !musicPlayer.paused && musicPlayer.currentTime>0.5 && musicPlayer.duration>150");
+            assertEquals("true",js("audio.state==='running' && !musicPlayer.error && Math.abs(musicGain.gain.value-.3)<.001 && !sound"));
+            js("pause()");double saved=Double.parseDouble(js("musicPlayer.currentTime"));SystemClock.sleep(450);assertEquals(saved,Double.parseDouble(js("musicPlayer.currentTime")),.03);
+            js("pause()");SystemClock.sleep(500);assertEquals("true",js("state==='resuming' && musicPlayer.paused"));waitFor("state==='playing' && !musicPlayer.paused");
+            js("musicPlayer.currentTime=musicPlayer.duration-.2");waitFor("musicPlayer.currentTime<2 && !musicPlayer.paused");
+            report("MOONCATCH_TRACK "+track+" "+js("JSON.stringify({duration:musicPlayer.duration,playing:!musicPlayer.paused,loop:musicPlayer.loop,volume:musicGain.gain.value})"));
+        }
+        scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(500);assertEquals("true",js("musicPlayer.paused"));scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);waitFor("state==='paused'");assertEquals("true",js("musicPlayer.paused"));
+        js("document.getElementById('music').click()");assertEquals("true",js("!musicEnabled && musicPlayer.paused"));
     }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");

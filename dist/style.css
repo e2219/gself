@@ -145,3 +145,5 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .worlds #world-ion{order:1;background:linear-gradient(135deg,#38314d,#182b3c)}@media(max-width:650px){.worlds #world-ion{grid-column:1/-1}.worlds #world-ion .chart-art svg{max-height:70px}}
 
 .route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr))}.route-map[data-layout="steps"] #mapFinal{display:none}
+
+.music-settings{margin:18px 0}.music-settings label{display:block;margin:8px 0;font-size:13px;color:var(--muted)}.music-settings select{box-sizing:border-box;width:100%;max-width:100%;min-height:44px;padding:10px;border:1px solid #a6d9c950;border-radius:8px;background:#172c3e;color:var(--ink);font-size:14px}.music-credit{font-size:11px;line-height:1.7;color:var(--muted)}.music-credit a{color:#a6d9c9}

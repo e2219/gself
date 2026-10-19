@@ -16,3 +16,6 @@ console.log('Profile PASS: allowlist, bounded format validation, higher-record m
 
 p.merge(store,{app:'mooncatch',format:1,data:{'mooncatch-world':'ion','mooncatch-music':'true','mooncatch-best-ion-v13':'1200','mooncatch-endless-ion-v16':'5500'}});assert.equal(store.getItem('mooncatch-world'),'ion');assert.equal(store.getItem('mooncatch-music'),'true');assert.equal(p.snapshot(store).data['mooncatch-best-ion-v13'],'1200');assert.throws(()=>p.parse(JSON.stringify({app:'mooncatch',format:1,data:{'mooncatch-music':'autoplay'}})));
 console.log('V22 profile PASS: ion records and optional music round-trip, strict music preference validation');
+
+assert(p.valid('mooncatch-music-track','floating-cities'));assert(p.valid('mooncatch-music-track','dream-culture'));assert(!p.valid('mooncatch-music-track','https://example.com/a.mp3'));
+p.merge(store,{app:'mooncatch',format:1,data:{'mooncatch-music-track':'dream-culture'}});assert.equal(p.snapshot(store).data['mooncatch-music-track'],'dream-culture');

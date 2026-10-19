@@ -20,3 +20,6 @@ fs.mkdirSync('_site', { recursive: true });
 fs.writeFileSync('_site/index.html', html);
 fs.writeFileSync('_site/.nojekyll', '');
 console.log('Built standalone GitHub Pages game');
+
+fs.cpSync('dist/audio','_site/audio',{recursive:true});
+fs.cpSync('dist/audio','audio',{recursive:true});

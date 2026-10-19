@@ -71,17 +71,33 @@ for(const size of [[390,844],[844,390],[960,510]])for(const leg of [0,20]){
  trips.push({size,leg,peak:run('ionAudit.peak')});run('departDock()');assert.equal(run('worldSlot'),0);assert.equal(run('worldEvent'),null);
 }
 console.log('V22 full voyages PASS:',JSON.stringify(trips));
-// Deterministic AudioContext: bounded voices, independent mute, pause/background/foreground.
-let made=0,live=new Set();
+// Media playback regressions, including late promises, blocked playback and source switches.
 class TestAudio{
- constructor(){this.currentTime=0;this.state='running';this.destination={}}
+ constructor(){this.state='running';this.destination={}}
  resume(){this.state='running';return Promise.resolve()}
- createGain(){return {gain:{value:0,setValueAtTime:noop,exponentialRampToValueAtTime:noop},connect(){return this},disconnect:noop}}
- createOscillator(){made++;const o={frequency:{setValueAtTime:noop},connect(g){return g},disconnect:noop,start:()=>live.add(o),stop:(at)=>{if(at===undefined){live.delete(o);o.onended?.()}else o.until=at}};return o}
- advance(dt){this.currentTime+=dt;for(const o of [...live])if(o.until<=this.currentTime){live.delete(o);o.onended?.()}}
+ createGain(){return {gain:{value:0},connect(){return this}}}
+ createMediaElementSource(){return {connect(g){return g}}}
 }
-sandbox.window.AudioContext=TestAudio;start('ion');assert.equal(run('musicEnabled'),false);els.music.onclick();assert.equal(run('sound'),false);assert.equal(storage['mooncatch-music'],'true');run('musicTick()');assert(made>0);
-for(let i=0;i<200;i++){run('audio.advance(.72);musicTick()');assert(run('musicVoices.size<=10'))}
-run('pause()');assert.equal(run('musicVoices.size'),0);assert.equal(live.size,0);const before=made;run('audio.advance(30);musicTick()');assert.equal(made,before);
-run('audio.state="suspended";pause();update(3);musicTick()');assert(run('musicVoices.size>0'));sandbox.document.hidden=true;run('musicTick()');assert.equal(run('musicVoices.size'),0);sandbox.document.hidden=false;els.music.onclick();run('musicTick()');assert.equal(run('musicEnabled'),false);assert.equal(live.size,0);
-console.log('V22 music PASS: original offline score, opt-in persistence, independent sound setting, bounded voices and pause/background cleanup');
+let plays=0,failPlay=false,latePlay=null;
+class TestMedia{
+ constructor(){this.paused=true;this.currentTime=0;this.listeners={};this.muted=false}
+ addEventListener(name,fn){this.listeners[name]=fn}
+ play(){plays++;this.paused=false;return failPlay?Promise.reject(Error('blocked')):latePlay?new Promise(resolve=>latePlay.resolve=resolve):Promise.resolve()}
+ pause(){this.paused=true}
+ load(){this.currentTime=0;this.paused=true}
+}
+sandbox.window.AudioContext=TestAudio;els.backgroundMusic=new TestMedia();
+(async()=>{
+ start('ion');assert.equal(run('musicEnabled'),false);els.music.onclick();await new Promise(setImmediate);
+ assert.equal(run('sound'),false);assert.equal(storage['mooncatch-music'],'true');assert(run('musicPlayer.loop&&!musicPlayer.paused&&musicPlayer.preload==="none"'));assert.equal(run('musicPlayer.src'),'audio/floating-cities.mp3');
+ run('musicPlayer.currentTime=32;pause()');assert(run('musicPlayer.paused'));assert.equal(run('musicPlayer.currentTime'),32);
+ run('pause()');await new Promise(setImmediate);assert(run('musicPlayer.paused'));run('update(3);musicTick()');await new Promise(setImmediate);assert(run('!musicPlayer.paused'));assert.equal(run('musicPlayer.currentTime'),32);
+ els.musicTrack.value='dream-culture';els.musicTrack.onchange();await new Promise(setImmediate);assert.equal(storage['mooncatch-music-track'],'dream-culture');assert(run('musicPlayer.src==="audio/dream-culture.mp3"&&musicPlayer.currentTime===0&&!musicPlayer.paused'));
+ els.musicTrack.value='https://untrusted.invalid';els.musicTrack.onchange();assert.equal(run('musicTrack'),'dream-culture');
+ sandbox.document.hidden=true;run('musicTick()');assert(run('musicPlayer.paused'));sandbox.document.hidden=false;
+ failPlay=true;run('musicTick()');await new Promise(setImmediate);assert(run('musicBlocked'));const count=plays;for(let i=0;i<60;i++)run('musicTick()');assert.equal(plays,count,'Blocked playback must not retry every frame');
+ failPlay=false;els.music.onclick();els.music.onclick();await new Promise(setImmediate);assert(run('!musicBlocked&&!musicPlayer.paused'));
+ run('stopMusic()');latePlay={};run('musicTick()');els.music.onclick();latePlay.resolve();await new Promise(setImmediate);assert(run('!musicEnabled&&musicPlayer.paused&&!musicPending'));latePlay=null;
+ els.music.onclick();await new Promise(setImmediate);run("musicPlayer.listeners.error()");assert(run('musicBlocked&&musicPlayer.paused'));assert.match(els.musicStatus.textContent,/未能播放/);
+ console.log('V22.1 recorded music PASS: two local tracks, single player, opt-in, independent SFX, retained offset, countdown silence, mute/late promise, source switch, error backoff and gesture retry');
+})().catch(e=>{console.error(e);process.exitCode=1});

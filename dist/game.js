@@ -758,8 +758,8 @@ window.addEventListener('keydown',e=>{
  if(moveKeys.includes(k)||k===' '){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else{launch=null;inputMode='keyboard';mouseX=mouseY=null;keys.add(k)}}
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);if(moveKeys.includes(k)){ship.target=ship.x;ship.targetY=ship.y}});
-window.addEventListener('blur',()=>{clearInput();if(state==='playing'||state==='resuming')pause()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&(state==='playing'||state==='resuming'))pause()});
+window.addEventListener('blur',()=>{stopMusic();clearInput();if(state==='playing'||state==='resuming')pause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMusic();if(state==='playing'||state==='resuming')pause()}});
 function pointer(e){
  if(state!=='playing'||panelOpen)return;
  clearVirtualInput();
@@ -2034,36 +2034,54 @@ function drawPolarity(e){
  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=warning?2:7;ctx.setLineDash(warning?[6,8]:[]);ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,Math.PI*2);ctx.stroke();ctx.fillStyle=color;ctx.font='18px sans-serif';ctx.textAlign='center';ctx.fillText(e.polarity==='dark'?'☾':'☀',g.x,g.y-g.r-12);ctx.restore();
 }
 
-// Original offline ambient score: sparse pentatonic bells over a quiet four-chord pad.
-// Audio is unlocked only by an explicit user action; no timer or network asset is needed.
-let musicEnabled=false,musicBus=null,musicNext=0,musicBeat=0;
-const musicVoices=new Set();
-try{musicEnabled=localStorage.getItem('mooncatch-music')==='true'}catch{}
-function musicSettings(){const b=$('music');b.textContent='音乐：'+(musicEnabled?'开':'关');b.setAttribute('aria-pressed',String(musicEnabled))}
+// Recorded instrumental tracks by Kevin MacLeod, CC BY 4.0; see audio/CREDITS.txt.
+// Stream one local MP3 through a single media element; never decode two full tracks into RAM.
+const musicTracks={
+ 'floating-cities':{title:'Floating Cities',mood:'太空氛围'},
+ 'dream-culture':{title:'Dream Culture',mood:'梦幻钢琴'}
+};
+let musicEnabled=false,musicTrack='floating-cities',musicPlayer=null,musicGain=null,musicPending=false,musicBlocked=false,musicAttempt=0;
+try{musicEnabled=localStorage.getItem('mooncatch-music')==='true';const saved=localStorage.getItem('mooncatch-music-track');if(Object.prototype.hasOwnProperty.call(musicTracks,saved))musicTrack=saved}catch{}
+function musicSettings(){
+ const b=$('music');b.textContent='音乐：'+(musicEnabled?'开':'关');b.setAttribute('aria-pressed',String(musicEnabled));$('musicTrack').value=musicTrack;
+ $('musicStatus').textContent=musicBlocked?'音乐未能播放，请关闭后重新开启；网页端也可刷新后重试。':`${musicTracks[musicTrack].title} · ${musicTracks[musicTrack].mood} · 暂停后保留播放进度`;
+}
+function musicWanted(){return musicEnabled&&state==='playing'&&!panelOpen&&!document.hidden&&!window.MooncatchIsHome?.()}
+function ensureMusic(){
+ if(musicPlayer)return;
+ audio??=new (window.AudioContext||window.webkitAudioContext)();
+ const player=$('backgroundMusic');player.preload='none';player.loop=true;player.src=`audio/${musicTrack}.mp3`;
+ const source=audio.createMediaElementSource(player),gain=audio.createGain();gain.gain.value=.3;source.connect(gain).connect(audio.destination);
+ musicPlayer=player;musicGain=gain;
+ player.addEventListener('error',()=>{musicBlocked=true;stopMusic();musicSettings()});
+}
+function requestMusic(){
+ if(musicPending||!musicPlayer)return;
+ const attempt=++musicAttempt;musicPending=true;musicPlayer.muted=!musicWanted();
+ try{Promise.resolve(musicPlayer.play()).then(()=>{
+  if(attempt!==musicAttempt)return;musicPending=false;
+  if(!musicWanted())stopMusic();else musicPlayer.muted=false;
+ },()=>{if(attempt!==musicAttempt)return;stopMusic();musicBlocked=true;musicSettings()})}
+ catch{stopMusic();musicBlocked=true;musicSettings()}
+}
 function unlockMusic(){
  if(!musicEnabled)return;
- try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{});if(!musicBus){musicBus=audio.createGain();musicBus.gain.value=.32;musicBus.connect(audio.destination)}}catch{}
+ musicBlocked=false;
+ try{ensureMusic();audio.resume().catch(()=>{});requestMusic()}catch{musicBlocked=true}
+ musicSettings();
 }
-function stopMusic(){
- for(const voice of musicVoices){try{voice.osc.stop();voice.osc.disconnect();voice.gain.disconnect()}catch{}}
- musicVoices.clear();musicNext=0;
-}
-function musicNote(midi,duration,volume,type='sine'){
- if(!audio||!musicBus||musicVoices.size>=10)return;
- const osc=audio.createOscillator(),gain=audio.createGain(),at=audio.currentTime,voice={osc,gain};
- osc.type=type;osc.frequency.setValueAtTime(440*2**((midi-69)/12),at);
- gain.gain.setValueAtTime(.0001,at);gain.gain.exponentialRampToValueAtTime(volume,at+.08);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
- osc.connect(gain).connect(musicBus);musicVoices.add(voice);osc.onended=()=>{musicVoices.delete(voice);osc.disconnect();gain.disconnect()};osc.start(at);osc.stop(at+duration+.02);
-}
+function stopMusic(){musicAttempt++;musicPending=false;if(musicPlayer)musicPlayer.pause()}
 function musicTick(){
- if(!musicEnabled||state!=='playing'||panelOpen||document.hidden||window.MooncatchIsHome?.()){if(musicVoices.size)stopMusic();return}
- if(!audio||audio.state!=='running'||!musicBus||audio.currentTime<musicNext)return;
- const roots=[50,46,53,48],root=roots[Math.floor(musicBeat/8)%4],melody=[12,19,22,17,24,19,14,17];
- if(musicBeat%4===0){musicNote(root-12,3.6,.022,'triangle');musicNote(root+7,3.2,.012)}
- musicNote(root+melody[musicBeat%8]+(activeWorld==='ion'?0:12),1.8,.025);
- musicBeat=(musicBeat+1)%32;musicNext=audio.currentTime+.72;
+ if(!musicWanted()){if(musicPlayer&&(!musicPlayer.paused||musicPending))stopMusic();return}
+ if(musicPlayer?.paused&&!musicPending&&!musicBlocked)requestMusic();
 }
-$('music').onclick=()=>{musicEnabled=!musicEnabled;try{storeSetting('mooncatch-music',String(musicEnabled))}catch{}musicSettings();if(musicEnabled)unlockMusic();else stopMusic()};
+$('music').onclick=()=>{musicEnabled=!musicEnabled;try{storeSetting('mooncatch-music',String(musicEnabled))}catch{}if(musicEnabled)unlockMusic();else stopMusic();musicSettings()};
+$('musicTrack').onchange=()=>{
+ const id=$('musicTrack').value;if(!Object.prototype.hasOwnProperty.call(musicTracks,id)||id===musicTrack)return;
+ stopMusic();musicTrack=id;musicBlocked=false;try{storeSetting('mooncatch-music-track',id)}catch{}
+ if(musicPlayer){musicPlayer.src=`audio/${id}.mp3`;musicPlayer.load()}
+ if(musicEnabled)unlockMusic();musicSettings();
+};
 musicSettings();
 
 function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);

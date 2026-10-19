@@ -147,8 +147,11 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 .worlds #world-ion{order:1;background:linear-gradient(135deg,#38314d,#182b3c)}@media(max-width:650px){.worlds #world-ion{grid-column:1/-1}.worlds #world-ion .chart-art svg{max-height:70px}}
 
 .route-map[data-layout="steps"]{grid-template-columns:24px repeat(4,minmax(0,1fr))}.route-map[data-layout="steps"] #mapFinal{display:none}
+
+.music-settings{margin:18px 0}.music-settings label{display:block;margin:8px 0;font-size:13px;color:var(--muted)}.music-settings select{box-sizing:border-box;width:100%;max-width:100%;min-height:44px;padding:10px;border:1px solid #a6d9c950;border-radius:8px;background:#172c3e;color:var(--ink);font-size:14px}.music-credit{font-size:11px;line-height:1.7;color:var(--muted)}.music-credit a{color:#a6d9c9}
 </style></head>
 <body>
+<audio id="backgroundMusic" preload="none" loop hidden></audio>
 <main>
 <header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 22</span></header>
 <section class="intro"><div><div class="eyebrow">远航整备 · 新航程</div><h1>驶入星海，<em>在月港重逢。</em></h1><p>全场自由航行，躲过四面星雨，收集属于你的星光。</p></div><svg id="harborArt" class="harbor-art" viewBox="0 0 240 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><g fill="#d5e6e9"><circle cx="18" cy="22" r="1.3"/><circle cx="208" cy="18" r="1.2"/><circle cx="189" cy="77" r="1"/><circle cx="75" cy="16" r="1"/></g><path d="M0 94Q80 35 240 90" fill="#1d3544"/><path d="M0 96Q80 41 240 94" stroke="#668b94"/><circle cx="145" cy="35" r="24" fill="#f3d694"/><circle cx="155" cy="29" r="22" fill="#102536"/><path d="m53 49 59-15-19 12-7 13-10-12-23 2Z" fill="#cce7df"/><path d="m29 63 40-15" stroke="#91bfb7" stroke-dasharray="2 6"/><path d="m184 82 0-18 16-7 16 7v20m-16-27v33m-21-15h42" stroke="#a6d9c9" stroke-width="2"/></svg><div class="best"><span id="bestLabel">本版最佳</span><strong id="best">000</strong><small>LOCAL RECORD</small></div></section>
@@ -208,7 +211,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <div class="panel-sheet"><header class="panel-heading"><h2 id="panelTitle">驾驶设置</h2><button id="panelClose">返回游戏</button></header>
 <section id="controlSettings"><div id="fullViewSettings" class="full-view-settings" hidden><div class="panel-actions"><button id="canvasOnly" aria-pressed="false">铺满屏幕 · 悬浮操作</button><button id="fullViewExit">退出全屏</button></div><p class="panel-intro">铺满模式中，可在下面选择直接拖动、悬浮摇杆或方向键。操作区覆盖在画面上，不占屏幕高度；支持移动时同时加速和切换形态。关闭后恢复原来的控制方式。</p></div><p id="controlIntro" class="panel-intro">选择你顺手的驾驶方式。操作区独立于星空，不必按住星舰。</p><div class="control-options" role="group" aria-label="手机控制方式">
 <button id="mode-drag" aria-pressed="true"><strong>手指拖动</strong><small>任意落指，相对滑动；抬手可换位置。</small></button><button id="mode-stick" aria-pressed="false"><strong>摇杆</strong><small>轻推微调，重推快飞；大幅拖动后反向也跟手。</small></button><button id="mode-dpad" aria-pressed="false"><strong>方向键</strong><small>按住持续移动，支持八向与斜向。</small></button>
-</div><section id="floatingSettings" class="floating-settings" hidden aria-label="悬浮控件布局"><h3 id="floatingTitle">悬浮控件布局</h3><p class="panel-intro">控制区与动作按钮会一起调整，左右手设置仍然生效。</p><div class="panel-actions" role="group" aria-label="控件大小"><button id="float-size-normal" aria-pressed="true">标准</button><button id="float-size-large" aria-pressed="false">加大</button><button id="float-size-largest" aria-pressed="false">超大</button></div><div class="panel-actions" role="group" aria-label="控件位置"><button id="float-position-edge" aria-pressed="true">贴边</button><button id="float-position-raised" aria-pressed="false">抬高</button><button id="float-position-inset" aria-pressed="false">靠内</button><button id="floatReset">恢复本方向默认</button></div><p id="floatingHint" class="panel-intro">横屏、竖屏分别保存。</p></section><section class="render-settings" aria-label="画面性能"><h3>画面与流畅度</h3><div class="panel-actions" role="group" aria-label="画质选择"><button id="render-auto" aria-pressed="true">自动（推荐）</button><button id="render-smooth" aria-pressed="false">流畅优先</button><button id="render-clear" aria-pressed="false">画质优先</button></div><p id="renderHint" class="panel-intro">航行后检测帧率</p><p class="panel-intro">自动模式会在持续掉帧时降低画面精细度和装饰特效，稳定后再逐步恢复。流畅优先适合长时间游玩；三种设置不影响操作、难度与奖励。</p></section><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="music" aria-pressed="false">音乐：关</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="endRun" hidden>结束并结算</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
+</div><section id="floatingSettings" class="floating-settings" hidden aria-label="悬浮控件布局"><h3 id="floatingTitle">悬浮控件布局</h3><p class="panel-intro">控制区与动作按钮会一起调整，左右手设置仍然生效。</p><div class="panel-actions" role="group" aria-label="控件大小"><button id="float-size-normal" aria-pressed="true">标准</button><button id="float-size-large" aria-pressed="false">加大</button><button id="float-size-largest" aria-pressed="false">超大</button></div><div class="panel-actions" role="group" aria-label="控件位置"><button id="float-position-edge" aria-pressed="true">贴边</button><button id="float-position-raised" aria-pressed="false">抬高</button><button id="float-position-inset" aria-pressed="false">靠内</button><button id="floatReset">恢复本方向默认</button></div><p id="floatingHint" class="panel-intro">横屏、竖屏分别保存。</p></section><section class="render-settings" aria-label="画面性能"><h3>画面与流畅度</h3><div class="panel-actions" role="group" aria-label="画质选择"><button id="render-auto" aria-pressed="true">自动（推荐）</button><button id="render-smooth" aria-pressed="false">流畅优先</button><button id="render-clear" aria-pressed="false">画质优先</button></div><p id="renderHint" class="panel-intro">航行后检测帧率</p><p class="panel-intro">自动模式会在持续掉帧时降低画面精细度和装饰特效，稳定后再逐步恢复。流畅优先适合长时间游玩；三种设置不影响操作、难度与奖励。</p></section><section class="music-settings" aria-label="背景音乐"><h3>背景音乐</h3><label for="musicTrack">纯音乐曲目</label><select id="musicTrack"><option value="floating-cities">Floating Cities · 太空氛围</option><option value="dream-culture">Dream Culture · 梦幻钢琴</option></select><p id="musicStatus" class="panel-intro" role="status"></p><p class="music-credit">音乐：Kevin MacLeod（<a href="https://incompetech.com/" target="_blank" rel="noopener">incompetech.com</a>）· <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> · 原曲未剪辑</p></section><div class="panel-actions"><button id="hand" aria-pressed="false">加速键：右侧 ⇄</button><button id="music" aria-pressed="false">音乐：关</button><button id="sound" aria-pressed="false">音效：关</button><button id="restart" title="立即开始新一局">重新开始</button><button id="endRun" hidden>结束并结算</button></div><p class="panel-intro">电脑仍可用鼠标、方向键或 WASD。空格加速，Q 切换月相，E 强化，R 赌约，P 暂停。全屏切换时会暂停，准备好再继续。</p></section>
 <section id="gameRules" hidden><section class="guide"><article><span class="symbol mint">ϟ</span><div><h3>磁暴熔炉 · 双极导流</h3><p>按编号依次接触节点，☀ 需明月、☾ 需暗月；用 Q 或月相按钮切换。接通回路可获得星屑、护甲并清除雷暴。最后 20 秒，同频月相能穿过首领脉冲并攻击核心，交叉光束仍须躲避。</p></div></article><article><span class="symbol coral">⋈</span><div><h3>深空压力 · 三向夹击</h3><p>无尽压力上限提高到 11，第 21 段达到上限。第 3 段起会出现锁定预警时位置、同时抵达的三向陨石，以及交叉光束和雷暴落点；第 15 段起常规星雨持续三向来袭。金色虚线与圆圈先预警，再转为危险光束和落雷。</p></div></article></section><p class="panel-intro"><strong>90 秒返航挑战</strong>：收集金色星光，避开陨石。加速时有护盾；强化和赌约由你主动打开。明月擅长吸星，暗月体积更小。点上方「暂停」可随时休息。</p><section class="guide"><article><span class="symbol gold">⌖</span><div><h3>无尽远航 · 月港整备</h3><p>每段结束修复 2 点护盾、补充 2 星屑并充满加速。停靠时可升级远航模块，准备好再启航。第 18 秒出现限时信标链，依次回收三枚可在下一站额外整备一次。</p></div></article></section><section class="guide"><article><span class="symbol gold">◎</span><div><h3>星环穿梭</h3><p>按编号穿过亮起星环，完成获得星屑。错过不扣分。</p></div></article><article><span class="symbol mint">☃</span><div><h3>护送月灵</h3><p>靠近接应，送回蓝色圆圈。加速可能甩开它，回头接回即可。</p></div></article><article><span class="symbol coral">☾</span><div><h3>月相与分岔航线</h3><p>明月吸星，暗月缩小船身但吸星减弱。第 24 秒选择货运港或引力遗迹，第 54 秒选择星鲸带或矿场。左路更安全，右路星光 ×1.4、陨石略增；忽略航门自动走左路。</p></div></article><article><span class="symbol gold">✺</span><div><h3>连锁过载</h3><p>用三次不同的加速撞碎或精准反射陨石，自动释放清障脉冲，每次加速最多充能一次。脉冲清除附近最多 8 颗飞行障碍，照常掉落星屑；不触发连爆、不充能、不伤害首领，也不能消除激光、光幕或水雷。船旁显示进度，充能保留到下一段，新一局重置。</p></div></article></section>
 <section class="guide cargo-guide"><article><span class="symbol gold">▣</span><div><h3>星光货运</h3><p>靠近方箱装货，飞到金色空间站交付。最多 3 件，满载奖励更高，键盘／触控最多减速 24%；鼠标保持跟手；到期未交货不扣分。</p></div></article><article><span class="symbol mint">↗</span><div><h3>反射护盾</h3><p>加速起手 0.18 秒内（守望者 0.26 秒）接触陨石，可沿来路反弹；绿色弹体能碎星、破巨陨外壳。普通陨石每次加速反射一次，紫色核心弹在加速护盾期间均可反射。</p></div></article></section>
 <section class="guide"><article><span class="symbol mint">◉</span><div><h3>引力弹弓</h3><p>靠近紫环，点加速入轨，再点沿切线弹射；蓄力 1.3 秒也会自动弹出。沿预览轨迹连穿三枚星环，移动可接管弹射。</p></div></article><article><span class="symbol gold">≈</span><div><h3>追逐星鲸</h3><p>蓝色尾流内免受伤害并可收集星光，累计同行 5 秒获得奖励。提前显示航线，跟随尾流可安全穿越激光闸门；星鲸离开时有短暂保护。</p></div></article><article><span class="symbol coral">ϟ</span><div><h3>激光闸门</h3><p>虚线预警 1.8 秒后开启；绿色缺口始终安全，也可用加速护盾穿越。</p></div></article></section>
@@ -218,13 +221,13 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V22</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V22.1</span></footer>
 </main><script>'use strict';
 // Portable records/settings only; never import executable code or an in-progress run.
 (function(root){
  const choices={
   'mooncatch-ship':['collector','falcon','warden'], 'mooncatch-world':['classic','aurora','warp','station','ion'],
-  'mooncatch-run':['timed','endless'], 'mooncatch-controls':['drag','stick','dpad'],
+  'mooncatch-run':['timed','endless'], 'mooncatch-music-track':['floating-cities','dream-culture'], 'mooncatch-controls':['drag','stick','dpad'],
   'mooncatch-canvas-controls':['drag','stick','dpad'], 'mooncatch-render':['auto','smooth','clear'],
   'mooncatch-left-hand':['true','false'], 'mooncatch-sound':['true','false'], 'mooncatch-music':['true','false']
  };
@@ -1017,8 +1020,8 @@ window.addEventListener('keydown',e=>{
  if(moveKeys.includes(k)||k===' '){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else{launch=null;inputMode='keyboard';mouseX=mouseY=null;keys.add(k)}}
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);if(moveKeys.includes(k)){ship.target=ship.x;ship.targetY=ship.y}});
-window.addEventListener('blur',()=>{clearInput();if(state==='playing'||state==='resuming')pause()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&(state==='playing'||state==='resuming'))pause()});
+window.addEventListener('blur',()=>{stopMusic();clearInput();if(state==='playing'||state==='resuming')pause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMusic();if(state==='playing'||state==='resuming')pause()}});
 function pointer(e){
  if(state!=='playing'||panelOpen)return;
  clearVirtualInput();
@@ -2293,36 +2296,54 @@ function drawPolarity(e){
  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=warning?2:7;ctx.setLineDash(warning?[6,8]:[]);ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,Math.PI*2);ctx.stroke();ctx.fillStyle=color;ctx.font='18px sans-serif';ctx.textAlign='center';ctx.fillText(e.polarity==='dark'?'☾':'☀',g.x,g.y-g.r-12);ctx.restore();
 }
 
-// Original offline ambient score: sparse pentatonic bells over a quiet four-chord pad.
-// Audio is unlocked only by an explicit user action; no timer or network asset is needed.
-let musicEnabled=false,musicBus=null,musicNext=0,musicBeat=0;
-const musicVoices=new Set();
-try{musicEnabled=localStorage.getItem('mooncatch-music')==='true'}catch{}
-function musicSettings(){const b=$('music');b.textContent='音乐：'+(musicEnabled?'开':'关');b.setAttribute('aria-pressed',String(musicEnabled))}
+// Recorded instrumental tracks by Kevin MacLeod, CC BY 4.0; see audio/CREDITS.txt.
+// Stream one local MP3 through a single media element; never decode two full tracks into RAM.
+const musicTracks={
+ 'floating-cities':{title:'Floating Cities',mood:'太空氛围'},
+ 'dream-culture':{title:'Dream Culture',mood:'梦幻钢琴'}
+};
+let musicEnabled=false,musicTrack='floating-cities',musicPlayer=null,musicGain=null,musicPending=false,musicBlocked=false,musicAttempt=0;
+try{musicEnabled=localStorage.getItem('mooncatch-music')==='true';const saved=localStorage.getItem('mooncatch-music-track');if(Object.prototype.hasOwnProperty.call(musicTracks,saved))musicTrack=saved}catch{}
+function musicSettings(){
+ const b=$('music');b.textContent='音乐：'+(musicEnabled?'开':'关');b.setAttribute('aria-pressed',String(musicEnabled));$('musicTrack').value=musicTrack;
+ $('musicStatus').textContent=musicBlocked?'音乐未能播放，请关闭后重新开启；网页端也可刷新后重试。':`${musicTracks[musicTrack].title} · ${musicTracks[musicTrack].mood} · 暂停后保留播放进度`;
+}
+function musicWanted(){return musicEnabled&&state==='playing'&&!panelOpen&&!document.hidden&&!window.MooncatchIsHome?.()}
+function ensureMusic(){
+ if(musicPlayer)return;
+ audio??=new (window.AudioContext||window.webkitAudioContext)();
+ const player=$('backgroundMusic');player.preload='none';player.loop=true;player.src=`audio/${musicTrack}.mp3`;
+ const source=audio.createMediaElementSource(player),gain=audio.createGain();gain.gain.value=.3;source.connect(gain).connect(audio.destination);
+ musicPlayer=player;musicGain=gain;
+ player.addEventListener('error',()=>{musicBlocked=true;stopMusic();musicSettings()});
+}
+function requestMusic(){
+ if(musicPending||!musicPlayer)return;
+ const attempt=++musicAttempt;musicPending=true;musicPlayer.muted=!musicWanted();
+ try{Promise.resolve(musicPlayer.play()).then(()=>{
+  if(attempt!==musicAttempt)return;musicPending=false;
+  if(!musicWanted())stopMusic();else musicPlayer.muted=false;
+ },()=>{if(attempt!==musicAttempt)return;stopMusic();musicBlocked=true;musicSettings()})}
+ catch{stopMusic();musicBlocked=true;musicSettings()}
+}
 function unlockMusic(){
  if(!musicEnabled)return;
- try{audio??=new (window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{});if(!musicBus){musicBus=audio.createGain();musicBus.gain.value=.32;musicBus.connect(audio.destination)}}catch{}
+ musicBlocked=false;
+ try{ensureMusic();audio.resume().catch(()=>{});requestMusic()}catch{musicBlocked=true}
+ musicSettings();
 }
-function stopMusic(){
- for(const voice of musicVoices){try{voice.osc.stop();voice.osc.disconnect();voice.gain.disconnect()}catch{}}
- musicVoices.clear();musicNext=0;
-}
-function musicNote(midi,duration,volume,type='sine'){
- if(!audio||!musicBus||musicVoices.size>=10)return;
- const osc=audio.createOscillator(),gain=audio.createGain(),at=audio.currentTime,voice={osc,gain};
- osc.type=type;osc.frequency.setValueAtTime(440*2**((midi-69)/12),at);
- gain.gain.setValueAtTime(.0001,at);gain.gain.exponentialRampToValueAtTime(volume,at+.08);gain.gain.exponentialRampToValueAtTime(.0001,at+duration);
- osc.connect(gain).connect(musicBus);musicVoices.add(voice);osc.onended=()=>{musicVoices.delete(voice);osc.disconnect();gain.disconnect()};osc.start(at);osc.stop(at+duration+.02);
-}
+function stopMusic(){musicAttempt++;musicPending=false;if(musicPlayer)musicPlayer.pause()}
 function musicTick(){
- if(!musicEnabled||state!=='playing'||panelOpen||document.hidden||window.MooncatchIsHome?.()){if(musicVoices.size)stopMusic();return}
- if(!audio||audio.state!=='running'||!musicBus||audio.currentTime<musicNext)return;
- const roots=[50,46,53,48],root=roots[Math.floor(musicBeat/8)%4],melody=[12,19,22,17,24,19,14,17];
- if(musicBeat%4===0){musicNote(root-12,3.6,.022,'triangle');musicNote(root+7,3.2,.012)}
- musicNote(root+melody[musicBeat%8]+(activeWorld==='ion'?0:12),1.8,.025);
- musicBeat=(musicBeat+1)%32;musicNext=audio.currentTime+.72;
+ if(!musicWanted()){if(musicPlayer&&(!musicPlayer.paused||musicPending))stopMusic();return}
+ if(musicPlayer?.paused&&!musicPending&&!musicBlocked)requestMusic();
 }
-$('music').onclick=()=>{musicEnabled=!musicEnabled;try{storeSetting('mooncatch-music',String(musicEnabled))}catch{}musicSettings();if(musicEnabled)unlockMusic();else stopMusic()};
+$('music').onclick=()=>{musicEnabled=!musicEnabled;try{storeSetting('mooncatch-music',String(musicEnabled))}catch{}if(musicEnabled)unlockMusic();else stopMusic();musicSettings()};
+$('musicTrack').onchange=()=>{
+ const id=$('musicTrack').value;if(!Object.prototype.hasOwnProperty.call(musicTracks,id)||id===musicTrack)return;
+ stopMusic();musicTrack=id;musicBlocked=false;try{storeSetting('mooncatch-music-track',id)}catch{}
+ if(musicPlayer){musicPlayer.src=`audio/${id}.mp3`;musicPlayer.load()}
+ if(musicEnabled)unlockMusic();musicSettings();
+};
 musicSettings();
 
 function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);

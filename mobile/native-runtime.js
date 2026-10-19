@@ -14,7 +14,7 @@
  window.MooncatchIsHome=()=>atHome;
  window.MooncatchResumeChanged=()=>native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{});
  window.MooncatchDockChanged=()=>native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{});
- function setHome(value){atHome=value;home.hidden=!value;document.body.classList.toggle('native-at-home',value);$('nativeReturn').hidden=value;native.files.setAwake({awake:!value&&state==='playing'}).catch(()=>{});}
+ function setHome(value){if(value)stopMusic();atHome=value;home.hidden=!value;document.body.classList.toggle('native-at-home',value);$('nativeReturn').hidden=value;native.files.setAwake({awake:!value&&state==='playing'}).catch(()=>{});}
  function goHome(){
   if(panelOpen)closePanel(false);
   if(!['ready','over'].includes(state))finish();
@@ -44,7 +44,7 @@
  };
  window.MooncatchLifecycle=active=>{
   if(!active){
-   homePress=null;clearInput();if(state==='playing'||state==='resuming')pause();else if(state==='menuIntro'){menuIntro=null;$('menuCue').hidden=true;state='playing';pause()}
+   homePress=null;stopMusic();clearInput();if(state==='playing'||state==='resuming')pause();else if(state==='menuIntro'){menuIntro=null;$('menuCue').hidden=true;state='playing';pause()}
    resumeSafetyPending=true;window.MooncatchSaveChanged?.();audio?.suspend().catch(()=>{});
    native.files.setAwake({awake:false}).catch(()=>{});
   }else{if(sound||musicEnabled)audio?.resume().catch(()=>{});native.files.setAwake({awake:!atHome&&['playing','resuming'].includes(state)}).catch(()=>{});}
