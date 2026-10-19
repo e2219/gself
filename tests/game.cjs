@@ -386,12 +386,9 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 {
  width=960;height=510;run('resize();start()');isolate();
  const well=()=>run('beginObjective({kind:"sling",duration:12});ship.x=ship.target=objective.cx*W+Math.min(W,H)*.18;ship.y=ship.targetY=objective.cy*H');
- well();assert(run('canSling()'));run('boostCooldown=4;hud()');assert(!els.padBoost.disabled);
- elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('orbit'));els.padBoost.onclick({detail:1});assert(run('orbit'));assert.equal(run('slingWins'),0);
- const angle=run('orbit.angle');run('update(.1)');assert.notEqual(run('orbit.angle'),angle);const radial=run('[Math.cos(orbit.angle),Math.sin(orbit.angle)]');
- elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('orbit'),null);assert(run('launch'));assert.equal(run('slingWins'),1);assert.equal(run('score'),80);assert(Math.abs(run('launch.vx')*radial[0]+run('launch.vy')*radial[1])<1e-8);
- run('releaseOrbit()');assert.equal(run('score'),80);events.keydown({key:'d',target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});assert.equal(run('launch'),null);
- run('start()');isolate();well();run('boost();pauseAndWait()');const orbitFreeze=run('JSON.stringify([orbit,ship,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([orbit,ship,elapsed])'),orbitFreeze);run('pauseAndWait()');for(let i=0;i<30;i++)run('update(.05)');assert.equal(run('orbit'),null);assert.equal(run('slingWins'),1);
+ well();run('boostCooldown=4;hud()');assert(els.padBoost.disabled);
+ run('boostCooldown=0');elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('boostTime>0'));const serial=run('boostSerial');els.padBoost.onclick({detail:1});assert.equal(run('boostSerial'),serial);
+ run('start()');isolate();well();run('elapsed=2;pauseAndWait()');const gravityFreeze=run('JSON.stringify([objective,ship,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([objective,ship,elapsed])'),gravityFreeze);
  // Five seconds in the whale wake pays once; the corridor protects health/armor and grants exit grace.
  run('start()');isolate();run('beginObjective({kind:"whale",duration:12})');
  run(`for(let i=0;i<52;i++){elapsed+=.1;const u=elapsed/12;ship.x=(objective.mirror?.88-u*.76:.12+u*.76)*W;ship.y=(.53+Math.sin(u*Math.PI*3)*.14)*H;updateAdventure(.1,ship.x,ship.y)}`);
@@ -407,8 +404,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('laser.vertical=true;ship.x=W*.8;ship.y=H*.6;stepLaser(.1,W*.3,ship.y,false)');assert.equal(run('hp'),3);
  run('ship.y=H*.1;stepLaser(.1,W*.3,ship.y,false)');assert.equal(run('hp'),2);
  run('elapsed=3.3;stepLaser(.1,ship.x,ship.y,false)');assert.equal(run('laser'),null);
- run('start()');isolate();well();run('boost()');width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(orbit.radius)'));els.restart.onclick();assert.equal(run('orbit'),null);assert.equal(run('launch'),null);assert.equal(run('laser'),null);assert(!run('whaleSafe'));assert.equal(run('slingWins+whaleWins+laserSlot'),0);
- console.log('V9 PASS: opt-in orbit, tangent/manual/automatic launch, pointer click deduplication, steering takeover, whale protection/reward/expiry/120Hz wake, laser warning/swept hit/gap/boost, pause/resize/reset');
+ run('start()');isolate();well();width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(blackHoleGeometry().r)'));els.restart.onclick();assert.equal(run('objective'),null);assert.equal(run('laser'),null);assert(!run('whaleSafe'));assert.equal(run('slingWins+whaleWins+laserSlot'),0);
+ console.log('V24 gravity controls PASS: cooldown, pointer click deduplication, pause/resize/reset; whale and laser regressions pass');
 }
 
 // V9.1: fast mouse reversal, borders, boost/weight changes and resume never retain relative offsets.
@@ -479,10 +476,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 {
  for(const [w,h] of [[360,400],[960,510]]){
   width=w;height=h;run('resize();start()');isolate();
-  run('beginObjective({kind:"sling",duration:12});ship.x=ship.target=W*.5+Math.min(W,H)*.18;ship.y=ship.targetY=H*.56;boost();drawNavigation();releaseOrbit()');
-  assert.equal(run('objective.kind'),'rings');assert(run('objective.linked'));assert.equal(run('objective.points.length'),3);assert.equal(run('objective.deadline-elapsed'),8);
-  assert(run('objective.points.every(p=>p.x*W>=35&&p.x*W<=W-35&&p.y*H>=40&&p.y*H<=H-40)'));
-  run('launch=null;for(const p of [...objective.points]){ship.x=p.x*W;ship.y=p.y*H;updateAdventure(0,ship.x,ship.y)}');assert.equal(run('ringWins'),1);assert.equal(run('objective'),null);
+  run('beginObjective({kind:"rings",duration:8});drawNavigation()');assert.equal(run('objective.kind'),'rings');
+  run('for(const p of [...objective.points]){ship.x=p.x*W;ship.y=p.y*H;updateAdventure(0,ship.x,ship.y)}');assert.equal(run('ringWins'),1);assert.equal(run('objective'),null);
   // Ordered swept contacts let fast movement collect a whole straight chain in one frame.
   run('objective={kind:"rings",linked:true,index:0,deadline:10,points:[{x:.3,y:.5},{x:.5,y:.5},{x:.7,y:.5}]};ship.x=W*.9;ship.y=H*.5;updateAdventure(0,W*.1,H*.5)');assert.equal(run('objective'),null);
   run('objective={kind:"rings",linked:true,index:0,deadline:10,points:[{x:.3,y:.5},{x:.5,y:.5},{x:.7,y:.5}]};ship.x=W*.1;ship.y=H*.5;updateAdventure(0,W*.9,H*.5)');assert.equal(run('objective.index'),1);
@@ -594,7 +589,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  // Expiry of a temporary route modifier cannot erase the destination choice.
  run('elapsed=50;updateAdventure(0,ship.x,ship.y)');assert.equal(run('activeRoute'),null);assert.equal(run('routePlan.join()'),'port,mine');
  run('start()');isolate();branch(0,'rich');branch(1,'calm');assert.equal(run('routePlan.join()'),'relic,whale');assert.equal(run('scheduledAdventure(adventureSchedule[2],2).kind'),'sling');
- run('beginObjective(scheduledAdventure(adventureSchedule[2],2));ship.x=W*.5+Math.min(W,H)*.18;ship.y=H*.56;enterOrbit();releaseOrbit()');assert.equal(run('objective.sector'),'relic');assert(run('objective.linked'));
+ run('beginObjective(scheduledAdventure(adventureSchedule[2],2))');assert.equal(run('objective.sector'),'relic');assert.equal(run('objective.kind'),'sling');
  run('start()');isolate();run('elapsed=33;routePlan[0]="port";beginObjective(scheduledAdventure(adventureSchedule[2],2));objective.crates.forEach(c=>c.taken=true);objective.load=3;ship.x=objective.station.x*W;ship.y=objective.station.y*H;updateAdventure(0,ship.x,ship.y)');assert.equal(run('guard'),1);assert.equal(run('objective'),null);run('updateAdventure(0,ship.x,ship.y)');assert.equal(run('guard'),1);
  run('start()');isolate();run('fork={stage:1,deadline:55,armed:54};elapsed=55;updateAdventure(0,ship.x,ship.y)');assert.equal(run('routePlan[1]'),'whale');
  run('routePlan=["relic","mine"];elapsed=63;mapHud()');assert.equal(els['map-mine'].attributes['data-state'],'active');assert.equal(els['map-whale'].attributes['data-state'],'skipped');assert(els.routeMap.attributes['aria-label'].includes('引力遗迹 → 陨石矿场'));
@@ -831,7 +826,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 }
 // Optional clearance goals are attainable on each map and award once only.
 {
- for(const map of ['classic','aurora','warp','station']){
+ for(const map of ['classic','aurora','station']){
   run(`state='over';selectWorld('${map}');start()`);isolate();
   run('elapsed=29.9;trackClear()');assert.equal(run('clearChallenge.hits'),0);
   run('elapsed=30;score=0;for(let i=0;i<challengeGoal();i++){const o={x:40,y:40,rock:true};shatter(o,false);shatter(o,false)}');assert(run('clearChallenge.won'));assert.equal(run('clearChallenge.hits'),run('challengeGoal()'));assert.equal(run('score'),250);assert.equal(run('dust'),2);
@@ -888,7 +883,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 }
 // Three full legs on every map and screen size with deliberate dock departure.
 {
- for(const map of ['classic','aurora','warp','station'])for(const size of [[360,400],[960,510]]){
+ for(const map of ['classic','aurora','station'])for(const size of [[360,400],[960,510]]){
   [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();invincible=1000;inputMode='keyboard';globalThis.endlessAudit={peak:0,legs:new Set(),captures:0};
    for(let i=0;i<17000&&['playing','dock'].includes(state)&&legIndex<3;i++){
     if(station){const c=station.cells.find(c=>!c.taken),r=station.rescue;
@@ -1039,7 +1034,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 
 // Pursuit pilot uses normal ship movement and cooldowns, without invulnerability or direct armor edits.
 {
- for(const size of [[360,400],[960,510]])for(const map of ['classic','aurora','warp','station']){
+ for(const size of [[360,400],[960,510]])for(const map of ['classic','aurora','station']){
   [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();legIndex=1;elapsed=12;ship.x=ship.target=W*.1;ship.y=ship.targetY=H*.8`);isolate();
   run(`stepBounty(0,ship.x,ship.y,false);elapsed=13.3;boostTime=.5;boostCooldown=4;ship.x=ship.target=bounty.x;ship.y=ship.targetY=bounty.y;stepBounty(.01,ship.x-70,ship.y,true);inputMode='keyboard';if(station)station.hp=4;
    for(let i=0;i<1100&&state==='playing'&&bounty?.stage==='hunt';i++){
@@ -1191,7 +1186,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 }
 // V20 optional supply chain: swept ordered pickup, real module effects, pause/expiry and once-only reward.
 {
- for(const size of [[320,568],[844,390],[960,510]])for(const map of ['classic','aurora','warp','station']){
+ for(const size of [[320,568],[844,390],[960,510]])for(const map of ['classic','aurora','station']){
   [width,height]=size;run(`state='over';selectRun('endless');selectWorld('${map}');resize();start();elapsed=18;expedition.modules.coil=2;expedition.modules.chart=2;stepSupplyChain(0,ship.x,ship.y)`);
   assert.equal(run('expedition.chain.until'),42);assert.equal(run('expedition.chain.index'),0);
   run('globalThis.pt=supplyPoint(expedition.chain.points[0]);ship.x=pt.x;ship.y=pt.y;stepSupplyChain(0,ship.x,ship.y)');assert.equal(run('expedition.chain.index'),0);
@@ -1205,7 +1200,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   run('start()');assert.equal(run('expedition.completed'),0);assert.equal(run('expedition.modules.coil'),0);
  }
  run('state="over";selectRun("timed");start();elapsed=18;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);
- console.log('V20 supply chain PASS: 4 maps × 3 screens, armed/swept/ordered pickups, coil/guide modules, reward caps, max-level supplies, pause/expiry and timed isolation');
+ console.log('V20 supply chain PASS: 3 maps × 3 screens, armed/swept/ordered pickups, coil/guide modules, reward caps, max-level supplies, pause/expiry and timed isolation');
 }
 
 // V21 finale progression: first voyage compatibility, real emitted telegraphs and bounded late waves.

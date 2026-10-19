@@ -228,6 +228,19 @@ public class MobileSmokeTest {
         js("openPanel('controls')");assertEquals("true",js("document.querySelector('.music-settings').contains(document.getElementById('music')) && document.querySelector('.music-settings').contains(document.getElementById('sound')) && document.getElementById('musicTrack').getBoundingClientRect().width<=innerWidth"));
         report("MOONCATCH_MODEL UI: launch reachable, objective below HUD, landscape bounds and grouped audio controls passed");
     }
+    @Test public void blackHoleAndBeaconSeparation() throws Exception {
+        open();js("selectedWorld='classic';selectedRun='endless';document.getElementById('nativeStart').click();spawn=hazardClock=100;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length;expedition.seen=true;invincible=100");
+        for(String mode:new String[]{"drag","stick","dpad"}){
+            js("selectControlMode('"+mode+"');clearInput();elapsed=0;beginObjective({kind:'sling',duration:20});elapsed=3;boostTime=boostCooldown=0;ship.x=ship.target=W*.5+blackHoleGeometry().r*.6;ship.y=ship.targetY=H*.56;window.beforePull=ship.x");
+            SystemClock.sleep(600);assertEquals("true",js("ship.x<beforePull-2 && objective.exposure>=.25"));
+            float[] b=point("boost",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,b);touch(down,MotionEvent.ACTION_UP,b);
+            waitFor("objective.rewarded===true",3000);assertEquals("true",js("Math.hypot(ship.x-W*.5,ship.y-H*.56)>=blackHoleGeometry().r && state==='playing'"));
+            report("MOONCATCH_BLACKHOLE "+mode+" gradual drift and real boost escape passed "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier})"));
+        }
+        js("objective=null;activeWorld='ion';worldSlot=1;worldEvent=null;expedition.seen=false;elapsed=18;stepIon(0,0,0);stepSupplyChain(0,0,0);hud()");assertEquals("true",js("worldEvent!==null && expedition.chain===null && document.getElementById('navigationCue').textContent.includes('回路')"));
+        js("pause()");String frozen=js("JSON.stringify([ship,elapsed,worldEvent])");SystemClock.sleep(500);assertEquals(frozen,js("JSON.stringify([ship,elapsed,worldEvent])"));
+        report("MOONCATCH_BLACKHOLE lunar/supply separation and pause passed");
+    }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");
         long end=SystemClock.uptimeMillis()+300000;int tick=0;

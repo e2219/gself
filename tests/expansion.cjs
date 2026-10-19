@@ -82,7 +82,7 @@ for(const tier of ['clear','smooth'])for(const size of [[320,568],[390,844],[844
  start('ion');run('elapsed=6;stepIon(0,ship.x,ship.y);worldEvent.index=1');const ion=run('JSON.stringify(worldEvent)');run('drawIon(1);drawIon(2);navigationHud()');assert.equal(run('JSON.stringify(worldEvent)'),ion);assert.match(els.navigationCue.textContent,/下一点 2/);
  run('pause();navigationHud()');assert.equal(els.navigationCue.hidden,true);run('state="playing";boss={hp:3};navigationHud()');assert.equal(els.navigationCue.hidden,true);
 }
-assert(modelLabels.includes('02')&&modelLabels.includes('03')&&modelLabels.includes('✓'));
+assert(modelLabels.includes('02')&&modelLabels.includes('03')&&modelLabels.includes('明月'));
 let rotations=[];ctx.rotate=a=>rotations.push(a);run('drawMeteor({x:0,y:0,r:14,dx:0,dy:-1,trident:true},0)');assert.equal(rotations[0],-Math.PI/2);delete ctx.rotate;delete ctx.fillText;
 console.log('V23 models/UI PASS: four sizes × two quality tiers, read-only cargo/beacons/hazards, completed/next labels, vertical trident direction and pause/boss cue isolation');
 
@@ -116,3 +116,38 @@ sandbox.window.AudioContext=TestAudio;els.backgroundMusic=new TestMedia();
  els.music.onclick();await new Promise(setImmediate);run("musicPlayer.listeners.error()");assert(run('musicBlocked&&musicPlayer.paused'));assert.match(els.musicStatus.textContent,/未能播放/);
  console.log('V22.1 recorded music PASS: two local tracks, single player, opt-in, independent SFX, retained offset, countdown silence, mute/late promise, source switch, error backoff and gesture retry');
 })().catch(e=>{console.error(e);process.exitCode=1});
+
+// V24: the field never seizes control, and drift works with every driver and frame rate.
+for(const size of [[320,568],[844,390],[960,510]]){
+ [width,height]=size;
+ for(const driver of ['pointer','keyboard','virtual']){
+  start();isolate();run(`inputMode='${driver}';beginObjective({kind:'sling',duration:12});ship.x=ship.target=W*.5+blackHoleGeometry().r*.6;ship.y=ship.targetY=H*.56`);
+  const x=run('ship.x');run('for(let i=0;i<60;i++)update(1/60)');assert.equal(run('ship.x'),x,'formation warning must not pull');
+  run('for(let i=0;i<120;i++)update(1/60)');assert(run('ship.x<ship.target+1e-8&&ship.x<'+x),'stationary target must drift');assert(run('objective.exposure>=.25'));
+  run('boostCooldown=0;boost();for(let i=0;i<70;i++)update(1/60)');assert.equal(run('slingWins'),1);assert.equal(run('objective.kind'),'sling');assert.equal(run('objective.rewarded'),true);
+  const bonus=run('score');run('stepBlackHole(.1);stepBlackHole(.1)');assert.equal(run('score'),bonus,'escape pays once');
+ }
+ start();isolate();run("beginObjective({kind:'sling',duration:12});elapsed=3;ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.56;stepBlackHole(.01)");assert.equal(run('hp'),2);assert(run('Number.isFinite(ship.x+ship.y)'));
+ run('hp=3;invincible=0;boostTime=1;stepBlackHole(.01)');assert.equal(run('hp'),3);
+ run('boostTime=0;ship.x=W*.9;ship.y=H*.56;stepBlackHole(.01,W*.1,H*.56)');assert.equal(run('hp'),2,'fast mouse crossing must hit core');
+ run('pause()');const frozen=run('JSON.stringify([objective,ship,elapsed])');run('update(5)');assert.equal(run('JSON.stringify([objective,ship,elapsed])'),frozen);
+ run("state='playing';elapsed=13;updateAdventure(.01,ship.x,ship.y)");assert.equal(run('objective'),null);
+}
+const driftSamples=[];
+for(const fps of [30,60,120]){
+ start();isolate();run("beginObjective({kind:'sling',duration:12});inputMode='pointer';ship.x=ship.target=W*.5+blackHoleGeometry().r*.8;ship.y=ship.targetY=H*.56;invincible=100");
+ run(`for(let i=0;i<${fps*4};i++)update(1/${fps})`);driftSamples.push(run('ship.x'));
+}
+assert(Math.max(...driftSamples)-Math.min(...driftSamples)<2,'pull should not depend on refresh rate');
+// Busy primary objectives own the scene; hidden supply cannot tick down or collect.
+start('classic','endless');isolate();run("expedition.seen=false;elapsed=18;stepSupplyChain(0,0,0);globalThis.deadline=expedition.chain.until;beginObjective({kind:'cargo',duration:12});elapsed+=2;stepSupplyChain(2,0,0)");
+assert.equal(run('expedition.chain.until'),run('deadline+2'));assert.equal(run('expedition.chain.index'),0);assert.equal(run('supplyBusy()'),true);
+run('objective=null;fork=null;elapsed+=.1;stepSupplyChain(.1,0,0)');assert(run('expedition.chain.armed>elapsed'));
+for(const world of ['ion','warp']){
+ start(world,'endless');isolate();run('expedition.seen=false;elapsed=18;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);
+ run('expedition.modules.coil=2;boostCooldown=5;mapSupplyReward();mapSupplyReward()');assert(Math.abs(run('boostCooldown')-.2)<1e-8);assert.equal(run('expedition.completed'),1);assert.equal(run('expedition.credits'),1);assert.equal(run('score'),105);assert.equal(run('dust'),2);
+}
+// The drawings are recognizably different and completed targets leave no icon behind.
+const labels=[];ctx.fillText=t=>labels.push(t);run("drawNavBeacon(100,100,2,0,{active:true});drawMoonBeacon(100,100,'dark',0,{active:true})");assert.deepEqual(labels,['02','暗月']);
+labels.length=0;run("drawNavBeacon(100,100,1,0,{done:true});drawMoonBeacon(100,100,'bright',0,{done:true})");assert.equal(labels.length,0);
+console.log('V24 PASS: distinct numeric/lunar targets, conflict scheduling and one-time map supplies; three drivers/screens, warm-up, cumulative pull, boost escape, swept core, center stability, pause/expiry and 30/60/120Hz drift',driftSamples);
