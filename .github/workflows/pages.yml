@@ -46,11 +46,13 @@ jobs:
           node tests/voyages.cjs
           node tests/profile.cjs
           node tests/mobile.cjs
+          node tests/echo.cjs
+          node tests/suite.cjs
           test -f dist/index.html
       - name: Build standalone game
         run: node .github/scripts/build-pages.cjs
       - name: Verify branch and Actions entry points match
-        run: git diff --exit-code -- index.html .nojekyll audio
+        run: git diff --exit-code -- index.html .nojekyll audio echo
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game

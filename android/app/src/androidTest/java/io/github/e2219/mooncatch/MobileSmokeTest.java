@@ -35,7 +35,8 @@ public class MobileSmokeTest {
     }
     private void open() throws Exception {
         scenario=ActivityScenario.launch(MainActivity.class);
-        waitFor("typeof MooncatchIsHome==='function'");
+        waitFor("typeof MooncatchIsHome==='function' && typeof MooncatchSuite==='object'");
+        js("MooncatchSuite.select('classic')");
         js("if(!MooncatchIsHome())document.getElementById('nativeReturn').click()");
         if(baseline==null)baseline=new JSONArray("["+js("JSON.stringify(MooncatchProfileData.snapshot(localStorage))")+"]").getString(0);
     }
@@ -53,7 +54,7 @@ public class MobileSmokeTest {
     }
     @After public void restoreProfile() throws Exception {
         if(scenario!=null && baseline!=null){
-            try {js("if(state==='playing'||state==='resuming')pause();clearInput();for(const k of MooncatchProfileData.keys)localStorage.removeItem(k);MooncatchProfileData.merge(localStorage,"+baseline+");window.nativeSaved=false;MooncatchSaveChanged().then(()=>window.nativeSaved=true)");waitFor("window.nativeSaved===true");
+            try {js("window.MooncatchSuite?.home();if(state==='playing'||state==='resuming')pause();clearInput();for(const k of MooncatchProfileData.keys)localStorage.removeItem(k);MooncatchProfileData.merge(localStorage,"+baseline+");window.nativeSaved=false;MooncatchSaveChanged().then(()=>window.nativeSaved=true)");waitFor("window.nativeSaved===true");
                 assertEquals(baseline,new JSONArray("["+js("JSON.stringify(MooncatchProfileData.snapshot(localStorage))")+"]").getString(0));
                 // Instrumentation terminates the app process; allow WebView DOM storage to flush first.
                 SystemClock.sleep(2000);
@@ -128,6 +129,37 @@ public class MobileSmokeTest {
         js("window.nativeBeforeImport=true;document.getElementById('saveApply').click()");
         waitFor("typeof MooncatchIsHome==='function' && MooncatchIsHome() && typeof nativeBeforeImport==='undefined'");
         assertEquals("\"10731\"",js("localStorage.getItem('mooncatch-best-v6')"));
+    }
+    private float[] echoPoint(String id,double fx,double fy) throws Exception {
+        String result=js("JSON.stringify((()=>{const f=document.getElementById('echoFrame'),a=f.getBoundingClientRect(),r=f.contentDocument.getElementById('"+id+"').getBoundingClientRect();return [(a.left+r.left+r.width*"+fx+")*devicePixelRatio,(a.top+r.top+r.height*"+fy+")*devicePixelRatio]})())");
+        JSONArray v=new JSONArray((String)new JSONArray("["+result+"]").get(0));return new float[]{(float)v.getDouble(0),(float)v.getDouble(1)};
+    }
+    private void echoShot(String name) throws Exception {
+        java.io.File f=new java.io.File(InstrumentationRegistry.getInstrumentation().getTargetContext().getExternalFilesDir(null),name+".png");
+        try(java.io.FileOutputStream out=new java.io.FileOutputStream(f)){InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
+    }
+    private void tap(float[] p){long d=SystemClock.uptimeMillis();touch(d,MotionEvent.ACTION_DOWN,p);SystemClock.sleep(55);touch(d,MotionEvent.ACTION_UP,p);SystemClock.sleep(180);}
+    @Test public void echoSyncRealTouch() throws Exception {
+        open();js("MooncatchSuite.home()");tap(point("chooseEcho",.5,.5));
+        waitFor("document.getElementById('echoFrame')?.contentWindow.MoonEcho!==undefined");
+        js("window.ew=document.getElementById('echoFrame').contentWindow;window.eg=ew.MoonEcho");
+        tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));assertEquals("true",js("eg.game.state.p[0]===eg.game.state.p[1]"));
+        tap(echoPoint("undo",.5,.5));assertEquals("0",js("eg.game.state.moves"));
+        float[] p=echoPoint("right",.5,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);SystemClock.sleep(900);touch(down,MotionEvent.ACTION_UP,p);waitFor("eg.game.won");
+        js("eg.choose(1)");SystemClock.sleep(250);assertEquals("0",js("eg.game.state.moves"));
+        p=echoPoint("board0",.3,.5);float[] q=echoPoint("board0",.7,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);touch(down,MotionEvent.ACTION_MOVE,q);touch(down,MotionEvent.ACTION_UP,q);SystemClock.sleep(200);assertEquals("1",js("eg.game.state.moves"));
+        js("eg.choose(8)");SystemClock.sleep(250);echoShot("echo-portrait");tap(echoPoint("board0",3.5/7,3.5/7));assertEquals("1",js("eg.game.state.flags[0].length"));tap(echoPoint("check",.5,.5));assertEquals("true",js("eg.game.state.safe[0]"));tap(echoPoint("undo",.5,.5));assertEquals("false",js("eg.game.state.safe[0]"));
+        InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("ew.document.getElementById('menu').open");tap(echoPoint("closeMenu",.5,.5));
+        js("eg.choose(0)");p=echoPoint("right",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);touch(down,MotionEvent.ACTION_CANCEL,p);String saved=js("eg.game.state.moves");SystemClock.sleep(700);assertEquals(saved,js("eg.game.state.moves"));
+        scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(500);assertEquals(saved,js("eg.game.state.moves"));scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));waitFor("innerWidth>innerHeight");SystemClock.sleep(400);echoShot("echo-landscape");
+        assertEquals("true",js("(()=>{const d=ew.document,b=d.getElementById('right').getBoundingClientRect();return b.width>=44&&b.height>=44&&b.bottom<=ew.innerHeight&&b.right<=ew.innerWidth})()"));
+        tap(echoPoint("reset",.5,.5));tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));
+        scenario.onActivity(a->a.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));waitFor("innerHeight>innerWidth");
+        js("window.echoTimes=[];window.echoPulse=setInterval(()=>eg.step(eg.game.state.p[0]===22?'R':'L'),150);window.echoLast=performance.now();function sample(t){echoTimes.push(t-echoLast);echoLast=t;if(echoTimes.length<90)requestAnimationFrame(sample)}requestAnimationFrame(sample)");
+        waitFor("echoTimes.length>=90");js("clearInterval(echoPulse)");report("MOONCATCH_ECHO "+js("JSON.stringify({frames:echoTimes.length,medianMs:echoTimes.slice(5).sort((a,b)=>a-b)[42],maxMs:Math.max(...echoTimes.slice(5)),level:eg.index+1})"));
+        js("MooncatchSuite.home()");tap(point("chooseClassic",.5,.5));assertEquals("\"classic\"",js("MooncatchSuite.mode"));tap(point("nativeStart",.5,.5));assertEquals("\"playing\"",js("state"));
+        report("MOONCATCH_ECHO real dpad, hold, swipe, flags, undo, cancel, lifecycle, back, rotation and classic return passed");
     }
     @Test public void profileSnapshot() throws Exception {
         open();

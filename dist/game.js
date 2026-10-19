@@ -755,6 +755,7 @@ $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$(
 $('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));
 $('sound').onclick=()=>{sound=!sound;try{storeSetting('mooncatch-sound',String(sound))}catch{}$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
 window.addEventListener('keydown',e=>{
+ if(window.MooncatchSuite&&window.MooncatchSuite.mode!=='classic')return;
  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const k=e.key.toLowerCase();
  if(panelOpen){
@@ -2348,4 +2349,4 @@ $('musicTrack').onchange=()=>{
 };
 musicSettings();
 
-function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();if(specialRun())readyModeCopy();requestAnimationFrame(frame);
+function frame(ms){if(window.MooncatchSuite&&window.MooncatchSuite.mode!=='classic'){last=ms;requestAnimationFrame(frame);return}musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();if(specialRun())readyModeCopy();requestAnimationFrame(frame);

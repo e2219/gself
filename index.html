@@ -244,7 +244,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V25</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V26</span></footer>
 </main><script>'use strict';
 // Portable records/settings only; never import executable code or an in-progress run.
 (function(root){
@@ -255,9 +255,11 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
   'mooncatch-left-hand':['true','false'], 'mooncatch-sound':['true','false'], 'mooncatch-music':['true','false']
  };
  const scoreKeys=['mooncatch-relax-v25','mooncatch-adventure-v25','mooncatch-best-v6',...['aurora','warp','station','ion'].map(w=>'mooncatch-best-'+w+'-v13'),...['classic','aurora','warp','station','ion'].map(w=>'mooncatch-endless-'+w+'-v16')];
- const keys=[...Object.keys(choices),'mooncatch-floating-layout',...scoreKeys];
+ const echoKey='mooncatch-echo-sync-v1';
+ const keys=[...Object.keys(choices),'mooncatch-floating-layout',echoKey,...scoreKeys];
  function valid(key,value){
   if(typeof value!=='string'||value.length>1000)return false;
+  if(key===echoKey)try{const p=JSON.parse(value);return p&&Object.keys(p).sort().join(',')==='best,completed'&&Array.isArray(p.completed)&&p.completed.length<=20&&p.completed.every(n=>Number.isInteger(n)&&n>=1&&n<=20)&&new Set(p.completed).size===p.completed.length&&p.best&&typeof p.best==='object'&&!Array.isArray(p.best)&&Object.entries(p.best).every(([k,n])=>/^(?:[1-9]|1[0-9]|20)$/.test(k)&&p.completed.includes(Number(k))&&Number.isInteger(n)&&n>=0&&n<=1000000)&&p.completed.every(n=>Object.prototype.hasOwnProperty.call(p.best,String(n)))}catch{return false}
   if(choices[key])return choices[key].includes(value);
   if(scoreKeys.includes(key))return /^(0|[1-9][0-9]{0,11})$/.test(value);
   if(key==='mooncatch-floating-layout')try{
@@ -277,7 +279,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
  function merge(storage,backup){
   // Validate the entire file before touching storage; restore the original on a failed write.
   const checked=parse(JSON.stringify(backup)),before=keys.map(k=>[k,storage.getItem(k)]);
-  try{for(const [k,v] of Object.entries(checked.data)){const old=storage.getItem(k);storage.setItem(k,scoreKeys.includes(k)?String(Math.max(valid(k,old)?Number(old):0,Number(v))):v)}}
+  try{for(const [k,v] of Object.entries(checked.data)){const old=storage.getItem(k);if(k===echoKey&&valid(k,old)){const a=JSON.parse(old),b=JSON.parse(v);for(const id of b.completed){if(!a.completed.includes(id))a.completed.push(id);a.best[id]=Math.min(a.best[id]??Infinity,b.best[id])}a.completed.sort((x,y)=>x-y);storage.setItem(k,JSON.stringify(a));continue}storage.setItem(k,scoreKeys.includes(k)?String(Math.max(valid(k,old)?Number(old):0,Number(v))):v)}}
   catch(error){for(const [k,v] of before){try{v===null?storage.removeItem(k):storage.setItem(k,v)}catch{}}throw Error('存储空间不可用，导入未完成')}
   return snapshot(storage);
  }
@@ -1040,6 +1042,7 @@ $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$(
 $('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));
 $('sound').onclick=()=>{sound=!sound;try{storeSetting('mooncatch-sound',String(sound))}catch{}$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
 window.addEventListener('keydown',e=>{
+ if(window.MooncatchSuite&&window.MooncatchSuite.mode!=='classic')return;
  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
  const k=e.key.toLowerCase();
  if(panelOpen){
@@ -2633,7 +2636,7 @@ $('musicTrack').onchange=()=>{
 };
 musicSettings();
 
-function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();if(specialRun())readyModeCopy();requestAnimationFrame(frame);
+function frame(ms){if(window.MooncatchSuite&&window.MooncatchSuite.mode!=='classic'){last=ms;requestAnimationFrame(frame);return}musicTick();const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();if(specialRun())readyModeCopy();requestAnimationFrame(frame);
 </script><script>'use strict';
 (function(){
  const section=document.createElement('section');section.className='save-settings';
@@ -2665,6 +2668,22 @@ function frame(ms){musicTick();const interval=ms-last;recordFrame(last?interval:
   try{data.merge(localStorage,pending);await window.MooncatchSaveChanged?.();cancel();location.reload()}
   catch(e){status(e.message||'导入未完成');lock(false)}
  };
+})();
+</script><script>(()=>{'use strict';
+let mode='home',frame=null;const native=window.MooncatchNative,oldBack=window.MooncatchBack,oldLife=window.MooncatchLifecycle;
+const style=document.createElement('style');style.textContent=`#suiteHome{position:fixed;inset:0;z-index:2500;overflow:auto;background:radial-gradient(ellipse at 20% 0%,#244550,#0b1728 70%);color:#e5f0ed;padding:max(28px,var(--native-safe-top,env(safe-area-inset-top))) max(20px,var(--native-safe-right,env(safe-area-inset-right))) max(24px,var(--native-safe-bottom,env(safe-area-inset-bottom))) max(20px,var(--native-safe-left,env(safe-area-inset-left)));display:grid;place-content:center;gap:18px;font-family:system-ui}#suiteHome[hidden],#echoFrame[hidden]{display:none}#suiteHome h1{font-size:32px;margin:0}#suiteHome p{max-width:600px;line-height:1.6;color:#b5cbcf}#suiteCards{display:flex;gap:16px;flex-wrap:wrap}#suiteCards button{flex:1;min-width:230px;max-width:390px;text-align:left;padding:26px;border:1px solid #668582;background:#17303e;border-radius:20px;color:#e1eee9;font:inherit;cursor:pointer;min-height:160px}#suiteCards strong{display:block;font-size:24px;margin:8px 0}#suiteCards small{line-height:1.7;display:block;color:#b4c9cc}#suiteCards button:active{background:#28505c}#suiteReturn{min-height:44px;margin:8px}#echoFrame{position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2400;background:#091421}`;document.head.append(style);
+const home=document.createElement('section');home.id='suiteHome';home.innerHTML='<div><small>MOONCATCH · 两种旅程</small><h1>月面拾光</h1><p>向星海出发，或与月影一起解开遗迹。</p></div><div id="suiteCards"><button id="chooseClassic"><span>✦</span><strong>星海航行</strong><small>驾驶飞船，收集星光<br>保留全部原有模式、地图与记录</small></button><button id="chooseEcho"><span>☾</span><strong>月影同行</strong><small>一次方向，同时移动两位旅人<br>20 关 · 推箱 / 排雷 / 一笔月纹</small></button></div><p>离线也能出发 · 进度自动保存</p>';document.body.append(home);
+function child(){return frame?.contentWindow?.MoonEcho}
+function insets(){if(!frame?.contentDocument)return;for(const s of ['top','right','bottom','left'])frame.contentDocument.documentElement.style.setProperty('--safe-'+s,getComputedStyle(document.documentElement).getPropertyValue('--native-safe-'+s)||'0px');child()?.draw()}
+function freeze(){if(typeof clearInput==='function')clearInput();if(typeof stopMusic==='function')stopMusic();if(typeof state!=='undefined'&&['playing','resuming','menuIntro'].includes(state)&&typeof pause==='function')pause();}
+function select(value){freeze();mode=value;home.hidden=value!=='home';if(frame)frame.hidden=value!=='echo';if(value==='echo'){if(!frame){frame=document.createElement('iframe');frame.id='echoFrame';frame.title='月影同行解谜棋盘';frame.src='echo/index.html';frame.onload=()=>{insets();child()?.pause(mode!=='echo');frame.contentWindow.focus()};document.body.append(frame)}child()?.pause(false);frame.contentWindow.focus()}else child()?.pause(true);native?.files.setAwake({awake:value==='echo'}).catch(()=>{});}
+window.MooncatchSuite={get mode(){return mode},select,home:()=>select('home')};
+document.getElementById('chooseClassic').onclick=()=>select('classic');document.getElementById('chooseEcho').onclick=()=>select('echo');
+const back=document.createElement('button');back.id='suiteReturn';back.textContent='切换玩法';back.onclick=()=>select('home');(document.querySelector('#nativeHome header')||document.querySelector('main')).append(back);
+const settingsBack=document.createElement('button');settingsBack.id='suiteSettingsReturn';settingsBack.textContent='暂停航行并切换玩法';settingsBack.onclick=()=>select('home');document.getElementById('controlSettings')?.append(settingsBack);
+window.MooncatchBack=()=>{if(mode==='echo'){child()?.back();return}if(mode==='home'){window.MooncatchSaveChanged?.().then(()=>native?.App.exitApp());return}if(native&&window.MooncatchIsHome?.()){select('home');return}oldBack?.()};
+window.MooncatchLifecycle=active=>{if(mode==='classic')oldLife?.(active);else{freeze();child()?.pause(!active);native?.files.setAwake({awake:active&&mode==='echo'}).catch(()=>{});if(!active)window.MooncatchSaveChanged?.()}};
+addEventListener('mooncatchInsets',()=>requestAnimationFrame(insets));addEventListener('resize',insets);select('home');
 })();
 </script>
 </body></html>

@@ -1,0 +1,266 @@
+[
+  {
+    "id": 1,
+    "path": "RRRR",
+    "visited": 5,
+    "minimum": 4,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 2,
+    "path": "LRR",
+    "visited": 10,
+    "minimum": 3,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 3,
+    "path": "RRRRRDD",
+    "visited": 158,
+    "minimum": 7,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 4,
+    "path": "RRRR",
+    "visited": 5,
+    "minimum": 4,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 5,
+    "path": "RRURRD",
+    "visited": 144,
+    "minimum": 6,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 6,
+    "path": "URRDLDRURRR",
+    "visited": 5446,
+    "minimum": 11,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 7,
+    "path": "RRURRDRRUUR",
+    "visited": 2807,
+    "minimum": 11,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 8,
+    "path": "URDRURU",
+    "visited": 272,
+    "minimum": 7,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 9,
+    "path": "RRRRDDDD",
+    "visited": 159,
+    "minimum": 8,
+    "flags": [
+      [
+        [
+          3,
+          3
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": 10,
+    "path": "RRRRDDDD",
+    "visited": 339,
+    "minimum": 8,
+    "flags": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": 11,
+    "path": "RRRRDDDD",
+    "visited": 23,
+    "minimum": 8,
+    "flags": [
+      [
+        [
+          1,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      [
+        [
+          2,
+          3
+        ],
+        [
+          5,
+          3
+        ]
+      ]
+    ]
+  },
+  {
+    "id": 12,
+    "path": "RRDDRURRDDD",
+    "visited": 3059,
+    "minimum": 11,
+    "flags": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      []
+    ]
+  },
+  {
+    "id": 13,
+    "path": "RDL",
+    "visited": 48,
+    "minimum": 3,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 14,
+    "path": "RRDLLDRR",
+    "visited": 75,
+    "minimum": 8,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 15,
+    "path": "RRDLLDRR",
+    "visited": 333,
+    "minimum": 8,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 16,
+    "path": "RUDRURRDDD",
+    "visited": 15095,
+    "minimum": 10,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 17,
+    "path": "RRLLRRDRRDDLUURRDDD",
+    "visited": 16616,
+    "minimum": 19,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 18,
+    "path": "RRDDURRDDD",
+    "visited": 230,
+    "minimum": 10,
+    "flags": [
+      [
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ],
+      [
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          3
+        ]
+      ]
+    ]
+  },
+  {
+    "id": 19,
+    "path": "URDRURRDRRURDDLDR",
+    "visited": 294528,
+    "minimum": 17,
+    "flags": [
+      [],
+      []
+    ]
+  },
+  {
+    "id": 20,
+    "path": "RDRDDURRURDLDRD",
+    "visited": 102924,
+    "minimum": 15,
+    "flags": [
+      [
+        [
+          1,
+          3
+        ]
+      ],
+      []
+    ]
+  }
+]
