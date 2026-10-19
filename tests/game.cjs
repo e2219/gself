@@ -1206,6 +1206,43 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V20 supply chain PASS: 4 maps × 3 screens, armed/swept/ordered pickups, coil/guide modules, reward caps, max-level supplies, pause/expiry and timed isolation');
 }
 
+// V21 finale progression: first voyage compatibility, real emitted telegraphs and bounded late waves.
+{
+ const rows=[];
+ for(const leg of [0,1,2,4,6,8,100]){
+  run(`state='over';selectedRun='endless';selectedWorld='classic';start();legIndex=${leg};elapsed=70;updateBoss(0,0,0,true,0)`);
+  const p=JSON.parse(run('JSON.stringify(bossDifficulty())')),plan=JSON.parse(run('JSON.stringify(stormSchedule())'));
+  rows.push({wave:leg+1,hp:p.hp,attacks:plan.length,warning:p.warning,fan:p.fan});
+  assert.equal(run('boss.hp'),p.hp);assert.equal(run('boss.maxHp'),p.hp);assert(p.hp<=6&&p.warning>=1.4&&p.fan<=7);assert(plan.every(e=>e.at>=72&&e.at+p.warning+.8<=90));
+  assert.equal(run('stormCaption().includes("装甲 "+boss.hp+"/"+boss.maxHp)'),true);
+  for(const kind of ['fragments','core','rift']){
+   run(`items=[];boss.warning=0;elapsed=74;storm.event={kind:'${kind}',x:.5,y:.4,gap:.5,fire:75,end:78,fired:false,radius:32,half:bossDifficulty().gap,fan:bossDifficulty().fan,fragments:bossDifficulty().fragments};globalThis.telegraph=stormAngles(storm.event);stepStorm(.01,0,0,true)`);
+   assert.equal(run('items.length'),0);
+   run('elapsed=75;stepStorm(.01,0,0,true)');assert.equal(run('items.length'),run('telegraph.length'));
+   assert(run('items.every((o,i)=>angleGap(Math.atan2(o.dy,o.dx),telegraph[i])<1e-9)'));
+   const count=run('items.length');run('stepStorm(.01,0,0,true)');assert.equal(run('items.length'),count);
+  }
+  run('storm.event=null;boss.hp=1;score=0;breakBossShell(false);breakBossShell(false)');assert.equal(run('score'),p.reward);assert.equal(run('storm.event'),null);
+ }
+ assert(rows[1].warning<rows[0].warning);assert(rows[2].hp>rows[0].hp);assert(rows[4].attacks>rows[0].attacks);
+ run("activeRun='timed';legIndex=100");assert.equal(run('bossDifficulty().hp'),3);assert.equal(run('stormSchedule().map(p=>p.at).join()'),'72,78,84');
+ // Later-wave rings retain a real, traversable gap; their collision line matches rendering.
+ for(const size of [[320,568],[844,390],[960,510]])for(const world of ['classic','aurora','warp']){
+  [width,height]=size;run(`state='over';selectedRun='endless';selectedWorld='${world}';resize();start();legIndex=8;elapsed=70;updateBoss(0,0,0,true,0);boss.warning=0;elapsed=72;stepStorm(0,0,0,true)`);
+  if(world==='aurora'){
+   run('elapsed=74;globalThis.g=irisGeometry(storm.event);ship.x=g.x+g.r*Math.cos(g.gap);ship.y=g.y+g.r*Math.sin(g.gap);hp=3;invincible=resumeShield=0;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('hp'),3);
+   run('ship.x=g.x+g.r*Math.cos(g.gap+Math.PI);ship.y=g.y+g.r*Math.sin(g.gap+Math.PI);stepStorm(0,ship.x,ship.y,false)');assert.equal(run('hp'),2);
+  }
+  for(const craft of ['collector','falcon','warden'])for(const tier of [0,2]){
+   run(`activeShip='${craft}';renderTier=${tier};items=[{}, {splitter:true},{probe:true},{boomerang:true},{core:true}].map((v,i)=>({...v,x:80+i*30,y:120,r:12,a:.4,rock:true}));globalThis.savedModelState=JSON.stringify([ship,boss,items,storm]);draw(74)`);
+   assert(run('savedModelState===JSON.stringify([ship,boss,items,storm])'));
+  }
+  run('state="playing";elapsed=70;bossStarted=false;boss=null;storm=null;invincible=100;inputMode="keyboard";for(let i=0;i<1201&&state==="playing";i++){update(1/60);if(i%30===0)draw(elapsed)}');assert.equal(run('state'),'dock');assert(run('items.length===0&&boss===null&&storm===null'));
+ }
+ run("state='over';selectedRun='timed';selectedWorld='classic';renderTier=0;start()");
+ console.log('V21 finales PASS:',JSON.stringify(rows),'telegraph/shot alignment, gap collision, rewards, timed isolation, 3 maps × 3 sizes full finale/dock and read-only model drawing');
+}
+
 run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("drag");start()');
 (async()=>{
  run('start()');isolate();

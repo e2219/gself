@@ -131,6 +131,21 @@ public class MobileSmokeTest {
         InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("panelOpen");InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("!panelOpen && state==='dock'");
         float[] launch=point("dockLaunch",.5,.5);down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,launch);touch(down,MotionEvent.ACTION_UP,launch);waitFor("state==='playing' && resumeShield>2");assertEquals("true",js("guard>=2 && stickPointer===null"));
     }
+    @Test public void bossModelVoyages() throws Exception {
+        open();
+        for(String world:new String[]{"classic","aurora","warp"}){
+            js("if(!MooncatchIsHome())document.getElementById('nativeReturn').click();selectedWorld='"+world+"';selectedRun='endless';document.getElementById('nativeStart').click();legIndex=8;elapsed=69.9;invincible=100;inputMode='keyboard';ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.8");
+            waitFor("boss && boss.maxHp===6");
+            for(int i=0;i<10;i++){
+                js("activeShip=['collector','falcon','warden']["+i+"%3];ship.target=W*(.25+.5*(1+Math.sin("+i+"))/2)");
+                SystemClock.sleep(1800);
+                report("MOONCATCH_BOSS "+world+" "+js("JSON.stringify({fps:frameHealth.fps,tier:renderTier,elapsed,state,armor:boss?.maxHp,attacks:storm?.slot})"));
+                assertEquals("true",js("Number.isFinite(ship.x+ship.y) && hp===3"));
+            }
+            waitFor("state==='dock'",10000);
+            assertEquals("true",js("boss===null && storm===null && items.length===0"));
+        }
+    }
     @Test public void fiveMinuteRenderSoak() throws Exception {
         open();js("document.getElementById('nativeStart').click()");
         long end=SystemClock.uptimeMillis()+300000;int tick=0;
