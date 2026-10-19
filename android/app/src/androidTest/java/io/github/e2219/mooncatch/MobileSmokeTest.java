@@ -53,7 +53,7 @@ public class MobileSmokeTest {
     }
     @After public void restoreProfile() throws Exception {
         if(scenario!=null && baseline!=null){
-            try {js("if(state==='playing')pause();clearInput();for(const k of MooncatchProfileData.keys)localStorage.removeItem(k);MooncatchProfileData.merge(localStorage,"+baseline+");window.nativeSaved=false;MooncatchSaveChanged().then(()=>window.nativeSaved=true)");waitFor("window.nativeSaved===true");
+            try {js("if(state==='playing'||state==='resuming')pause();clearInput();for(const k of MooncatchProfileData.keys)localStorage.removeItem(k);MooncatchProfileData.merge(localStorage,"+baseline+");window.nativeSaved=false;MooncatchSaveChanged().then(()=>window.nativeSaved=true)");waitFor("window.nativeSaved===true");
                 assertEquals(baseline,new JSONArray("["+js("JSON.stringify(MooncatchProfileData.snapshot(localStorage))")+"]").getString(0));
                 // Instrumentation terminates the app process; allow WebView DOM storage to flush first.
                 SystemClock.sleep(2000);
@@ -78,9 +78,24 @@ public class MobileSmokeTest {
             InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);waitFor("state==='paused' && panelOpen");js("document.getElementById('nativeReturn').click()");
         }
         js("document.getElementById('nativeStart').click()");double beforePause=Double.parseDouble(js("elapsed"));scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(750);scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);waitFor("state==='paused'");assertTrue("Game advanced in background",Double.parseDouble(js("elapsed"))<=beforePause+.2);
-        js("document.getElementById('start').click()");assertEquals("true",js("state==='playing' && resumeShield>0"));
+        js("window.pauseResumeShield=-1;const resumeHook=MooncatchResumeChanged;MooncatchResumeChanged=()=>{if(state==='playing')window.pauseResumeShield=resumeShield;resumeHook()};document.getElementById('start').click()");assertEquals("\"resuming\"",js("state"));waitFor("state==='playing'");assertEquals("true",js("window.pauseResumeShield>=1.5"));
         // Native bridge storage survives activity destruction and a cold activity launch.
         js("storeSetting('mooncatch-best-v6','731');storeSetting('mooncatch-sound','true');window.nativeSaved=false;MooncatchSaveChanged().then(()=>window.nativeSaved=true)");waitFor("window.nativeSaved===true");scenario.close();open();assertEquals("\"731\"",js("localStorage.getItem('mooncatch-best-v6')"));assertEquals("true",js("sound"));
+    }
+    @Test public void pauseCountdownAndControls() throws Exception {
+        open();js("document.getElementById('nativeStart').click();selectControlMode('stick');spawn=hazardClock=100;invincible=100");
+        float[] p=point("stickRing",.85,.5);long down=SystemClock.uptimeMillis();touch(down,MotionEvent.ACTION_DOWN,p);SystemClock.sleep(150);
+        float[] pauseButton=point("canvasPause",.5,.5);touch(down,MotionEvent.ACTION_POINTER_DOWN|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,pauseButton);
+        waitFor("state==='paused'");assertEquals("true",js("!panelOpen && stickPointer===null"));
+        touch(down,MotionEvent.ACTION_POINTER_UP|(1<<MotionEvent.ACTION_POINTER_INDEX_SHIFT),p,pauseButton);touch(down,MotionEvent.ACTION_UP,p);
+        String frozen=js("JSON.stringify([elapsed,ship.x,ship.y,hp])");
+        js("document.getElementById('start').click()");assertEquals("true",js("state==='resuming' && !document.getElementById('resumeCue').hidden"));
+        SystemClock.sleep(1800);assertEquals(frozen,js("JSON.stringify([elapsed,ship.x,ship.y,hp])"));assertEquals("\"resuming\"",js("state"));
+        waitFor("state==='playing'");assertEquals("true",js("resumeShield>0 && stickPointer===null"));
+        js("pause();pause()");scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(500);scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);waitFor("state==='paused'");
+        SystemClock.sleep(3300);assertEquals("\"paused\"",js("state"));
+        js("pause()");SystemClock.sleep(300);js("document.getElementById('resumeCancel').click()");assertEquals("true",js("state==='paused' && document.getElementById('resumeCue').hidden"));
+        report("MOONCATCH_PAUSE direct two-finger button, 3s freeze, shield, background cancellation and explicit cancel passed");
     }
     @Test public void nativeFileRoundTrip() throws Exception {
         org.junit.Assume.assumeTrue("Interactive system picker test", "true".equals(InstrumentationRegistry.getArguments().getString("interactiveFiles")));

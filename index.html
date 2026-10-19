@@ -133,6 +133,16 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 @media(max-width:650px){.intro{flex-wrap:wrap;gap:14px}.intro>.harbor-art{position:absolute;right:0;top:0;width:125px;max-width:30%;opacity:.7}.intro>div:first-child{z-index:1}.intro .best{flex:1;min-width:70px;align-self:end}.intro h1{font-size:27px}.intro p{max-width:240px}.chart-art svg{height:65px}.fleet-card .chart-art{margin-bottom:8px}.ship-art svg{height:50px}.dock{padding:12px}.dock-sheet{padding:16px}.dock-heading h2{font-size:20px}.module-options{grid-template-columns:1fr}.module-card{display:grid;grid-template-columns:36px 1fr auto;gap:3px 8px;padding:10px 12px}.module-icon{grid-row:1/3;align-self:center}.module-card strong{margin:0;align-self:center}.module-card>span:not(.module-icon){grid-column:2/4;font-size:11px}.module-card small{grid-column:3;grid-row:1;margin:0}.dock-actions{gap:8px}.dock-actions .primary{min-width:0;font-size:12px;padding:12px}.dock footer{flex-wrap:wrap}.dock footer span{max-width:none}.dock footer button{margin-left:auto}.dock-emblem{font-size:30px}}
 @media(orientation:landscape) and (max-height:520px){.dock{align-items:flex-start;padding:10px}.dock-sheet{max-width:720px;padding:14px}.dock-heading{padding-bottom:6px}.dock-heading h2{font-size:19px}#dockSummary,#dockBudget{margin:5px 0}.module-options{grid-template-columns:repeat(3,minmax(0,1fr))}.module-card{display:block;padding:8px 12px}.module-icon{display:none}.module-card strong{margin:0 0 4px}.module-card small{margin-top:4px}.dock-actions{margin:10px 0 6px}.dock footer{margin-top:6px}}
 @media(prefers-reduced-motion:reduce){.fleet-card{transition:none}.primary:hover{transform:none}}
+/* Direct pause remains available beside the menu in a full-canvas cockpit. */
+.canvas-pause{display:none}
+.immersive.canvas-only .canvas-pause{display:block;position:absolute;z-index:12;bottom:max(var(--float-bottom),env(safe-area-inset-bottom));right:calc(max(var(--float-edge),env(safe-area-inset-right)) + 60px);min-width:54px;min-height:var(--float-menu-height);padding:8px;border:1px solid #f3d69475;border-radius:12px;background:#18323eea;color:#f3d694;font-size:12px;touch-action:manipulation}
+.immersive.canvas-only:has(.game.controls-left) .canvas-pause{right:auto;left:calc(max(var(--float-edge),env(safe-area-inset-left)) + 60px)}
+.immersive.canvas-only .canvas-pause[hidden]{display:none}
+.resume-cue{position:absolute;inset:0;z-index:6;display:grid;place-items:center;pointer-events:none;background:#0a15244d}
+.resume-cue[hidden]{display:none}.resume-card{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:22px 26px;border:1px solid #a6d9c960;border-radius:22px;background:#102536ee;color:#e9f2e7;max-width:calc(100% - 24px)}
+.resume-card>span{font-size:14px;letter-spacing:2px}.resume-card>strong{display:grid;place-items:center;width:96px;height:96px;border:2px solid #f3d694;border-radius:50%;font-size:56px;font-weight:500;line-height:1;color:#f3d694;font-variant-numeric:tabular-nums}
+.resume-card>small{font-size:11px;color:#a4bac4}.resume-card>button{pointer-events:auto;min-height:44px;padding:10px 20px;background:#24464c;color:#cce7df;border:1px solid #a6d9c950;border-radius:10px;touch-action:manipulation}
+@media(max-height:420px) and (orientation:landscape){.resume-card{gap:7px;padding:14px 24px}.resume-card>strong{width:66px;height:66px;font-size:40px}}
 </style></head>
 <body>
 <main>
@@ -153,6 +163,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <section id="playShell" class="play-shell" aria-label="航行驾驶舱">
 <div id="playContent" class="play-content">
 <button id="canvasMenu" class="canvas-menu" aria-haspopup="dialog" aria-label="暂停并打开游戏菜单" hidden>菜单</button>
+<button id="canvasPause" class="canvas-pause" aria-label="暂停游戏" hidden>Ⅱ 暂停</button>
 <nav class="playbar" aria-label="游戏快捷操作"><button id="pause" disabled>暂停 <kbd>P</kbd></button><button id="fullscreen" aria-pressed="false">全屏</button><button id="controlsOpen" aria-haspopup="dialog">操作：拖动</button><button id="helpOpen" aria-haspopup="dialog">玩法</button></nav>
 <div id="routeMap" class="route-map" role="group" aria-label="本局分岔星图"><span class="map-end">起航</span><div class="map-branch"><span id="map-port" class="route-node">货运港</span><span id="map-relic" class="route-node">引力遗迹</span></div><div class="map-branch"><span id="map-whale" class="route-node">星鲸迁徙带</span><span id="map-mine" class="route-node">陨石矿场</span></div><span id="mapFinal" class="map-end">风暴<br>返航</span></div>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
@@ -160,6 +171,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span id="timeLabel">剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
 <canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机可自选拖动、摇杆或方向键，旁边的按钮加速。"></canvas>
+<div id="resumeCue" class="resume-cue" hidden><div class="resume-card"><span>准备继续航行</span><strong id="resumeNumber" role="status" aria-live="polite" aria-atomic="true">3</strong><small>重新落指后操控 · 恢复保护 1.5 秒</small><button id="resumeCancel">保持暂停</button></div></div>
 <div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">先选地图与星舰，开始新的航程。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
 <section id="dock" class="dock" role="dialog" aria-modal="true" aria-labelledby="dockTitle" hidden><div class="dock-sheet"><header class="dock-heading"><div><span class="dock-label">月港补给站</span><h2 id="dockTitle">靠港整备</h2></div><span class="dock-emblem" aria-hidden="true">⌖</span></header><p id="dockSummary"></p><p id="dockBudget" role="status"></p><div class="module-options"><button id="module0" class="module-card" aria-pressed="false"></button><button id="module1" class="module-card" aria-pressed="false"></button><button id="module2" class="module-card" aria-pressed="false"></button></div><div class="dock-actions"><button id="dockApply">确认整备</button><button id="dockLaunch" class="primary">启航</button></div><small id="dockLoadout"></small><footer><span>时间已暂停，离港后保护 3 秒。未用整备换成物资。</span><button id="dockEnd">结束并结算</button></footer></div></section>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
@@ -201,7 +213,7 @@ body.game-focused{overflow:hidden}.play-shell.immersive{position:fixed;inset:0;z
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V21.1</span></footer>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V21.2</span></footer>
 </main><script>'use strict';
 // Portable records/settings only; never import executable code or an in-progress run.
 (function(root){
@@ -315,7 +327,7 @@ try{sound=localStorage.getItem('mooncatch-sound')==='true'}catch{}
 let ship={x:480,y:350,target:480,targetY:350,direction:1};
 let bounty=null,bountySeen=false,bountiesWon=0;
 let hazardWave=0,clearChallenge={hits:0,won:false};
-let menuIntro=null,resumeShield=0,resumeSafetyPending=false;
+let menuIntro=null,resumeShield=0,resumeSafetyPending=false,resumeRemaining=0;
 const newFlight=()=>({angle:-Math.PI/2,bank:0,throttle:0,trail:[]});
 let flight=newFlight();
 let moonPhase='bright',moonCooldown=0,objective=null,adventureSlot=0,fork=null,routeSlot=0,activeRoute=null,adventureResult='',ringWins=0,escortWins=0;
@@ -808,6 +820,7 @@ function resize(){
  W=b.width;H=b.height;canvas.width=pixelsX;canvas.height=pixelsY;ctx.setTransform(d,0,0,d,0,0);
  // Density changes only the backing bitmap, never the world geometry or held inputs.
  if(W===ow&&H===oh)return;
+ if(state==='resuming')pause();
  resetFrameWindow();
  ship.x=clamp(ship.x*W/ow);ship.target=clamp(ship.target*W/ow);ship.y=clampY(ship.y*H/oh);ship.targetY=clampY(ship.targetY*H/oh);
  if(bounty){bounty.x*=W/ow;bounty.y*=H/oh;bounty.prevX*=W/ow;bounty.prevY*=H/oh}
@@ -834,7 +847,8 @@ function hud(){
  const controlSignature=state+'|'+panelOpen;
  if(controlSignature!==controlHudSignature){
   controlHudSignature=controlSignature;
-  $('pause').disabled=panelOpen||!['playing','paused'].includes(state);$('pause').textContent=state==='paused'?'继续':'暂停';
+  for(const id of ['pause','canvasPause']){$(id).disabled=panelOpen||!['playing','paused','resuming'].includes(state);$(id).textContent=state==='paused'?'▶ 继续':'Ⅱ 暂停';$(id).setAttribute('aria-label',state==='paused'?'继续游戏，3 秒倒计时':'暂停游戏')}
+  $('canvasPause').hidden=!canvasOnly||!['playing','paused','resuming'].includes(state);
   $('touchControls').setAttribute('aria-disabled',String(state!=='playing'||panelOpen));
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
@@ -872,6 +886,7 @@ function hud(){
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
+ cancelResumeCountdown();
  if(panelOpen)closePanel(false);
  overload=newOverload();expedition=newExpedition();$('dock').hidden=true;
  activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
@@ -884,13 +899,29 @@ function start(){
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus({preventScroll:true})}
+function cancelResumeCountdown(){resumeRemaining=0;$('resumeCue').hidden=true}
 function pause(){
- if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。加速充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
- else if(state==='paused'){clearInput();if(resumeSafetyPending){resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false}state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phaseInfo().subtitle;focusGame()}
- hud();
+ if(panelOpen)return;
+ if(state==='playing'||state==='resuming'){
+  cancelResumeCountdown();state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';
+  show('让宇宙等一会儿。','已暂停。继续后倒计时 3 秒，准备好再出发。','继续旅程 · 3 秒倒计时 →');$('status').textContent='已暂停';
+ }else if(state==='paused'){
+  clearInput();state='resuming';resumeRemaining=3;$('overlay').hidden=true;$('resumeNumber').textContent='3';$('resumeCue').hidden=false;$('status').textContent='准备继续 · 3 秒倒计时';$('resumeCancel').focus({preventScroll:true});
+ }
+ window.MooncatchResumeChanged?.();hud();
+}
+function stepResumeCountdown(dt){
+ if(document.hidden){pause();return}
+ resumeRemaining=Math.max(0,resumeRemaining-Math.max(0,dt));
+ const label=String(Math.ceil(Math.max(0,resumeRemaining-1e-6)));
+ if($('resumeNumber').textContent!==label)$('resumeNumber').textContent=label;
+ if(resumeRemaining<=1e-6){
+  cancelResumeCountdown();clearInput();resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false;state='playing';$('status').textContent=phaseInfo().subtitle;focusGame();window.MooncatchResumeChanged?.();hud();
+ }
 }
 function finish(){
  if(state==='over')return;
+ cancelResumeCountdown();
  $('dock').hidden=true;expedition.chain=null;
  settleLeg();
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{storeSetting(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
@@ -913,7 +944,12 @@ for(const mode of ['timed','endless'])$('run-'+mode).onclick=()=>selectRun(mode)
 $('endRun').onclick=endVoyage;
 for(const w of worlds)$('world-'+w.id).onclick=()=>selectWorld(w.id);
 for(const f of fleet)$('ship-'+f.id).onclick=()=>selectShip(f.id);
-$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('restart').onclick=start;$('boost').onclick=()=>{boost()};
+$('start').onclick=()=>state==='paused'?pause():state==='resuming'?undefined:start();
+for(const id of ['pause','canvasPause','resumeCancel']){
+ $(id).onclick=e=>{if(!e||e.detail===0)pause()};
+ $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();pause()});
+}
+$('restart').onclick=start;$('boost').onclick=()=>{boost()};
 for(const id of ['boost','padBoost']){
  $(id).onclick=e=>{if(!e||e.detail===0)boost()};
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
@@ -957,18 +993,19 @@ window.addEventListener('keydown',e=>{
   if(k==='tab'){const focusable=[$('module0'),$('module1'),$('module2'),$('dockApply'),$('dockLaunch'),$('dockEnd')].filter(b=>!b.disabled);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
   return;
  }
+ if(k==='escape'&&state==='resuming'){e.preventDefault();pause();return}
  if(k==='escape'&&focusMode&&!document.fullscreenElement){e.preventDefault();toggleFullscreen();return}
  if(state==='wager'){if(!e.repeat){if(k==='1'||k==='2'){e.preventDefault();chooseWager(Number(k)-1)}else if(k==='escape'){e.preventDefault();skipWager()}}return}
  if(state==='upgrade'){if((k==='1'||k==='2')&&!e.repeat){e.preventDefault();chooseUpgrade(Number(k)-1)}return}
  if(state==='playing'&&(k==='e'||k==='r')){e.preventDefault();if(!e.repeat)$(k==='e'?'upgradeReady':'wagerReady').onclick();return}
  if(k==='q'){e.preventDefault();if(!e.repeat)switchMoon();return}
  if(k==='p'){e.preventDefault();if(!e.repeat)pause();return}
- if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
+ if(state!=='playing'||e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
  if(moveKeys.includes(k)||k===' '){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else{launch=null;inputMode='keyboard';mouseX=mouseY=null;keys.add(k)}}
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);if(moveKeys.includes(k)){ship.target=ship.x;ship.targetY=ship.y}});
-window.addEventListener('blur',()=>{clearInput();if(state==='playing')pause()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause()});
+window.addEventListener('blur',()=>{clearInput();if(state==='playing'||state==='resuming')pause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&(state==='playing'||state==='resuming'))pause()});
 function pointer(e){
  if(state!=='playing'||panelOpen)return;
  clearVirtualInput();
@@ -1288,6 +1325,7 @@ function spawnItem(x,rock){
 
 function update(dt){
  if(panelOpen)return;
+ if(state==='resuming'){stepResumeCountdown(dt);return}
  if(state==='menuIntro'){
   menuIntro.remaining-=dt;
   if(menuIntro.remaining<=0){const kind=menuIntro.kind;menuIntro=null;$('menuCue').hidden=true;state='playing';if(kind==='upgrade')offerUpgrade();else maybeOfferWager()}
@@ -2013,7 +2051,7 @@ $('joystick').addEventListener('pointerdown',e=>{
 $('joystick').addEventListener('pointermove',moveStick);
 for(const type of ['pointerup','pointercancel','lostpointercapture'])$('joystick').addEventListener(type,e=>{if(e.pointerId===stickPointer){clearVirtualInput();ship.target=ship.x;ship.targetY=ship.y}});
 function openPanel(kind){
- if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):canvasOnly?$('canvasMenu'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
+ if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):canvasOnly?$('canvasMenu'):$('controlsOpen');panelResume=state==='playing'||state==='resuming';if(panelResume)pause();clearInput();panelOpen=true}
  $('playContent').inert=true;$('gamePanel').hidden=false;
  $('gameRules').hidden=kind!=='rules';$('controlSettings').hidden=kind!=='controls';
  $('panelTitle').textContent=kind==='rules'?'航行手册':'驾驶设置';
@@ -2026,7 +2064,7 @@ function closePanel(resume=true){
  if(shouldResume){resumeSafetyPending=true;pause()}else hud();
 }
 function prepareLayoutChange(){
- clearInput();if(state==='playing'){pause();resumeSafetyPending=true}
+ clearInput();if(state==='playing'||state==='resuming'){pause();resumeSafetyPending=true}
 }
 function setFocused(value){
  focusMode=value;if(!value)canvasOnly=false;applyCanvasOnly();$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
@@ -2063,7 +2101,7 @@ function selectFloatingLayout(kind,value){
 }
 function applyCanvasOnly(){
  $('playShell').classList.toggle('canvas-only',focusMode&&canvasOnly);
- $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;
+ $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;$('canvasPause').hidden=!canvasOnly||!['playing','paused','resuming'].includes(state);
  $('canvasOnly').setAttribute('aria-pressed',String(canvasOnly));
  $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 悬浮操作';
  applyControlMode();applyFloatingLayout();
@@ -2133,7 +2171,7 @@ function drawMining(t){
  ctx.restore();
 }
 
-function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
+function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
 </script><script>'use strict';
 (function(){
  const section=document.createElement('section');section.className='save-settings';

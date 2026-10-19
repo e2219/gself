@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=21.1"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101d2a"><meta name="description" content="驾驶月舟，接住星光。一个只需90秒的轻松小游戏。"><title>月面拾光 · Mooncatch</title><link rel="stylesheet" href="style.css?v=21.2"></head>
 <body>
 <main>
 <header><a class="brand" href="./"><span class="brand-icon">☾</span> 月面拾光 <small>MOONCATCH</small></a><span class="edition">小小宇宙 / VOL. 21</span></header>
@@ -20,6 +20,7 @@
 <section id="playShell" class="play-shell" aria-label="航行驾驶舱">
 <div id="playContent" class="play-content">
 <button id="canvasMenu" class="canvas-menu" aria-haspopup="dialog" aria-label="暂停并打开游戏菜单" hidden>菜单</button>
+<button id="canvasPause" class="canvas-pause" aria-label="暂停游戏" hidden>Ⅱ 暂停</button>
 <nav class="playbar" aria-label="游戏快捷操作"><button id="pause" disabled>暂停 <kbd>P</kbd></button><button id="fullscreen" aria-pressed="false">全屏</button><button id="controlsOpen" aria-haspopup="dialog">操作：拖动</button><button id="helpOpen" aria-haspopup="dialog">玩法</button></nav>
 <div id="routeMap" class="route-map" role="group" aria-label="本局分岔星图"><span class="map-end">起航</span><div class="map-branch"><span id="map-port" class="route-node">货运港</span><span id="map-relic" class="route-node">引力遗迹</span></div><div class="map-branch"><span id="map-whale" class="route-node">星鲸迁徙带</span><span id="map-mine" class="route-node">陨石矿场</span></div><span id="mapFinal" class="map-end">风暴<br>返航</span></div>
 <div class="constellationbar"><span id="dustMeter">✧ 星屑 0 / 3</span><span id="powers">击碎陨石，点亮你的星座</span></div>
@@ -27,6 +28,7 @@
 <section class="game" aria-label="月面拾光游戏">
 <div class="hud"><div><span>星光</span><strong id="score">000</strong></div><div class="time"><span id="timeLabel">剩余时间</span><strong id="time">90<span>s</span></strong></div><div class="health"><span>月舟护盾</span><strong id="health" aria-label="3点护盾">● ● ●</strong></div></div>
 <canvas id="sky" width="960" height="510" tabindex="0" aria-label="游戏区域。使用四个方向键或W、A、S、D在整个场地移动月舟；空格加速，P键暂停。手机可自选拖动、摇杆或方向键，旁边的按钮加速。"></canvas>
+<div id="resumeCue" class="resume-cue" hidden><div class="resume-card"><span>准备继续航行</span><strong id="resumeNumber" role="status" aria-live="polite" aria-atomic="true">3</strong><small>重新落指后操控 · 恢复保护 1.5 秒</small><button id="resumeCancel">保持暂停</button></div></div>
 <div id="overlay" class="overlay"><div class="dialog"><div class="moon">☾</div><div class="eyebrow" id="tag">YOUR NIGHT, YOUR LITTLE ADVENTURE</div><h2 id="title">今夜，去拾光。</h2><p id="message">先选地图与星舰，开始新的航程。<br>强化与赌约会在下方等你，有空再选。</p><button id="start" class="primary">开启旅程 <span>→</span></button><small id="hint">手机可选拖动 / 摇杆 / 方向键 · 电脑鼠标 / WASD · 空格加速</small></div></div>
 <section id="dock" class="dock" role="dialog" aria-modal="true" aria-labelledby="dockTitle" hidden><div class="dock-sheet"><header class="dock-heading"><div><span class="dock-label">月港补给站</span><h2 id="dockTitle">靠港整备</h2></div><span class="dock-emblem" aria-hidden="true">⌖</span></header><p id="dockSummary"></p><p id="dockBudget" role="status"></p><div class="module-options"><button id="module0" class="module-card" aria-pressed="false"></button><button id="module1" class="module-card" aria-pressed="false"></button><button id="module2" class="module-card" aria-pressed="false"></button></div><div class="dock-actions"><button id="dockApply">确认整备</button><button id="dockLaunch" class="primary">启航</button></div><small id="dockLoadout"></small><footer><span>时间已暂停，离港后保护 3 秒。未用整备换成物资。</span><button id="dockEnd">结束并结算</button></footer></div></section>
 <div id="upgrade" class="upgrade" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" hidden><div class="upgrade-panel"><div class="eyebrow">CONSTELLATION AWAKENED</div><h2 id="upgradeTitle">点亮一座星座</h2><p id="upgradeHint">时间已暂停，选择本局强化</p><div class="choices"><button id="choice0" class="choice"><strong></strong></button><button id="choice1" class="choice"><strong></strong></button></div><small>键盘 1 / 2 选择 · 仅在本局生效</small></div></div>
@@ -68,6 +70,6 @@
 </section>
 </div></div>
 </section>
-<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V21.1</span></footer>
-</main><script src="profile-data.js?v=1"></script><script src="game.js?v=21.1"></script><script src="profile-ui.js?v=1"></script>
+<footer><span>不必抓住所有星星。下一颗，也很亮。</span><span>MADE FOR A SMALL BREAK · V21.2</span></footer>
+</main><script src="profile-data.js?v=1"></script><script src="game.js?v=21.2"></script><script src="profile-ui.js?v=1"></script>
 </body></html>

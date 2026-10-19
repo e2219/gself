@@ -7,6 +7,8 @@ function el(id){return els[id]??={style:{setProperty(k,v){this[k]=v}},classList:
 const sandbox={document:{body:{classList:classList()},getElementById:el,querySelector:()=>({classList:{toggle:noop}}),addEventListener:(n,f)=>docEvents[n]=f},window:{addEventListener:(n,f)=>events[n]=f},localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},ResizeObserver:class{constructor(callback){resizeCallback=callback}observe(){}},devicePixelRatio:1,requestAnimationFrame:noop,Math,console};
 vm.createContext(sandbox);vm.runInContext(fs.readFileSync('dist/game.js','utf8'),sandbox);
 const run=x=>vm.runInContext(x,sandbox);
+// Existing gameplay scenarios advance through the real resume preparation.
+run('function pauseAndWait(){pause();if(state==="resuming")update(3)}');
 const isolate=()=>run('spawn=hazardClock=100;items=[];pending=[];warnings=[];shards=[];dust=0;perfectReady=false;wagerSlot=wagerSchedule.length;adventureSlot=adventureSchedule.length;routeSlot=routeSchedule.length;laserSlot=laserSchedule.length');
 const hit=rock=>run(`items=[{x:ship.x,y:shipY(),r:9,v:0,rock:${rock},a:0}];update(.01)`);
 run('start()');isolate();for(let i=0;i<10;i++)hit(false);assert.equal(run('score'),170);
@@ -17,7 +19,7 @@ const cd=run('boostCooldown');run('boost()');assert.equal(run('boostCooldown'),c
 run('boostTime=0');hit(true);assert.equal(run('hp'),2);hit(true);assert.equal(run('hp'),2);
 // A star between the old and new ship position must be caught during a boost.
 run('boostCooldown=0;ship.x=ship.target=200;ship.direction=1;boost();ship.target=400;items=[{x:250,y:shipY(),r:9,v:0,rock:false,a:0}];update(.05)');assert.equal(run('combo'),1);
-run('pause()');assert.equal(run('state'),'paused');assert(els.boost.disabled);run('pause()');assert.equal(run('state'),'playing');
+run('pauseAndWait()');assert.equal(run('state'),'paused');assert(els.boost.disabled);run('pauseAndWait()');assert.equal(run('state'),'playing');
 run('elapsed=29.99;update(.02)');assert.equal(run('phase'),1);run('elapsed=59.99;update(.02)');assert.equal(run('phase'),2);
 run('boostTime=0;combo=0;score=0');hit(false);assert.equal(run('score'),20);
 // Warning precedes hazards before they enter the arena.
@@ -42,7 +44,7 @@ elementEvents['sky:pointermove'](touch(2,10));assert.equal(run('ship.target'),be
 elementEvents['sky:pointercancel'](touch(1,70));assert.equal(run('movePointer'),2);const handoffTarget=run('ship.target');
 elementEvents['sky:pointermove'](touch(2,20));assert.equal(run('ship.target'),handoffTarget+20);
 elementEvents['sky:pointerup'](touch(2,20));assert.equal(run('movePointer'),null);
-run('pause()');assert.equal(run('touches.size'),0);run('pause();boostCooldown=0');
+run('pauseAndWait()');assert.equal(run('touches.size'),0);run('pauseAndWait();boostCooldown=0');
 elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('boostTime')>0);
 els.hand.onclick();assert.equal(storage['mooncatch-left-hand'],'true');
 // Breaking a rock makes a collectible, but non-boost invulnerability does not.
@@ -54,9 +56,9 @@ run('shards=[];boostTime=0;invincible=1');hit(true);assert.equal(run('shards.len
 run('dust=3;offerUpgrade()');assert.equal(run('state'),'upgrade');assert.equal(run('offers.length'),2);assert.notEqual(run('offers[0].id'),run('offers[1].id'));
 const frozen=run('[time,boostCooldown,elapsed].join()');run('update(1)');assert.equal(run('[time,boostCooldown,elapsed].join()'),frozen);
 const chosen=run('offers[0].id');run('chooseUpgrade(0)');assert.equal(run('powers["'+chosen+'"]'),1);assert.equal(run('state'),'paused');assert.equal(run('upgradeCount'),1);
-run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);run('pause()');assert.equal(run('state'),'playing');
+run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);run('pauseAndWait()');assert.equal(run('state'),'playing');
 run('powers={magnet:2,echo:0,chain:0};dust=8;offerUpgrade()');assert(run('offers.every(p=>p.id!=="magnet")'));
-run('chooseUpgrade(1);pause();dust=15;offerUpgrade();chooseUpgrade(0);pause();dust=24;offerUpgrade();chooseUpgrade(0);pause();dust=50;offerUpgrade()');assert.equal(run('upgradeCount'),4);assert.equal(run('state'),'playing');
+run('chooseUpgrade(1);pauseAndWait();dust=15;offerUpgrade();chooseUpgrade(0);pauseAndWait();dust=24;offerUpgrade();chooseUpgrade(0);pauseAndWait();dust=50;offerUpgrade()');assert.equal(run('upgradeCount'),4);assert.equal(run('state'),'playing');
 // Magnet pulls in an otherwise missed star; echo catches without damaging the real ship.
 run('start()');isolate();run('powers.magnet=1;items=[{x:ship.x+80,y:shipY()-10,v:0,a:0,r:9,rock:false}]');
 const distance=run('items[0].x-ship.x');run('update(.05)');assert(run('items[0].x-ship.x')<distance);
@@ -129,18 +131,18 @@ run('boostSerial=2;updateBoss(.01,.01,ship.x,true);boostSerial=3;updateBoss(.01,
 run('updateBoss(.01,.01,ship.x,true)');assert.equal(run('score'),600);
 run('start()');isolate();run('elapsed=72;updateBoss(.01,.01,ship.x,false);boss.warning=0;boss.y=shipY()-36;ship.x=ship.target=W/2;updateBoss(.01,.01,ship.x,false)');assert.equal(run('hp'),2);
 // New features pause and reset, and both 360px and desktop scenes render.
-run('pause()');const frozenBoss=run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])');run('update(1)');assert.equal(run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])'),frozenBoss);
-run('pause();draw(1);start()');assert.equal(run('boss'),null);assert.equal(run('guard'),0);assert.equal(run('perfectCount'),0);assert.equal(run('powers.capacitor'),0);
+run('pauseAndWait()');const frozenBoss=run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])');run('update(1)');assert.equal(run('JSON.stringify([boss,perfectWindow,slowTime,boostCooldown])'),frozenBoss);
+run('pauseAndWait();draw(1);start()');assert.equal(run('boss'),null);assert.equal(run('guard'),0);assert.equal(run('perfectCount'),0);assert.equal(run('powers.capacitor'),0);
 console.log('V4 PASS: underside magnet equilibrium at 30/60/120fps, radial shards, no pointer backlog, perfect window and one-shot reward, recharge/armor/insurance, boss warning/safe lane/3-hit reward/damage, pause/reset');
 
 // V5: offers pause the world, skipping is free, and the two schedule slots are consumed once.
 run('start()');isolate();run('wagerSlot=0;elapsed=18;maybeOfferWager()');assert.equal(run('state'),'wager');assert.equal(run('wagerOffers.length'),2);assert.notEqual(run('wagerOffers[0].id'),run('wagerOffers[1].id'));
 const offerFreeze=run('[elapsed,time,boostCooldown].join()');run('update(1)');assert.equal(run('[elapsed,time,boostCooldown].join()'),offerFreeze);
-run('score=123;skipWager()');assert.equal(run('state'),'paused');run('pause()');assert.equal(run('state'),'playing');assert.equal(run('score'),123);assert.equal(run('wagerSlot'),1);run('maybeOfferWager()');assert.equal(run('state'),'playing');
-run('elapsed=46;maybeOfferWager()');assert.equal(run('state'),'wager');run('skipWager();pause();maybeOfferWager()');assert.equal(run('state'),'playing');assert.equal(run('wagerSlot'),2);
-function accept(id){run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="'+id+'")];chooseWager(0);pause();resumeShield=0')}
+run('score=123;skipWager()');assert.equal(run('state'),'paused');run('pauseAndWait()');assert.equal(run('state'),'playing');assert.equal(run('score'),123);assert.equal(run('wagerSlot'),1);run('maybeOfferWager()');assert.equal(run('state'),'playing');
+run('elapsed=46;maybeOfferWager()');assert.equal(run('state'),'wager');run('skipWager();pauseAndWait();maybeOfferWager()');assert.equal(run('state'),'playing');assert.equal(run('wagerSlot'),2);
+function accept(id){run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="'+id+'")];chooseWager(0);pauseAndWait();resumeShield=0')}
 // Quiet wager: success queues one bonus; boost still works when it forfeits the wager.
-run('start()');isolate();accept('quiet');run('pause()');const contractFreeze=run('activeWager.remaining');run('update(5)');assert.equal(run('activeWager.remaining'),contractFreeze);run('pause();elapsed=10;tickWager()');assert.equal(run('wagersWon'),1);assert.equal(run('bonusCredits'),1);run('tickWager()');assert.equal(run('bonusCredits'),1);
+run('start()');isolate();accept('quiet');run('pauseAndWait()');const contractFreeze=run('activeWager.remaining');run('update(5)');assert.equal(run('activeWager.remaining'),contractFreeze);run('pauseAndWait();elapsed=10;tickWager()');assert.equal(run('wagersWon'),1);assert.equal(run('bonusCredits'),1);run('tickWager()');assert.equal(run('bonusCredits'),1);
 run('offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),0);assert.equal(run('bonusUpgradeCount'),1);assert.equal(run('bonusCredits'),0);
 run('start()');isolate();accept('quiet');run('score=55;boostCooldown=1;boost()');assert(run('activeWager'));run('boostCooldown=0;boost()');assert.equal(run('activeWager'),null);assert(run('boostTime')>0);assert.equal(run('score'),55);assert.equal(run('wagersFailed'),1);assert.equal(run('bonusCredits'),0);
 // Armor is allowed in safe wager; base shield damage fails without score penalties.
@@ -151,7 +153,7 @@ for(let i=0;i<8;i++)run('collectStar({x:ship.x,y:shipY()})');assert.equal(run('w
 run('collectStar({x:ship.x,y:shipY()})');assert.equal(run('bonusCredits'),1);
 run('start()');isolate();accept('stars');run('elapsed=10;tickWager()');assert.equal(run('wagersFailed'),1);assert.equal(run('bonusCredits'),0);
 // A bonus and a dust upgrade ready together never stack dialogs or consume each other.
-run('start();dust=3;bonusCredits=1;offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0);pause();offerUpgrade()');assert.equal(run('upgradeSource'),'dust');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);assert.equal(run('bonusUpgradeCount'),1);
+run('start();dust=3;bonusCredits=1;offerUpgrade()');assert.equal(run('upgradeSource'),'wager');run('chooseUpgrade(0);pauseAndWait();offerUpgrade()');assert.equal(run('upgradeSource'),'dust');run('chooseUpgrade(0)');assert.equal(run('upgradeCount'),1);assert.equal(run('bonusUpgradeCount'),1);
 // Gravity twin catches from below and above; expired echo targets fall back to the real ship.
 width=960;height=510;run('resize();start()');isolate();run('powers.magnet=1;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY()+55,v:220,a:0,r:9,rock:false}];shards=[{x:230,y:shipY()-55,age:0,life:5,locked:false}]');
 for(let i=0;i<60;i++)run('update(1/60)');assert.equal(run('items.length'),0);assert.equal(run('shards.length'),0);assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('score'),35);
@@ -170,7 +172,7 @@ console.log('V5 PASS: wager schedule/skip/freeze/success/failure/bonus separatio
 // Real echo pickup advances the gold wager; timed offers cannot cover an upgrade dialog.
 run('start()');isolate();accept('stars');run('activeWager.progress=7;powers.echo=1;ship.x=ship.target=700;echoes=[{x:200,y:shipY(),life:2}];items=[{x:200,y:shipY(),v:0,a:0,r:9,rock:false}];update(.01)');assert.equal(run('wagersWon'),1);assert.equal(run('state'),'playing');assert(!els.upgradeReady.hidden);els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');run('update(.8)');assert.equal(run('state'),'upgrade');assert.equal(run('upgradeSource'),'wager');assert(els.wager.hidden);
 run('start();elapsed=18;dust=3;offerUpgrade();maybeOfferWager()');assert.equal(run('state'),'upgrade');assert.equal(run('wagerSlot'),0);assert(els.wager.hidden);
-run('chooseUpgrade(0);pause();maybeOfferWager()');assert.equal(run('state'),'wager');assert(els.upgrade.hidden);assert(els.overlay.hidden);
+run('chooseUpgrade(0);pauseAndWait();maybeOfferWager()');assert.equal(run('state'),'wager');assert(els.upgrade.hidden);assert(els.overlay.hidden);
 console.log('PASS: actual echo wager progress and automatic menu priority');
 
 {
@@ -213,7 +215,7 @@ for(let i=0;i<30;i++)run('update(1/60)');assert.equal(run('echoes[0].y'),100);as
 run('items=[{x:700,y:340,v:220,a:0,r:9,rock:false,captured:true,echoTarget:echoes[0]}];echoes=[]');for(let i=0;i<30;i++)run('update(1/60)');assert.equal(run('score'),20);
 // Resize, pause and restart do not leave stale input or invalid moving objects.
 run('warnWave();warnings.forEach(spawnMeteor);draw(1)');width=360;height=480;run('resize();draw(2)');assert(run('items.every(o=>Number.isFinite(o.x)&&Number.isFinite(o.y)&&(!("v" in o)||Number.isFinite(o.v)))'));
-run('pause()');const freeze=run('JSON.stringify([ship,items,warnings,elapsed])');run('update(.5)');assert.equal(run('JSON.stringify([ship,items,warnings,elapsed])'),freeze);
+run('pauseAndWait()');const freeze=run('JSON.stringify([ship,items,warnings,elapsed])');run('update(.5)');assert.equal(run('JSON.stringify([ship,items,warnings,elapsed])'),freeze);
 run('start()');assert.equal(run('hazardWave'),0);assert.equal(run('ship.targetY'),run('ship.y'));
 console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY and handoff, swept crossings and near misses, four-edge telegraphs, fixed trajectories, continuous difficulty, 2D echo attraction/expiry, resize/pause/reset');
 
@@ -237,7 +239,7 @@ console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY an
  assert.equal(run('ship.x'),230);assert.equal(run('ship.y'),170);assert.equal(run('flight.trail.length'),0);assert(run('flight.throttle<.001'));
  run('powers.echo=1;flight.angle=.7;boost()');assert.equal(run('echoes[0].angle'),.7);
  for(let i=0;i<200;i++)run('updateFlight(.001,ship.x-1,ship.y)');assert(run('flight.trail.length<=32'));
- run('draw(3);pause()');assert.equal(run('flight.trail.length'),0);run('start()');assert.equal(run('flight.angle'),-Math.PI/2);assert.equal(run('flight.throttle'),0);
+ run('draw(3);pauseAndWait()');assert.equal(run('flight.trail.length'),0);run('start()');assert.equal(run('flight.angle'),-Math.PI/2);assert.equal(run('flight.throttle'),0);
  console.log('V6.1 PASS: frame-rate-independent pose, shortest rotation, immediate 2D position/stop, fading bounded trails, echo orientation and reset');
 }
 
@@ -253,13 +255,13 @@ console.log('V6 PASS: 2D keyboard/normalized diagonals/boost/bounds, touch XY an
  up(event(30,70,590));const stoppedAt=run('[ship.x,ship.y].join()');down(event(31,140,680));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
  // Upgrade releases capture. Moving the old finger, even after resume, is ignored.
  run('dust=3;offerUpgrade()');assert.equal(run('state'),'upgrade');assert(!pad.captures.has(31));assert.equal(run('touches.size'),0);assert.equal(pad.attributes['data-active'],'false');assert(els.padBoost.disabled);
- run('chooseUpgrade(0);pause()');move(event(31,20,510));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
+ run('chooseUpgrade(0);pauseAndWait()');move(event(31,20,510));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
  down(event(32,10,700));run('update(.01)');assert.equal(run('[ship.x,ship.y].join()'),stoppedAt);
  move(event(32,20,690));run('update(.01)');assert.equal(run('ship.x'),229.5);
  // Separate boost button leaves steering attached to the pad and doubles pad movement.
  elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('movePointer'),32);assert(run('boostTime>0'));assert.equal(els.padBoostLabel.textContent,'加速中');assert(els.padBoost.disabled);
  move(event(32,25,685));run('update(.01)');assert.equal(run('ship.x'),246);
- run('pause()');assert.equal(run('touches.size'),0);assert(!pad.captures.has(32));assert.equal(pad.attributes['aria-disabled'],'true');
+ run('pauseAndWait()');assert.equal(run('touches.size'),0);assert(!pad.captures.has(32));assert.equal(pad.attributes['aria-disabled'],'true');
  // A mouse on a narrow-screen pad uses the same relative control, never absolute arena coordinates.
  run('start()');isolate();const mouseOrigin=run('ship.x');down(event(40,80,600,'mouse'));run('update(.01)');assert.equal(run('ship.x'),mouseOrigin);move(event(40,90,610,'mouse'));run('update(.01)');assert.equal(run('ship.x'),mouseOrigin+16.5);
  elementEvents['touchPad:lostpointercapture'](event(40,90,610,'mouse'));move(event(40,200,800,'mouse'));const cancelled=run('ship.x');run('update(.01)');assert.equal(run('ship.x'),cancelled);
@@ -288,15 +290,15 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   if(choice==='upgrade')run('dust=3;offerUpgrade();chooseUpgrade(0)');
   else {run('state="wager";wagerOffers=[wagerTypes.find(w=>w.id==="safe")]');run(choice==='accept'?'chooseWager(0)':'skipWager()')}
   assert.equal(run('state'),'paused');assert.equal(run('resumeShield'),0);const waiting=run('elapsed');run('update(5)');assert.equal(run('elapsed'),waiting);
-  run('pause()');assert.equal(run('resumeShield'),1.5);assert.equal(run('resumeSafetyPending'),false);
+  run('pauseAndWait()');assert.equal(run('resumeShield'),1.5);assert.equal(run('resumeSafetyPending'),false);
   run('guard=2;combo=9;invincible=0');hit(true);assert.equal(run('hp'),3);assert.equal(run('guard'),2);assert.equal(run('combo'),9);assert.equal(run('shards.length'),0);
   run('boss={x:ship.x,y:ship.y,r:40,hp:3,warning:0,lastBoost:-1};updateBoss(0,0,ship.x,false,ship.y)');assert.equal(run('hp'),3);assert.equal(run('boss.hp'),3);assert.equal(run('guard'),2);run('boss=null');
-  const remaining=run('resumeShield');run('pause();update(10);pause()');assert.equal(run('resumeShield'),remaining);
+  const remaining=run('resumeShield');run('pauseAndWait();update(10);pauseAndWait()');assert.equal(run('resumeShield'),Math.max(1.5,remaining));
   run('guard=0;update(1.48);damage()');assert.equal(run('hp'),3);run('update(.02)');hit(true);assert.equal(run('hp'),2);
  }
  // Scheduled wager introduction freezes its clock, and upgrades do not immediately cover a return shield.
  run('start()');isolate();run('wagerSlot=0;elapsed=17.99;update(.02)');assert.equal(run('state'),'playing');els.wagerReady.onclick();assert.equal(run('state'),'menuIntro');const t=run('elapsed');run('update(.8)');assert.equal(run('state'),'wager');assert.equal(run('elapsed'),t);
- run('start()');isolate();run('dust=3;bonusCredits=1;offerUpgrade();chooseUpgrade(0);pause();offerUpgrade(true)');assert.equal(run('state'),'playing');run('update(1.51)');assert.equal(run('state'),'playing');els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');
+ run('start()');isolate();run('dust=3;bonusCredits=1;offerUpgrade();chooseUpgrade(0);pauseAndWait();offerUpgrade(true)');assert.equal(run('state'),'playing');run('update(1.51)');assert.equal(run('state'),'playing');els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');
  els.restart.onclick();assert.equal(run('menuIntro'),null);assert.equal(run('resumeShield'),0);assert.equal(run('resumeSafetyPending'),false);assert(els.menuCue.hidden);
  console.log('V6.4 PASS: frozen intro, explicit continue after wager/skip/upgrade, full return shield against rocks/boss, no armor/combo loss or free rewards, pause cannot replenish shield, delayed next menu and restart reset');
 }
@@ -324,10 +326,10 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('fork={deadline:22,armed:20};updateAdventure(.01,ship.x,ship.y)');assert.equal(run('activeRoute.id'),'calm');assert(run('difficulty().interval>2.1-elapsed/90'));
  // Ready choices wait for a click; optional wager invitation expires freely.
  run('start()');isolate();run('dust=3;wagerSlot=0;elapsed=18;updateChoiceDock();hud()');assert.equal(run('state'),'playing');assert(!els.upgradeReady.hidden&&!els.wagerReady.hidden);assert(els.upgrade.hidden&&els.wager.hidden);
- run('elapsed=26.01;updateChoiceDock();hud()');assert.equal(run('wagerInviteUntil'),0);assert.equal(run('wagerSlot'),1);assert.equal(run('score'),0);assert.equal(run('state'),'playing');els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');run('update(.8);chooseUpgrade(0);pause()');assert.equal(run('resumeShield'),1.5);
+ run('elapsed=26.01;updateChoiceDock();hud()');assert.equal(run('wagerInviteUntil'),0);assert.equal(run('wagerSlot'),1);assert.equal(run('score'),0);assert.equal(run('state'),'playing');els.upgradeReady.onclick();assert.equal(run('state'),'menuIntro');run('update(.8);chooseUpgrade(0);pauseAndWait()');assert.equal(run('resumeShield'),1.5);
  // Resize uses normalized gates/rings and rescales the escort. Pauses freeze all deadlines.
  run('start()');isolate();run('beginObjective({kind:"escort",duration:16})');const relative=run('[objective.x/W,objective.y/H]');width=360;height=350;run('resize()');assert(Math.abs(run('objective.x/W')-relative[0])<1e-8);assert(Math.abs(run('objective.y/H')-relative[1])<1e-8);
- run('fork={deadline:7,armed:1};draw(1);pause()');const frozen=run('JSON.stringify([objective,fork,elapsed,moonCooldown])');run('update(10)');assert.equal(run('JSON.stringify([objective,fork,elapsed,moonCooldown])'),frozen);run('start();beginObjective({kind:"rings",duration:12});draw(1)');
+ run('fork={deadline:7,armed:1};draw(1);pauseAndWait()');const frozen=run('JSON.stringify([objective,fork,elapsed,moonCooldown])');run('update(10)');assert.equal(run('JSON.stringify([objective,fork,elapsed,moonCooldown])'),frozen);run('start();beginObjective({kind:"rings",duration:12});draw(1)');
  els.restart.onclick();assert.equal(run('objective'),null);assert.equal(run('fork'),null);assert.equal(run('activeRoute'),null);assert.equal(run('moonPhase'),'bright');assert.equal(run('ringWins+escortWins+adventureSlot+routeSlot'),0);
  // A complete unattended journey never opens an automatic modal, even with upgrades ready.
  run(`start();invincible=1000;dust=3;let seen=new Set(),peak=0;for(let n=0;n<5500&&state==='playing';n++){update(1/60);if(objective)seen.add(objective.kind);if(fork)seen.add('fork');if(wagerInviteUntil)seen.add('invite');peak=Math.max(peak,items.length)};globalThis.journey={seen:[...seen],peak}`);
@@ -375,7 +377,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('start()');isolate();run('boss={x:200,y:200,r:40,hp:3,warning:1,lastBoost:-1};reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.2)');assert.equal(run('boss.hp'),3);
  run('boss.warning=0');for(let i=0;i<3;i++)run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.2)');assert.equal(run('boss.hp'),0);assert.equal(run('score'),600);assert.equal(run('hp'),3);run('updateReflections(.2)');assert.equal(run('score'),600);
  // Pausing freezes cargo and shots; resize/reset cannot retain weight, cargo rewards or projectiles.
- run('start()');isolate();beginCargo();crate(0);run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];pause()');const frozen=run('JSON.stringify([objective,reflections,elapsed])');run('update(5)');assert.equal(run('JSON.stringify([objective,reflections,elapsed])'),frozen);
+ run('start()');isolate();beginCargo();crate(0);run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];pauseAndWait()');const frozen=run('JSON.stringify([objective,reflections,elapsed])');run('update(5)');assert.equal(run('JSON.stringify([objective,reflections,elapsed])'),frozen);
  width=360;height=400;run('resize();draw(1)');assert(run('Number.isFinite(reflections[0].x)'));els.restart.onclick();assert.equal(run('cargoSpeed()'),1);assert.equal(run('reflectCount+cargoDelivered+reflections.length'),0);
  console.log('V8 PASS: full/partial delivery, cargo expiry/cap/reward, loaded keyboard/mouse/touch, perfect reflection one-shot/direction/timing, nearest swept hits, boss shells/reward, pause/resize/reset');
 }
@@ -389,14 +391,14 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  const angle=run('orbit.angle');run('update(.1)');assert.notEqual(run('orbit.angle'),angle);const radial=run('[Math.cos(orbit.angle),Math.sin(orbit.angle)]');
  elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('orbit'),null);assert(run('launch'));assert.equal(run('slingWins'),1);assert.equal(run('score'),80);assert(Math.abs(run('launch.vx')*radial[0]+run('launch.vy')*radial[1])<1e-8);
  run('releaseOrbit()');assert.equal(run('score'),80);events.keydown({key:'d',target:{tagName:'CANVAS'},preventDefault:noop,repeat:false});assert.equal(run('launch'),null);
- run('start()');isolate();well();run('boost();pause()');const orbitFreeze=run('JSON.stringify([orbit,ship,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([orbit,ship,elapsed])'),orbitFreeze);run('pause()');for(let i=0;i<30;i++)run('update(.05)');assert.equal(run('orbit'),null);assert.equal(run('slingWins'),1);
+ run('start()');isolate();well();run('boost();pauseAndWait()');const orbitFreeze=run('JSON.stringify([orbit,ship,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([orbit,ship,elapsed])'),orbitFreeze);run('pauseAndWait()');for(let i=0;i<30;i++)run('update(.05)');assert.equal(run('orbit'),null);assert.equal(run('slingWins'),1);
  // Five seconds in the whale wake pays once; the corridor protects health/armor and grants exit grace.
  run('start()');isolate();run('beginObjective({kind:"whale",duration:12})');
  run(`for(let i=0;i<52;i++){elapsed+=.1;const u=elapsed/12;ship.x=(objective.mirror?.88-u*.76:.12+u*.76)*W;ship.y=(.53+Math.sin(u*Math.PI*3)*.14)*H;updateAdventure(.1,ship.x,ship.y)}`);
  assert(run('whaleSafe'));assert.equal(run('whaleWins'),1);assert.equal(run('score'),150);run('guard=2;damage()');assert.equal(run('hp'),3);assert.equal(run('guard'),2);assert(run('items.length>0'));
  run('elapsed=12.1;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('objective'),null);assert(!run('whaleSafe'));assert(run('resumeShield>=.8'));assert.equal(run('score'),150);
  // Wake lifetime remains ~2.4 seconds on high-refresh devices; no unbounded trail accumulation.
- run('start()');isolate();run('beginObjective({kind:"whale",duration:12});for(let i=0;i<360;i++){elapsed+=1/120;updateAdventure(1/120,ship.x,ship.y)}');assert(run('objective.trail.length<=90'));assert(run('elapsed-objective.trail[0].at>2.3'));run('draw(1);pause()');const wakeFreeze=run('JSON.stringify([objective,elapsed])');run('update(1)');assert.equal(run('JSON.stringify([objective,elapsed])'),wakeFreeze);
+ run('start()');isolate();run('beginObjective({kind:"whale",duration:12});for(let i=0;i<360;i++){elapsed+=1/120;updateAdventure(1/120,ship.x,ship.y)}');assert(run('objective.trail.length<=90'));assert(run('elapsed-objective.trail[0].at>2.3'));run('draw(1);pauseAndWait()');const wakeFreeze=run('JSON.stringify([objective,elapsed])');run('update(1)');assert.equal(run('JSON.stringify([objective,elapsed])'),wakeFreeze);
  // Laser warning is harmless, active rays catch fast crossings, and green gaps/boost remain safe.
  run('start()');isolate();run('laser={vertical:false,at:.56,gap:.6,width:.38,warningEnd:2,end:3.2};ship.x=W*.1;ship.y=H*.7;elapsed=1.9;stepLaser(.1,ship.x,H*.4,false)');assert.equal(run('hp'),3);
  run('elapsed=2.2;stepLaser(.1,ship.x,H*.4,false)');assert.equal(run('hp'),2);
@@ -415,7 +417,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  const move=(x,y)=>{elementEvents['sky:pointermove']({pointerType:'mouse',clientX:x,clientY:y,currentTarget:els.sky});run('update(1/120)');assert.equal(run('ship.x'),Math.max(24,Math.min(width-24,x)));assert.equal(run('ship.y'),Math.max(28,Math.min(height-28,y)))};
  move(80,90);run('boost()');move(800,420);move(60,50);move(1000,550);move(920,460);move(-100,-80);move(40,45);
  run('beginObjective({kind:"cargo",duration:14});objective.load=3');move(650,250);move(200,200);run('boostTime=0');move(700,100);
- run('pause()');const frozen=run('[ship.x,ship.y].join()');elementEvents['sky:pointermove']({pointerType:'mouse',clientX:300,clientY:300});assert.equal(run('[ship.x,ship.y].join()'),frozen);run('pause()');move(320,250);
+ run('pauseAndWait()');const frozen=run('[ship.x,ship.y].join()');elementEvents['sky:pointermove']({pointerType:'mouse',clientX:300,clientY:300});assert.equal(run('[ship.x,ship.y].join()'),frozen);run('pauseAndWait()');move(320,250);
  run('objective=null;ship.x=ship.target=100;ship.y=ship.targetY=200;boostTime=0;invincible=resumeShield=0;items=[{x:400,y:200,r:12,v:0,a:0,rock:true}]');move(700,200);assert.equal(run('hp'),2);
  console.log('V9.1 PASS: absolute mouse alignment across fast reversals, clamped borders, boost/cargo/resume; swept collisions retained');
 }
@@ -428,8 +430,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   freshHull(id);assert.equal(run('activeShip'),id);assert.equal(storage['mooncatch-ship'],id);assert(els['ship-'+id].disabled);
   els['ship-'+(id==='collector'?'falcon':'collector')].onclick();assert.equal(run('activeShip'),id);
   run('dust=3;offerUpgrade()');assert.equal(run('offers[0].id'),run('hull().skill'));assert(run('offers.every(p=>!p.owner||p.owner===activeShip)'));
-  run('chooseUpgrade(0);pause()');assert.equal(run('powers[hull().skill]'),1);assert(run('resumeShield>=1.5'));
-  run('dust=8;offerUpgrade();chooseUpgrade(0);pause()');assert.equal(run('powers[hull().skill]'),2);
+  run('chooseUpgrade(0);pauseAndWait()');assert.equal(run('powers[hull().skill]'),1);assert(run('resumeShield>=1.5'));
+  run('dust=8;offerUpgrade();chooseUpgrade(0);pauseAndWait()');assert.equal(run('powers[hull().skill]'),2);
   run('dust=15;offerUpgrade()');assert(run('offers.every(p=>p.id!==hull().skill)'));run('draw(1);start()');assert.equal(run('powers[hull().skill]'),0);
  }
  freshHull('collector');assert.equal(run('starAttraction()'),78);assert.equal(run('cargoReward(3)'),432);
@@ -437,7 +439,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('moonPhase="dark";powers.satellite=2;const sat=satellites()[0];items=[{...sat,r:5,v:0,rock:false,a:0}];shards=[{...sat,life:5,age:.2,locked:false}];update(.01)');assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('items.length'),0);assert.equal(run('satellites().length'),3);
  freshHull('falcon');run('boost()');assert.equal(run('boostTime'),1.4);assert.equal(run('boostCooldown'),4.3);assert.equal(run('ringReward(150)'),180);assert.equal(run('cargoReward(3)'),360);
  run('powers.wake=1;moonPhase="dark";ship.x=ship.target=400;ship.y=ship.targetY=250;items=[{x:200,y:258,r:7,v:0,rock:false,a:0}];shards=[{x:220,y:255,life:5,age:.2}];stepFleet(.02,100,250)');assert.equal(run('combo'),1);assert.equal(run('dust'),1);assert.equal(run('skillWake.length'),1);
- run('pause()');const trailFrozen=run('JSON.stringify(skillWake)');run('update(10)');assert.equal(run('JSON.stringify(skillWake)'),trailFrozen);run('pause();boostTime=0;stepFleet(2,ship.x,ship.y)');assert.equal(run('skillWake.length'),0);
+ run('pauseAndWait()');const trailFrozen=run('JSON.stringify(skillWake)');run('update(10)');assert.equal(run('JSON.stringify(skillWake)'),trailFrozen);run('pauseAndWait();boostTime=0;stepFleet(2,ship.x,ship.y)');assert.equal(run('skillWake.length'),0);
  run('powers.wake=2;boostTime=100;for(let i=0;i<300;i++)stepFleet(.01,ship.x-10,ship.y)');assert(run('skillWake.length<=96'));width=360;height=400;run('resize();draw(1)');assert(run('skillWake.every(p=>Number.isFinite(p.x2+p.y2))'));
  freshHull('falcon');run('powers.wake=1;boostTime=1.4;for(let i=0;i<168;i++){elapsed+=1/120;ship.x+=2;stepFleet(1/120,ship.x-2,ship.y)}');assert(run('skillWake.length>30&&skillWake.length<45'));assert(run('skillWake[0].life>.35'));
  freshHull('warden');assert.equal(run('guard'),1);run('boost();powers.split=1;items=[{x:ship.x,y:ship.y,dx:0,dy:1,r:12,rock:true,a:0}];reflectMeteor(items[0])');assert.equal(run('reflections.length'),3);assert.equal(run('perfectCount'),1);assert(run('reflections.every(s=>Math.abs(Math.hypot(s.dx,s.dy)-1)<1e-9)'));
@@ -455,7 +457,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('elapsed=73.81;stepStorm(.01,ship.x,ship.y,false)');assert(run('items.length>=7&&items.length<=9'));assert(run('items.every(o=>angleGap(Math.atan2(o.dy,o.dx),storm.event.gap)>.7)'));
  const emitted=run('items.length');run('stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('items.length'),emitted);
  run('elapsed=76.1;stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('storm.event'),null);assert.equal(run('items.length'),0);
- run('elapsed=78;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'wave');run('pause()');const stormFrozen=run('JSON.stringify([storm,elapsed])');run('update(4)');assert.equal(run('JSON.stringify([storm,elapsed])'),stormFrozen);run('pause()');
+ run('elapsed=78;stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'wave');run('pauseAndWait()');const stormFrozen=run('JSON.stringify([storm,elapsed])');run('update(4)');assert.equal(run('JSON.stringify([storm,elapsed])'),stormFrozen);run('pauseAndWait()');
  // Known center/gap/radius: cross the damaging side in one pointer step, then the green side.
  run('storm.event={kind:"wave",x:.5,y:.5,gap:0,fire:0,end:10,fired:true,radius:100};elapsed=(100-32)/(Math.hypot(W,H)*.5);ship.x=W/2-140;ship.y=H/2;invincible=resumeShield=0;stepStorm(0,W/2-60,H/2,false)');assert.equal(run('hp'),2);
  run('hp=3;invincible=0;ship.x=W/2+140;stepStorm(0,W/2+60,H/2,false)');assert.equal(run('hp'),3);
@@ -516,7 +518,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  elementEvents['dir-ur:lostpointercapture'](pe(93,20,620,els['dir-ur']));assert.equal(run('directionPointers.size'),0);
  elementEvents['dir-l:pointerdown'](pe(94,20,570,els['dir-l']));elementEvents['dir-r:pointerdown'](pe(95,125,570,els['dir-r']));assert.equal(run('virtualDirection().x'),0);elementEvents['dir-l:pointerup'](pe(94,20,570,els['dir-l']));assert.equal(run('virtualDirection().x'),1);
  run('boostCooldown=0;ship.x=ship.target=100');elementEvents['padBoost:pointerdown']({preventDefault:noop,stopPropagation:noop});const before=run('ship.x');run('update(.1)');assert(Math.abs(run('ship.x')-before-64.8)<1e-8);
- els.pause.onclick();assert.equal(run('state'),'paused');assert.equal(run('directionPointers.size'),0);assert(!els.pause.disabled);assert.equal(els.pause.textContent,'继续');els.pause.onclick();assert.equal(run('state'),'playing');
+ els.pause.onclick();run('if(state==="resuming")update(3)');assert.equal(run('state'),'paused');assert.equal(run('directionPointers.size'),0);assert(!els.pause.disabled);assert.equal(els.pause.textContent,'▶ 继续');els.pause.onclick();run('if(state==="resuming")update(3)');assert.equal(run('state'),'playing');
  const idle=run('[ship.x,ship.y].join()');elementEvents['dir-r:pointermove'](pe(95,150,570,els['dir-r']));run('update(.05)');assert.equal(run('[ship.x,ship.y].join()'),idle);
  elementEvents['dir-u:keydown']({key:'Enter',repeat:false,preventDefault:noop,stopPropagation:noop});assert.equal(run('virtualDirection().y'),-1);elementEvents['dir-u:keyup']({key:'Enter',preventDefault:noop});assert.equal(run('virtualDirection().y'),0);
  els['mode-drag'].onclick();assert(!els.touchPad.hidden&&els.joystick.hidden&&els.dpad.hidden);assert.equal(storage['mooncatch-controls'],'drag');run('boostTime=0');const startX=run('ship.x');elementEvents['touchPad:pointerdown'](pe(96,50,570,els.touchPad));elementEvents['touchPad:pointermove'](pe(96,60,570,els.touchPad));run('update(.01)');assert.equal(run('ship.x'),Math.min(width-24,startX+16.5));
@@ -527,12 +529,12 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
 {
  run('start()');isolate();els.helpOpen.onclick();assert(run('panelOpen'));assert.equal(run('state'),'paused');assert(els.playContent.inert);assert(!els.gameRules.hidden&&els.controlSettings.hidden);assert(els.pause.disabled);
  const frozen=run('JSON.stringify([elapsed,ship,boostCooldown,objective])');run('update(4)');assert.equal(run('JSON.stringify([elapsed,ship,boostCooldown,objective])'),frozen);
- els.panelClose.onclick();assert(!run('panelOpen'));assert(!els.playContent.inert);assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
- els.pause.onclick();els.controlsOpen.onclick();assert(!els.controlSettings.hidden&&els.gameRules.hidden);els['mode-stick'].onclick();els.panelClose.onclick();assert.equal(run('state'),'paused');els.pause.onclick();
- run('resumeShield=0;dust=3;offerUpgrade(true)');assert.equal(run('state'),'menuIntro');els.helpOpen.onclick();run('update(5)');assert.equal(run('state'),'menuIntro');els.panelClose.onclick();run('update(.81)');assert.equal(run('state'),'upgrade');
+ els.panelClose.onclick();run('if(state==="resuming")update(3)');assert(!run('panelOpen'));assert(!els.playContent.inert);assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
+ els.pause.onclick();run('if(state==="resuming")update(3)');els.controlsOpen.onclick();assert(!els.controlSettings.hidden&&els.gameRules.hidden);els['mode-stick'].onclick();els.panelClose.onclick();run('if(state==="resuming")update(3)');assert.equal(run('state'),'paused');els.pause.onclick();run('if(state==="resuming")update(3)');
+ run('resumeShield=0;dust=3;offerUpgrade(true)');assert.equal(run('state'),'menuIntro');els.helpOpen.onclick();run('update(5)');assert.equal(run('state'),'menuIntro');els.panelClose.onclick();run('if(state==="resuming")update(3)');run('update(.81)');assert.equal(run('state'),'upgrade');
  const offers=run('offers.map(p=>p.id).join()');els.helpOpen.onclick();events.keydown({key:'1',target:{tagName:'BUTTON'}});assert.equal(run('offers.map(p=>p.id).join()'),offers);events.keydown({key:'Escape',target:{tagName:'BUTTON'},preventDefault:noop});assert(!run('panelOpen'));assert.equal(run('state'),'upgrade');
  els.controlsOpen.onclick();els.restart.onclick();assert.equal(run('state'),'playing');assert(!run('panelOpen'));assert(!els.playContent.inert);assert.equal(run('elapsed'),0);assert.equal(run('controlMode'),'stick');assert.equal(run('stickPointer'),null);
- els.helpOpen.onclick();els.gamePanel.querySelectorAll=()=>[els.panelClose,els.restart];sandbox.document.activeElement=els.panelClose;events.keydown({key:'Tab',shiftKey:true,target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.restart);events.keydown({key:'Tab',target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.panelClose);els.panelClose.onclick();run('selectControlMode("drag")');
+ els.helpOpen.onclick();els.gamePanel.querySelectorAll=()=>[els.panelClose,els.restart];sandbox.document.activeElement=els.panelClose;events.keydown({key:'Tab',shiftKey:true,target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.restart);events.keydown({key:'Tab',target:{tagName:'BUTTON'},preventDefault:noop});assert.equal(sandbox.document.activeElement,els.panelClose);els.panelClose.onclick();run('if(state==="resuming")update(3)');run('selectControlMode("drag")');
  console.log('V11 panels PASS: rules/settings access, input isolation, focus loop, frozen intro/upgrade/gameplay, safe explicit return, paused-state preservation and restart');
 }
 
@@ -553,7 +555,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('selectControlMode("drag")');elementEvents['touchPad:pointerdown'](pe(103,60,550,els.touchPad));
  els.sky.bounds={width,height:height-5,left:12,top:170};resizeCallback();assert.equal(run('movePointer'),103);const y=run('ship.targetY');elementEvents['touchPad:pointermove'](pe(103,60,550,els.touchPad));assert.equal(run('ship.targetY'),y);
  elementEvents['touchPad:pointermove'](pe(103,60,560,els.touchPad));assert(Math.abs(run('ship.targetY')-Math.min(run('H')-28,y+16.5))<1e-8);
- run('pause()');assert.equal(run('movePointer'),null);assert(!els.touchPad.captures.has(103));assert.equal(run('touches.size'),0);
+ run('pauseAndWait()');assert.equal(run('movePointer'),null);assert(!els.touchPad.captures.has(103));assert.equal(run('touches.size'),0);
  delete els.sky.bounds;run('resize();start()');
  console.log('V11.1 PASS: event-driven/no-op/DPR canvas resize preserves stationary joystick, dpad and keys; layout shifts do not inject drag deltas; pause still releases input');
 }
@@ -574,7 +576,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   const x=run('ship.x');if(mode==='drag')elementEvents['touchPad:pointermove'](pe(111,50,570,els.touchPad));run('update(.04)');assert(run('ship.x')>x);
   run('update(.36)');els.padMoon.onclick({detail:1});assert.equal(run('moonPhase'),'dark');
   elementEvents['padMoon:pointerdown'](pe(112,310,620,els.padMoon));assert.equal(run('moonPhase'),'bright');assert.equal(run('JSON.stringify([stickPointer,stickVector,[...directionPointers.keys()],movePointer,inputMode])'),input);
-  run('pause();moonCooldown=0');elementEvents['padMoon:pointerdown'](pe(112,310,620,els.padMoon));assert.equal(run('moonPhase'),'bright');assert.equal(run('stickPointer'),null);assert.equal(run('directionPointers.size'),0);assert.equal(run('movePointer'),null);
+  run('pauseAndWait();moonCooldown=0');elementEvents['padMoon:pointerdown'](pe(112,310,620,els.padMoon));assert.equal(run('moonPhase'),'bright');assert.equal(run('stickPointer'),null);assert.equal(run('directionPointers.size'),0);assert.equal(run('movePointer'),null);
  }
  run('start()');isolate();run('keys.add("d")');events.keydown({key:'q',target:{tagName:'CANVAS'},repeat:false,preventDefault:noop});assert.equal(run('moonPhase'),'dark');assert(run('keys.has("d")'));
  run('moonCooldown=0');els.moonToggle.onclick({detail:0});assert.equal(run('moonPhase'),'bright');assert(run('keys.has("d")'));
@@ -619,7 +621,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  mineStart();run('objective.mines[0].x=200;objective.mines[0].y=200;objective.mines[1].dead=true;objective.ores[0].x=400;objective.ores[0].y=200;objective.ores[1].y=400;objective.ores[2].y=400;reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.6)');assert.equal(run('minesCleared'),1);assert.equal(run('oreCount'),0);
  run('reflections=[{x:100,y:200,dx:1,dy:0,r:8,life:2}];updateReflections(.6)');assert.equal(run('oreCount'),1);assert.equal(run('dust'),2);
  const normalized=run('[objective.mines[0].x/W,objective.ores[0].y/H]');width=360;height=400;run('resize();draw(1)');assert(Math.abs(run('objective.mines[0].x/W')-normalized[0])<1e-9);assert(Math.abs(run('objective.ores[0].y/H')-normalized[1])<1e-9);
- run('pause()');const frozen=run('JSON.stringify([objective,elapsed,oreCount,minesCleared])');run('update(3)');assert.equal(run('JSON.stringify([objective,elapsed,oreCount,minesCleared])'),frozen);run('pause()');
+ run('pauseAndWait()');const frozen=run('JSON.stringify([objective,elapsed,oreCount,minesCleared])');run('update(3)');assert.equal(run('JSON.stringify([objective,elapsed,oreCount,minesCleared])'),frozen);run('pauseAndWait()');
  run('elapsed=65;laserSlot=2;objective=null;stepLaser(0,ship.x,ship.y,false)');assert.equal(run('laser'),null);assert.equal(run('laserSlot'),3);
  mineStart();run('elapsed=70;invincible=0;ship.x=objective.mines[0].x;ship.y=objective.mines[0].y;updateMining(.01,ship.x,ship.y)');assert.equal(run('minePhase(objective.mines[0])'),'idle');assert.equal(run('hp'),3);
  run('elapsed=74;updateAdventure(.01,ship.x,ship.y)');assert.equal(run('objective'),null);assert.equal(run('score'),0);assert.equal(run('hp'),3);
@@ -659,7 +661,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('resumeShield=0;ship.x=auroraGeometry(worldEvent,elapsed).x;ship.y=auroraGeometry(worldEvent,elapsed).y+50;stepWorld(.01,ship.x,ship.y-100)');assert.equal(run('worldWins'),1);assert.equal(run('score'),145);assert.equal(run('dust'),1);
  run('stepWorld(.01,ship.x,ship.y-100)');assert.equal(run('score'),145);
  run('elapsed=20;worldEvent=null;stepWorld(0,ship.x,ship.y);elapsed=24;boostTime=.5;ship.x=40;ship.y=auroraGeometry(worldEvent,elapsed).y;stepWorld(.01,40,ship.y)');assert.equal(run('hp'),2);assert.equal(run('worldWins'),2);
- const geometry=run('auroraGeometry(worldEvent,elapsed).x/W');width=360;height=350;resizeCallback();assert(Math.abs(run('auroraGeometry(worldEvent,elapsed).x/W')-geometry)<1e-9);run('draw(24);pause()');const saved=run('JSON.stringify([worldEvent,elapsed,worldWins])');run('update(3)');assert.equal(run('JSON.stringify([worldEvent,elapsed,worldWins])'),saved);run('pause();elapsed=70;stepWorld(0,ship.x,ship.y)');assert.equal(run('worldEvent'),null);
+ const geometry=run('auroraGeometry(worldEvent,elapsed).x/W');width=360;height=350;resizeCallback();assert(Math.abs(run('auroraGeometry(worldEvent,elapsed).x/W')-geometry)<1e-9);run('draw(24);pauseAndWait()');const saved=run('JSON.stringify([worldEvent,elapsed,worldWins])');run('update(3)');assert.equal(run('JSON.stringify([worldEvent,elapsed,worldWins])'),saved);run('pauseAndWait();elapsed=70;stepWorld(0,ship.x,ship.y)');assert.equal(run('worldEvent'),null);
  console.log('V13 aurora PASS: selection locks/persistence, independent records, readable warning, moving swept gap, damage/shield/boost, single reward, resize, pause and storm cleanup');
 }
 {
@@ -711,7 +713,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('elapsed=10;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'port');assert(els.flightStatus.textContent.includes('蓄能 2s'));
  run('elapsed=12;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'relic');
  run('elapsed=14;ship.x=auroraGeometry(worldEvent,elapsed).x;ship.y=auroraGeometry(worldEvent,elapsed).y;stepWorld(.01,ship.x,ship.y);hud()');assert.equal(active(),'whale');assert(els.flightStatus.textContent.includes('+120 分'));assert.equal(els['map-whale'].attributes['aria-current'],'step');
- run('pause()');const caption=els.flightStatus.textContent;run('update(5);hud()');assert.equal(els.flightStatus.textContent,caption);run('pause();elapsed=17;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'port');assert(els.flightStatus.textContent.includes('下一轮还有 3s'));
+ run('pauseAndWait()');const caption=els.flightStatus.textContent;run('update(5);hud()');assert.equal(els.flightStatus.textContent,caption);run('pauseAndWait();elapsed=17;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'port');assert(els.flightStatus.textContent.includes('下一轮还有 3s'));
  run('elapsed=30;setPhase(1);hud()');assert.equal(els.announcement.textContent,'追光巡航');assert.equal(els.phase1.className,'active');assert(els.status.textContent.includes('极光航道'));
  run('elapsed=70;stepWorld(0,ship.x,ship.y);hud()');assert.equal(active(),'mine');
  run('state="over";selectWorld("warp");start()');isolate();assert.equal(els.phase1.textContent,'02 信标接力');assert.equal(active(),'port');
@@ -758,7 +760,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('elapsed=74;globalThis.g=irisGeometry(storm.event);ship.x=g.x+g.r*Math.cos(g.gap);ship.y=g.y+g.r*Math.sin(g.gap);stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('hp'),3);
  run('ship.x=g.x+g.r*Math.cos(g.gap+Math.PI);ship.y=g.y+g.r*Math.sin(g.gap+Math.PI);stepStorm(.01,ship.x,ship.y,false)');assert.equal(run('hp'),2);
  run('invincible=0;stepStorm(.01,ship.x,ship.y,true);draw(74)');assert.equal(run('hp'),2);
- run('pause()');const frozen=run('JSON.stringify(storm)');run('update(2)');assert.equal(run('JSON.stringify(storm)'),frozen);
+ run('pauseAndWait()');const frozen=run('JSON.stringify(storm)');run('update(2)');assert.equal(run('JSON.stringify(storm)'),frozen);
  run('state="over";selectWorld("warp");start()');isolate();run('elapsed=70;updateBoss(0,0,ship.x,false);boss.warning=0;elapsed=72;updateBoss(0,0,0,false,0);stepStorm(0,ship.x,ship.y,false)');assert.equal(run('storm.event.kind'),'rift');
  run('breakBossShell(false,boss.x,boss.y+100)');assert.equal(run('boss.hp'),3);run('breakBossShell(false,boss.x,boss.y-100)');assert.equal(run('boss.hp'),2);
  run('globalThis.g=finaleGate(storm.event);ship.x=g.x*W;ship.y=g.y*H;boostTime=1;globalThis.jumped=stepFinalePortal(ship.x,ship.y)');assert(!run('jumped'));
@@ -784,7 +786,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('items=[{x:40,y:80,rock:true,stationRaid:true}];shatter(items[0],false);shatter(items[0],false)');assert.equal(run('station.intercepts'),1);
  run('items=[{x:W*.5,y:H*.52,prevX:W*.5,prevY:H*.52,r:12,rock:true,stationRaid:true,v:0,a:0}];ship.x=ship.target=30;ship.y=ship.targetY=H-30;update(.01)');assert.equal(run('station.hp'),3);assert.equal(run('hp'),3);
  run('elapsed=10;station.raidSlot=0;warnings=[];stepStation(0,ship.x,ship.y)');assert.equal(run('warnings.length'),1);assert.equal(run('warnings[0].remaining'),2);run('spawnMeteor(warnings[0])');assert(run('items[items.length-1].stationRaid'));
- run('pause()');const frozen=run('JSON.stringify([station,elapsed])');run('update(3)');assert.equal(run('JSON.stringify([station,elapsed])'),frozen);run('pause();draw(10)');width=800;height=500;resizeCallback();run('draw(10)');assert.equal(run('station.hp'),3);
+ run('pauseAndWait()');const frozen=run('JSON.stringify([station,elapsed])');run('update(3)');assert.equal(run('JSON.stringify([station,elapsed])'),frozen);run('pauseAndWait();draw(10)');width=800;height=500;resizeCallback();run('draw(10)');assert.equal(run('station.hp'),3);
  run('station.hp=1;items=[{x:W*.5,y:H*.52,r:12,rock:true,stationRaid:true,v:0,a:0}];update(.01)');assert.equal(run('state'),'over');assert(run('station.failed'));assert(els.title.textContent.includes('失守'));assert(!run('station.paid'));
  run('start();elapsed=90;station.hp=4;station.rescued=2;score=0;finish()');assert.equal(run('score'),800);run('finish()');assert.equal(run('score'),800);assert.equal(storage['mooncatch-best-station-v13'],'800');assert(!run('bossStarted'));
  run('start()');assert.equal(run('station.hp'),2);assert.equal(run('station.load+station.rescued+station.delivered'),0);
@@ -823,7 +825,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('items=[];warnings=[];hazardWave=2;warnWave();spawnMeteor(warnings[0]);shatter(items[0],false);items[0].worldAge=2;splitMeteors()');assert.equal(run('items.filter(o=>o.fragment).length'),0);assert.equal(run('score'),30);
  run('items=[];warnings=[];hazardWave=3;warnWave();globalThis.w=warnings[0];globalThis.v=warningVector(w);ship.x=W*.9;ship.y=H*.9;spawnMeteor(w)');assert(run('items[0].probe'));assert.equal(run('items[0].dx'),run('v.dx'));assert.equal(run('items[0].dy'),run('v.dy'));assert.equal(run('items[0].speedScale'),1.4);
  run('globalThis.direction=items[0].dx;warnings=[];invincible=100;update(.02)');assert.equal(run('items[0].dx'),run('direction'));run('draw(25)');
- run('pause()');const frozen=run('JSON.stringify([items,clearChallenge,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([items,clearChallenge,elapsed])'),frozen);run('pause()');
+ run('pauseAndWait()');const frozen=run('JSON.stringify([items,clearChallenge,elapsed])');run('update(2)');assert.equal(run('JSON.stringify([items,clearChallenge,elapsed])'),frozen);run('pauseAndWait()');
  run('start()');isolate();run('elapsed=25;items=[{x:W*.2,y:H*.2,dx:1,dy:0,r:13,speedScale:1,rock:true,splitter:true,worldAge:0,age:0,a:0}];slowTime=2;update(.05)');assert(Math.abs(run('items[0].worldAge')-.02)<1e-9);
  console.log('V15 hazards PASS: variant scheduling, fixed probe aim, 1.25s split preview, two non-recursive fragments, early destruction bonus, pause and slowed split clock');
 }
@@ -848,7 +850,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  run('score=100;dust=12;powers.magnet=2;upgradeCount=2;hp=1;guard=1;moonPhase="dark";boostCooldown=3;bossStarted=true;boss={hp:3};elapsed=90;clearChallenge.won=true;nextLeg()');
  assert.equal(run('state'),'dock');assert.equal(run('legIndex'),1);assert.equal(run('elapsed'),0);assert.equal(run('score'),300);assert.equal(run('hp'),3);assert.equal(run('guard'),1);assert.equal(run('powers.magnet'),2);assert.equal(run('dust'),14);assert.equal(run('upgradeCount'),2);assert.equal(run('bonusCredits'),1);assert.equal(run('moonPhase'),'dark');assert.equal(run('boostCooldown'),0);assert.equal(run('stickPointer'),null);assert(!els.dock.hidden);assert(els.pause.disabled);
  assert.equal(run('voyage.cleared'),1);assert.equal(run('voyage.challenges'),1);assert.equal(storage['mooncatch-endless-classic-v16'],'300');assert.equal(storage['mooncatch-best-v6'],timedBest);
- const frozen=run('JSON.stringify([ship,elapsed,hp,score,legIndex])');run('nextLeg();update(30);pause()');assert.equal(run('JSON.stringify([ship,elapsed,hp,score,legIndex])'),frozen);assert.equal(run('state'),'dock');
+ const frozen=run('JSON.stringify([ship,elapsed,hp,score,legIndex])');run('nextLeg();update(30);pauseAndWait()');assert.equal(run('JSON.stringify([ship,elapsed,hp,score,legIndex])'),frozen);assert.equal(run('state'),'dock');
  run('selectModule(2);applyModule();applyModule()');assert.equal(run('expedition.modules.ward'),1);assert.equal(run('expedition.picks'),0);run('departDock()');assert.equal(run('state'),'playing');assert.equal(run('guard'),3);assert(run('resumeShield>=3'));assert.equal(run('hazardClock'),6);assert(els.dock.hidden);
  run('elapsed=89.99;update(.02)');assert.equal(run('state'),'dock');run('openPanel("controls")');els.endRun.onclick();assert.equal(run('state'),'over');assert(!run('panelOpen'));assert(els.hint.textContent.includes('完成 2 段'));
  run('start()');assert.equal(run('expedition.modules.ward'),0);assert.equal(run('legIndex'),0);assert.equal(run('powers.magnet'),0);assert(els.dock.hidden);
@@ -870,7 +872,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   };press();run('elapsed=90;nextLeg()');assert.equal(run('stickPointer'),null);assert.equal(run('keys.size+directionPointers.size+touches.size'),0);
   width=740;height=320;resizeCallback();run('departDock()');const still=run('[ship.x,ship.y].join()');run('update(.03)');assert.equal(run('[ship.x,ship.y].join()'),still);
   const x=run('ship.x');press();run('update(.03);draw(1)');assert(run('ship.x')>x,driver);
-  sandbox.document.hidden=true;docEvents.visibilitychange();assert.equal(run('state'),'paused');sandbox.document.hidden=false;run('pause()');assert.equal(run('state'),'playing');
+  sandbox.document.hidden=true;docEvents.visibilitychange();assert.equal(run('state'),'paused');sandbox.document.hidden=false;run('pauseAndWait()');assert.equal(run('state'),'playing');
  }
  run('state="over";selectRun("timed");selectControlMode("drag");start()');
  console.log('V20 controls PASS: five drivers release at dock/rotation, fresh input and background pause');
@@ -953,8 +955,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   }
   // Real updates: slow time and pause freeze the same clock used for the preview.
   run('start();legIndex=1;ship.x=ship.target=W*.9;ship.y=ship.targetY=H*.9');isolate();
-  run('spawnMeteor({edge:0,at:.2,tx:.2,ty:.5,variant:"boomerang"});globalThis.blade=items[0];for(let i=0;i<20;i++)update(.05);globalThis.hold=JSON.stringify([blade.x,blade.y,blade.worldAge]);pause();update(5)');assert.equal(run('JSON.stringify([blade.x,blade.y,blade.worldAge])'),run('hold'));
-  run('pause();slowTime=1;globalThis.beforeAge=blade.worldAge;update(.05)');assert(Math.abs(run('blade.worldAge-beforeAge')-.02)<1e-9);
+  run('spawnMeteor({edge:0,at:.2,tx:.2,ty:.5,variant:"boomerang"});globalThis.blade=items[0];for(let i=0;i<20;i++)update(.05);globalThis.hold=JSON.stringify([blade.x,blade.y,blade.worldAge]);pauseAndWait();update(5)');assert.equal(run('JSON.stringify([blade.x,blade.y,blade.worldAge])'),run('hold'));
+  run('pauseAndWait();slowTime=1;globalThis.beforeAge=blade.worldAge;update(.05)');assert(Math.abs(run('blade.worldAge-beforeAge')-.02)<1e-9);
   run('globalThis.normalized=[blade.x/W,blade.y/H]');[width,height]=[740,320];resizeCallback();assert(run('Math.abs(blade.x/W-normalized[0])+Math.abs(blade.y/H-normalized[1])<1e-9'));run('draw(2)');
  }
  // Collision on the return leg still uses swept circles. A boosted interception is rewarded once.
@@ -982,7 +984,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  for(const size of [[360,400],[960,510]]){
   [width,height]=size;run('resize();start();powers.graze=2;boostCooldown=3;ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5');isolate();
   run('items=[{x:ship.x,y:ship.y+38,dx:-1,dy:0,speedScale:1,r:12,rock:true,a:0,age:0}];update(.05);draw(1)');assert(Math.abs(run('boostCooldown')-2.35)<1e-8);assert.equal(run('hp'),3);
-  const frozen=run('[grazeLock,grazeFlash,boostCooldown].join()');run('pause();update(2)');assert.equal(run('[grazeLock,grazeFlash,boostCooldown].join()'),frozen);run('pause()');
+  const frozen=run('[grazeLock,grazeFlash,boostCooldown].join()');run('pauseAndWait();update(2)');assert.equal(run('[grazeLock,grazeFlash,boostCooldown].join()'),frozen);run('pauseAndWait()');
  }
  run('start();state="upgrade";offers=[powersList.find(p=>p.id==="graze")];chooseUpgrade(0)');assert.equal(run('powers.graze'),1);assert(run('synergyHint("graze").includes("通用强化")'));run('state="upgrade";offers=[powersList.find(p=>p.id==="graze")];chooseUpgrade(0)');assert.equal(run('powers.graze'),2);
  run('start()');assert.equal(run('powers.graze+grazeLock+grazeFlash'),0);
@@ -1029,7 +1031,7 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   if(driver==='keyboard')run('keys.add("d")');if(driver==='mouse')run('inputMode="pointer"');
   const controls=run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])');accept();assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
   run('elapsed=16;stepBounty(.01,ship.x,ship.y,false);globalThis.normalized=[bounty.x/W,bounty.y/H];draw(16)');width=740;height=320;resizeCallback();assert(run('Math.abs(bounty.x/W-normalized[0])+Math.abs(bounty.y/H-normalized[1])<1e-9'));assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer,[...keys],inputMode])'),controls);
-  run('pause()');const snapshot=run('JSON.stringify([elapsed,bounty,warnings])');run('update(2)');assert.equal(run('JSON.stringify([elapsed,bounty,warnings])'),snapshot);run('pause();elapsed=bounty.until;stepBounty(.01,ship.x,ship.y,false);draw(30)');assert.equal(run('state'),'playing');
+  run('pauseAndWait()');const snapshot=run('JSON.stringify([elapsed,bounty,warnings])');run('update(2)');assert.equal(run('JSON.stringify([elapsed,bounty,warnings])'),snapshot);run('pauseAndWait();elapsed=bounty.until;stepBounty(.01,ship.x,ship.y,false);draw(30)');assert.equal(run('state'),'playing');
  }
  run('state="over";selectRun("timed");selectControlMode("drag");start()');
  console.log('V18 controls PASS: all five drivers retain input on acceptance, normalized resize, stationary pause timers and non-modal expiry');
@@ -1081,9 +1083,9 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  // One isolated hitch, browser suspension, and menu time never count as sustained overload.
  run('selectRenderMode("auto");frameHealth.state=state;resetFrameWindow(0)');feed(119,1000/60);feed(1,100);assert.equal(run('renderTier'),0);
  feed(60,500);assert.equal(run('renderTier'),0);assert.equal(run('frameHealth.count'),0);
- run('pause()');feed(300,1000/30);assert.equal(run('renderTier'),0);assert.equal(run('frameHealth.count'),0);run('pause()');
+ run('pauseAndWait()');feed(300,1000/30);assert.equal(run('renderTier'),0);assert.equal(run('frameHealth.count'),0);run('pauseAndWait()');
  sandbox.document.hidden=true;feed(300,1000/30);assert.equal(run('renderTier'),0);sandbox.document.hidden=false;
- run('openPanel("controls")');els['render-smooth'].onclick();assert.equal(run('renderMode'),'smooth');assert.equal(storage['mooncatch-render'],'smooth');assert.equal(els.sky.width,488);assert.equal(els.sky.height,1055);assert.equal(run('effectiveTier()'),2);assert.equal(run('state'),'paused');els.panelClose.onclick();assert.equal(run('state'),'playing');
+ run('openPanel("controls")');els['render-smooth'].onclick();assert.equal(run('renderMode'),'smooth');assert.equal(storage['mooncatch-render'],'smooth');assert.equal(els.sky.width,488);assert.equal(els.sky.height,1055);assert.equal(run('effectiveTier()'),2);assert.equal(run('state'),'paused');els.panelClose.onclick();run('if(state==="resuming")update(3)');assert.equal(run('state'),'playing');
  feed(1800,1000/60);assert.equal(run('renderMode'),'smooth');assert.equal(els.sky.width,488);assert.equal(run('effectiveTier()'),2);
  run('selectRenderMode("clear")');feed(600,1000/30);assert.equal(run('effectiveTier()'),0);assert.equal(els.sky.width,780);assert.equal(storage['mooncatch-render'],'clear');
  run('selectRenderMode("invalid")');assert.equal(run('renderMode'),'clear');run('start()');assert.equal(run('renderMode'),'clear');
@@ -1111,14 +1113,14 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  els.floatReset.onclick();assert.equal(run('floatingPrefs.landscape.size'),'normal');assert.equal(run('floatingPrefs.landscape.position'),'edge');assert.equal(run('floatingPrefs.portrait.size'),'largest');
  run('selectFloatingLayout("size","bogus")');assert.equal(run('floatingPrefs.landscape.size'),'normal');
  // Scale joystick throw with its ring while retaining live movement and multi-touch actions.
- width=390;height=844;resizeCallback();els['mode-stick'].onclick();assert.equal(storage['mooncatch-canvas-controls'],'stick');els.panelClose.onclick();run('if(state==="paused")pause();ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5');isolate();
+ width=390;height=844;resizeCallback();els['mode-stick'].onclick();assert.equal(storage['mooncatch-canvas-controls'],'stick');els.panelClose.onclick();run('if(state==="resuming")update(3)');run('if(state==="paused")pauseAndWait();ship.x=ship.target=W*.5;ship.y=ship.targetY=H*.5');isolate();
  const g=JSON.parse(run('JSON.stringify(floatingGeometry())')),ring=92*g.scale;
  els.stickRing.bounds={left:12,top:height-250,width:ring,height:ring};
  const cx=12+ring/2,cy=height-250+ring/2;
  elementEvents['joystick:pointerdown']({pointerId:401,clientX:cx+36*g.scale,clientY:cy,currentTarget:els.joystick,pointerType:'touch',preventDefault:noop});assert(Math.abs(run('stickVector.x')-1)<1e-8);
  const x=run('ship.x');run('update(.02)');assert(run('ship.x')>x);elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('stickPointer'),401);
  width=844;height=390;resizeCallback();assert.equal(run('stickPointer'),401);assert.equal(run('driverMode()'),'stick');assert.equal(els.playShell.style['--float-move'],'140px');run('draw(1)');
- els.canvasMenu.onclick();assert.equal(run('stickPointer'),null);run('leftHand=false;applyHand()');els.hand.onclick();assert(run('leftHand'));els.hand.onclick();assert(!run('leftHand'));run('setCanvasOnly(false)');assert(els.floatingSettings.hidden);els.panelClose.onclick();run('setFocused(false)');
+ els.canvasMenu.onclick();assert.equal(run('stickPointer'),null);run('leftHand=false;applyHand()');els.hand.onclick();assert(run('leftHand'));els.hand.onclick();assert(!run('leftHand'));run('setCanvasOnly(false)');assert(els.floatingSettings.hidden);els.panelClose.onclick();run('if(state==="resuming")update(3)');run('setFocused(false)');
  const defaults=run('JSON.stringify(normalizeFloatingPrefs({portrait:{size:"invalid",position:99},landscape:null}))');assert.equal(defaults,run('JSON.stringify(normalizeFloatingPrefs(null))'));
  delete els.stickRing.bounds;run('floatingPrefs=normalizeFloatingPrefs(null);floatingSignature="";canvasControl="drag";applyFloatingLayout();selectControlMode("drag");start()');
  console.log('V18.4 layout PASS: 36 size/position/viewport combinations, orientation-specific persistence/reset, bounded geometry, scaled joystick, multi-touch/resize, handedness and normal-layout restoration');
@@ -1136,8 +1138,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  assert.equal(run('overload.charge'),0);assert.equal(run('overload.bursts'),1);assert.equal(run('overload.cleared'),1);assert.equal(run('items.filter(o=>o.rock).length'),1);assert(run('overload.pulse.life>0'));
  hit(true);assert.equal(run('overload.charge'),0);assert.equal(run('overload.bursts'),1);
  // Pausing freezes the visual; resizing keeps its normalized origin and does not fire twice.
- run('pause()');const frozen=run('JSON.stringify(overload)');run('update(3);draw(1)');assert.equal(run('JSON.stringify(overload)'),frozen);
- width=390;height=844;run('resize();draw(2)');assert.equal(run('JSON.stringify(overload)'),frozen);run('pause();items=[];update(.6)');assert.equal(run('overload.pulse'),null);
+ run('pauseAndWait()');const frozen=run('JSON.stringify(overload)');run('update(3);draw(1)');assert.equal(run('JSON.stringify(overload)'),frozen);
+ width=390;height=844;run('resize();draw(2)');assert.equal(run('JSON.stringify(overload)'),frozen);run('pauseAndWait();items=[];update(.6)');assert.equal(run('overload.pulse'),null);
  // At most eight nearby meteors, one reward each, no chain escape or perfect-hit reward.
  width=960;height=510;run('resize();start()');isolate();
  run('powers.chain=2;perfectReady=true;perfectWindow=.18;overload.pending=true;items=Array.from({length:10},(_,i)=>({x:ship.x+70+i*3,y:ship.y,r:8,rock:true,a:0}));items.push({x:ship.x+200,y:ship.y,r:8,rock:true,a:0},{x:ship.x+70,y:ship.y,r:8,rock:false,a:0});releaseOverload()');
@@ -1198,8 +1200,8 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
   assert.equal(run('expedition.chain'),null);assert.equal(run('expedition.completed'),1);assert.equal(run('expedition.credits'),1);assert.equal(run('score'),105);assert.equal(run('dust'),2);assert(Math.abs(run('boostCooldown')-.2)<1e-8);
   run('stepSupplyChain(.01,ship.x,ship.y)');assert.equal(run('expedition.completed'),1);run('elapsed=90;nextLeg()');assert.equal(run('expedition.picks'),2);
   run('selectModule(0);applyModule();selectModule(0);applyModule()');assert.equal(run('expedition.modules.coil'),3);assert.equal(run('dust'),6);assert.equal(run('expedition.picks'),0);assert(run('guard<=4'));run('departDock()');assert.equal(run('expedition.credits'),0);
-  run('elapsed=18;stepSupplyChain(0,0,0);pause()');const frozen=run('JSON.stringify(expedition.chain)');run('update(20)');assert.equal(run('JSON.stringify(expedition.chain)'),frozen);
-  run('pause();elapsed=50;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);assert.equal(run('expedition.credits'),0);assert.equal(run('state'),'playing');
+  run('elapsed=18;stepSupplyChain(0,0,0);pauseAndWait()');const frozen=run('JSON.stringify(expedition.chain)');run('update(20)');assert.equal(run('JSON.stringify(expedition.chain)'),frozen);
+  run('pauseAndWait();elapsed=50;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);assert.equal(run('expedition.credits'),0);assert.equal(run('state'),'playing');
   run('start()');assert.equal(run('expedition.completed'),0);assert.equal(run('expedition.modules.coil'),0);
  }
  run('state="over";selectRun("timed");start();elapsed=18;stepSupplyChain(0,0,0)');assert.equal(run('expedition.chain'),null);
@@ -1269,6 +1271,33 @@ console.log('V6.3 PASS: gentler escalating difficulty and restart button from ev
  console.log('V21.1 iris PASS:',checks,'stationary-camping / moving-gap scenarios across portrait/landscape, first/late waves, both rotation directions; full-arena reach, warning, locked aim and boost immunity');
 }
 
+// V21.2: exercise the real countdown without the legacy scenario helper.
+{
+ run('start()');isolate();
+ run('setFocused(true);setCanvasOnly(true);start()');assert(!els.canvasPause.hidden);
+ elementEvents['canvasPause:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.equal(run('state'),'paused');
+ els.canvasPause.onclick({detail:1});assert.equal(run('state'),'paused'); // No duplicate synthesized click.
+ els.canvasPause.onclick({detail:0});assert.equal(run('state'),'resuming');assert(!els.resumeCue.hidden);
+ const snapshot=run('JSON.stringify([elapsed,time,ship,items,warnings,boss,boostCooldown,activeWager])');
+ events.keydown({key:'ArrowRight',target:{tagName:'CANVAS'},preventDefault:noop});run('boost();update(.99)');
+ assert.equal(els.resumeNumber.textContent,'3');assert.equal(run('keys.size'),0);
+ run('update(.01)');assert.equal(els.resumeNumber.textContent,'2');
+ run('update(1)');assert.equal(els.resumeNumber.textContent,'1');
+ assert.equal(run('JSON.stringify([elapsed,time,ship,items,warnings,boss,boostCooldown,activeWager])'),snapshot);
+ els.start.onclick();assert.equal(run('state'),'resuming'); // Stale resume click cannot restart.
+ run('update(.99)');assert.equal(run('state'),'resuming');run('update(.01)');assert.equal(run('state'),'playing');assert(els.resumeCue.hidden);assert(run('resumeShield>=1.5'));
+ assert.equal(run('JSON.stringify([elapsed,time,ship,items,warnings,boss,boostCooldown,activeWager])'),snapshot);
+ for(const cancel of [()=>els.resumeCancel.onclick({detail:0}),()=>events.blur(),()=>{sandbox.document.hidden=true;docEvents.visibilitychange();sandbox.document.hidden=false},()=>events.keydown({key:'Escape',target:{tagName:'BUTTON'},preventDefault:noop}),()=>{width+=10;resizeCallback()}]){
+  run('pause();pause();update(.8)');assert.equal(run('state'),'resuming');cancel();assert.equal(run('state'),'paused');assert(els.resumeCue.hidden);run('update(4)');assert.equal(run('state'),'paused');run('pause();update(3)');assert.equal(run('state'),'playing');
+ }
+ run('pause();pause();openPanel("controls")');assert.equal(run('state'),'paused');run('closePanel()');assert.equal(run('state'),'resuming');assert.equal(run('resumeRemaining'),3);
+ run('start()');assert(els.resumeCue.hidden);assert.equal(run('elapsed'),0);
+ run('pause();pause();finish()');assert.equal(run('state'),'over');assert(els.resumeCue.hidden);assert(els.canvasPause.hidden);
+ run('setFocused(false);start()');assert(els.canvasPause.hidden);
+ run('pause();pause();last=1000');for(let tick=1;tick<=29;tick++)run(`frame(${1000+tick*100})`);assert.equal(run('state'),'resuming');run('frame(4000)');assert.equal(run('state'),'playing');
+ console.log('V21.2 pause PASS: direct button, pointer/click deduplication, full 3/2/1 freeze, stale input, shield, cancel, background, resize, settings and restart cleanup');
+}
+
 run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("drag");start()');
 (async()=>{
  run('start()');isolate();
@@ -1276,7 +1305,7 @@ run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("d
  el('playShell').requestFullscreen=async()=>{sandbox.document.fullscreenElement=els.playShell;docEvents.fullscreenchange()};
  sandbox.document.exitFullscreen=async()=>{sandbox.document.fullscreenElement=null;docEvents.fullscreenchange()};
  await els.fullscreen.onclick();assert(run('focusMode'));assert.equal(run('state'),'paused');assert(els.playShell.classList.contains('immersive'));assert(sandbox.document.body.classList.contains('game-focused'));
- els.pause.onclick();assert(run('resumeShield>=1.5'));sandbox.document.fullscreenElement=null;docEvents.fullscreenchange();assert(!run('focusMode'));assert.equal(run('state'),'paused');assert(!sandbox.document.body.classList.contains('game-focused'));
+ els.pause.onclick();run('if(state==="resuming")update(3)');assert(run('resumeShield>=1.5'));sandbox.document.fullscreenElement=null;docEvents.fullscreenchange();assert(!run('focusMode'));assert.equal(run('state'),'paused');assert(!sandbox.document.body.classList.contains('game-focused'));
  delete els.playShell.requestFullscreen;await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('nativeScreen'));await els.fullscreen.onclick();assert(!run('focusMode'));assert.equal(els.fullscreen.attributes['aria-pressed'],'false');
  el('playShell').requestFullscreen=async()=>{throw Error('unsupported')};await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('fullscreenBusy'));events.keydown({key:'Escape',target:{tagName:'CANVAS'},preventDefault:noop});assert(!run('focusMode'));assert(!sandbox.document.body.classList.contains('game-focused'));
  delete els.playShell.requestFullscreen;run('start()');assert.equal(run('state'),'playing');
@@ -1286,7 +1315,7 @@ run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("d
  run('selectControlMode("stick")');const savedControl=storage['mooncatch-controls'];
  await els.fullscreen.onclick();assert(run('focusMode'));assert(!run('canvasOnly'));assert(!els.fullViewSettings.hidden);
  run('start();openPanel("controls")');els.canvasOnly.onclick();assert(run('canvasOnly'));assert(els.playShell.classList.contains('canvas-only'));assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],savedControl);assert(!els['mode-stick'].disabled);assert(!els.canvasMenu.hidden);
- els.panelClose.onclick();assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
+ els.panelClose.onclick();run('if(state==="resuming")update(3)');assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
  // Direct canvas motion is 1:1 even during boost, with no first-contact teleport.
  width=390;height=844;resizeCallback();run('ship.x=ship.target=150;ship.y=ship.targetY=400');isolate();
  const fullTouch=(id,x,y)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:els.sky,preventDefault:noop});
@@ -1297,8 +1326,8 @@ run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("d
  const moon=run('moonPhase');elementEvents['moonToggle:pointerdown']({preventDefault:noop,stopPropagation:noop});assert.notEqual(run('moonPhase'),moon);assert.equal(run('movePointer'),201);
  width=844;height=390;resizeCallback();assert.equal(run('movePointer'),201);assert(run('canvasOnly'));run('draw(1)');
  // Floating menu pauses and releases touches; turning this option off restores the joystick.
- els.canvasMenu.onclick();assert.equal(run('state'),'paused');assert(run('panelOpen'));assert.equal(run('touches.size'),0);els.canvasOnly.onclick();assert(!run('canvasOnly'));assert(run('focusMode'));assert.equal(run('controlMode'),'stick');assert(!els['mode-stick'].disabled);assert(!els.joystick.hidden);els.panelClose.onclick();assert.equal(run('state'),'playing');
- run('openPanel("controls")');els.canvasOnly.onclick();els.panelClose.onclick();await els.fullViewExit.onclick();assert(!run('canvasOnly'));assert(!run('focusMode'));assert(els.fullViewSettings.hidden);assert(els.canvasMenu.hidden);assert.equal(storage['mooncatch-controls'],savedControl);
+ els.canvasMenu.onclick();assert.equal(run('state'),'paused');assert(run('panelOpen'));assert.equal(run('touches.size'),0);els.canvasOnly.onclick();assert(!run('canvasOnly'));assert(run('focusMode'));assert.equal(run('controlMode'),'stick');assert(!els['mode-stick'].disabled);assert(!els.joystick.hidden);els.panelClose.onclick();run('if(state==="resuming")update(3)');assert.equal(run('state'),'playing');
+ run('openPanel("controls")');els.canvasOnly.onclick();els.panelClose.onclick();run('if(state==="resuming")update(3)');await els.fullViewExit.onclick();assert(!run('canvasOnly'));assert(!run('focusMode'));assert(els.fullViewSettings.hidden);assert(els.canvasMenu.hidden);assert.equal(storage['mooncatch-controls'],savedControl);
  // Browser/system fullscreen exit also resets the temporary mode.
  run('setFocused(true);setCanvasOnly(true);nativeScreen=true');sandbox.document.fullscreenElement=null;docEvents.fullscreenchange();assert(!run('canvasOnly'));assert(!els.playShell.classList.contains('canvas-only'));
  run('selectControlMode("drag");start()');
@@ -1307,7 +1336,7 @@ run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("d
  const overlayTouch=(id,x,y,surface)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch',currentTarget:surface,preventDefault:noop});
  for(const size of [[390,844],[844,390]])for(const mode of ['stick','dpad','drag']){
   [width,height]=size;run('resize();start();selectControlMode("stick");setFocused(true);setCanvasOnly(true);openPanel("controls")');
-  els['mode-'+mode].onclick();assert.equal(run('driverMode()'),mode);assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],'stick');assert.equal(els.playShell.attributes['data-canvas-controls'],mode);els.panelClose.onclick();run('if(state==="paused")pause();ship.x=ship.target=W*.4;ship.y=ship.targetY=H*.5');isolate();
+  els['mode-'+mode].onclick();assert.equal(run('driverMode()'),mode);assert.equal(run('controlMode'),'stick');assert.equal(storage['mooncatch-controls'],'stick');assert.equal(els.playShell.attributes['data-canvas-controls'],mode);els.panelClose.onclick();run('if(state==="resuming")update(3)');run('if(state==="paused")pauseAndWait();ship.x=ship.target=W*.4;ship.y=ship.targetY=H*.5');isolate();
   const x=run('ship.x');
   if(mode==='stick'){els.stickRing.bounds={left:12,top:height-154,width:92,height:92};elementEvents['joystick:pointerdown'](overlayTouch(220,100,height-108,els.joystick))}
   if(mode==='dpad')elementEvents['dir-r:pointerdown'](overlayTouch(220,100,height-80,els['dir-r']));
@@ -1315,7 +1344,7 @@ run('state="over";selectRun("timed");selectWorld("classic");selectControlMode("d
   run('update(.03)');assert(run('ship.x')>x,mode+' '+size);
   const held=run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer])');elementEvents['boost:pointerdown']({preventDefault:noop,stopPropagation:noop});elementEvents['moonToggle:pointerdown']({preventDefault:noop,stopPropagation:noop});assert(run('boostTime>0'));assert.equal(run('JSON.stringify([stickPointer,[...directionPointers.keys()],movePointer])'),held);
   if(mode!=='drag'){const target=run('ship.target');elementEvents['sky:pointerdown'](overlayTouch(221,200,200,els.sky));assert.equal(run('ship.target'),target);assert.equal(run('touches.size'),0)}
-  els.canvasMenu.onclick();assert.equal(run('state'),'paused');assert.equal(run('touches.size+directionPointers.size'),0);assert.equal(run('stickPointer'),null);run('setCanvasOnly(false)');assert.equal(run('driverMode()'),'stick');els.panelClose.onclick();run('setFocused(false)');
+  els.canvasMenu.onclick();assert.equal(run('state'),'paused');assert.equal(run('touches.size+directionPointers.size'),0);assert.equal(run('stickPointer'),null);run('setCanvasOnly(false)');assert.equal(run('driverMode()'),'stick');els.panelClose.onclick();run('if(state==="resuming")update(3)');run('setFocused(false)');
  }
  delete els.stickRing.bounds;run('selectControlMode("drag");start()');
  console.log('V18.2 controls PASS: floating stick/dpad/direct drag × portrait/landscape, stored preference isolation, simultaneous boost/phase, no canvas hijack and pause cleanup');

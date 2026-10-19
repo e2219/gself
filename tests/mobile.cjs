@@ -1,7 +1,7 @@
 const vm=require('node:vm');
 const fs=require('node:fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom');
 const html=fs.readFileSync('dist/index.html','utf8');
-const dom=new JSDOM(html,{runScripts:'outside-only',url:'https://localhost'}),w=dom.window;
+const dom=new JSDOM(html,{runScripts:'outside-only',pretendToBeVisual:true,url:'https://localhost'}),w=dom.window;
 const noop=()=>{},ctx=new Proxy({createRadialGradient:()=>({addColorStop:noop})},{get:(o,k)=>o[k]||noop,set:(o,k,v)=>(o[k]=v,true)});
 w.HTMLCanvasElement.prototype.getContext=()=>ctx;w.HTMLElement.prototype.getBoundingClientRect=()=>({width:390,height:844,left:0,top:0});
 w.ResizeObserver=class{observe(){}};w.requestAnimationFrame=noop;const calls=[];
@@ -15,8 +15,8 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  el('nativeStart').click();assert.equal(run('state'),'playing');assert(el('nativeHome').hidden);
  w.MooncatchBack();assert.equal(run('state'),'paused');assert(run('panelOpen'));
  el('mode-stick').click();assert.equal(run('driverMode()'),'stick');assert.equal(w.localStorage.getItem('mooncatch-canvas-controls'),'stick');
- w.MooncatchBack();assert(!run('panelOpen'));assert.equal(run('state'),'paused');el('start').click();assert.equal(run('state'),'playing');
- w.MooncatchLifecycle(false);assert.equal(run('state'),'paused');assert(run('resumeSafetyPending'));w.MooncatchLifecycle(true);assert.equal(run('state'),'paused');el('start').click();assert(run('resumeShield>=1.5'));
+ w.MooncatchBack();assert(!run('panelOpen'));assert.equal(run('state'),'paused');el('start').click();assert.equal(run('state'),'resuming');run('update(3)');assert.equal(run('state'),'playing');
+ w.MooncatchLifecycle(false);assert.equal(run('state'),'paused');assert(run('resumeSafetyPending'));w.MooncatchLifecycle(true);assert.equal(run('state'),'paused');el('start').click();assert.equal(run('state'),'resuming');run('update(3)');assert(run('resumeShield>=1.5'));
  run('dust=3;offerUpgrade()');assert.equal(run('state'),'upgrade');w.MooncatchBack();assert.equal(run('state'),'paused');assert.equal(run('upgradeCount'),0);assert(el('upgrade').hidden);
  el('start').click();w.MooncatchBack();el('nativeReturn').click();assert(w.MooncatchIsHome());assert.equal(run('state'),'ready');assert(!run('panelOpen'));
  el('nativeSettings').click();assert(run('panelOpen'));assert(!el('gamePanel').hidden);
@@ -33,6 +33,11 @@ const run=s=>vm.runInContext(s,dom.getInternalVMContext()),el=id=>w.document.get
  w.MooncatchBack();assert(run('panelOpen'));w.MooncatchLifecycle(false);w.MooncatchLifecycle(true);w.MooncatchBack();assert.equal(run('state'),'dock');assert(!run('panelOpen'));
  el('module2').click();el('dockApply').click();assert.equal(run('expedition.modules.ward'),1);assert.equal(run('state'),'dock');
  el('dockLaunch').click();assert.equal(run('state'),'playing');assert(run('resumeShield>=3'));assert(run('guard>=2'));
+ // Native pause is reachable without opening settings and background cancels preparation.
+ assert(!el('canvasPause').hidden);el('canvasPause').click();assert.equal(run('state'),'paused');assert(!run('panelOpen'));
+ el('canvasPause').click();assert.equal(run('state'),'resuming');assert.equal(calls.at(-1).awake,true);
+ run('update(1)');assert.equal(el('resumeNumber').textContent,'2');w.MooncatchLifecycle(false);assert.equal(run('state'),'paused');assert(el('resumeCue').hidden);
+ w.MooncatchLifecycle(true);assert.equal(run('state'),'paused');el('start').click();run('update(3)');assert.equal(run('state'),'playing');assert(run('resumeShield>=1.5'));
  assert(calls.some(c=>c?.awake===false));assert(calls.some(c=>c?.awake===true));
  dom.window.close();console.log('Native DOM PASS: fullscreen home, selection, back stack, controls, foreground safety, optional upgrade, backup preview/cancel, sound persistence and safe insets');
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close()});

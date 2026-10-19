@@ -73,7 +73,7 @@ try{sound=localStorage.getItem('mooncatch-sound')==='true'}catch{}
 let ship={x:480,y:350,target:480,targetY:350,direction:1};
 let bounty=null,bountySeen=false,bountiesWon=0;
 let hazardWave=0,clearChallenge={hits:0,won:false};
-let menuIntro=null,resumeShield=0,resumeSafetyPending=false;
+let menuIntro=null,resumeShield=0,resumeSafetyPending=false,resumeRemaining=0;
 const newFlight=()=>({angle:-Math.PI/2,bank:0,throttle:0,trail:[]});
 let flight=newFlight();
 let moonPhase='bright',moonCooldown=0,objective=null,adventureSlot=0,fork=null,routeSlot=0,activeRoute=null,adventureResult='',ringWins=0,escortWins=0;
@@ -566,6 +566,7 @@ function resize(){
  W=b.width;H=b.height;canvas.width=pixelsX;canvas.height=pixelsY;ctx.setTransform(d,0,0,d,0,0);
  // Density changes only the backing bitmap, never the world geometry or held inputs.
  if(W===ow&&H===oh)return;
+ if(state==='resuming')pause();
  resetFrameWindow();
  ship.x=clamp(ship.x*W/ow);ship.target=clamp(ship.target*W/ow);ship.y=clampY(ship.y*H/oh);ship.targetY=clampY(ship.targetY*H/oh);
  if(bounty){bounty.x*=W/ow;bounty.y*=H/oh;bounty.prevX*=W/ow;bounty.prevY*=H/oh}
@@ -592,7 +593,8 @@ function hud(){
  const controlSignature=state+'|'+panelOpen;
  if(controlSignature!==controlHudSignature){
   controlHudSignature=controlSignature;
-  $('pause').disabled=panelOpen||!['playing','paused'].includes(state);$('pause').textContent=state==='paused'?'继续':'暂停';
+  for(const id of ['pause','canvasPause']){$(id).disabled=panelOpen||!['playing','paused','resuming'].includes(state);$(id).textContent=state==='paused'?'▶ 继续':'Ⅱ 暂停';$(id).setAttribute('aria-label',state==='paused'?'继续游戏，3 秒倒计时':'暂停游戏')}
+  $('canvasPause').hidden=!canvasOnly||!['playing','paused','resuming'].includes(state);
   $('touchControls').setAttribute('aria-disabled',String(state!=='playing'||panelOpen));
   for(const id of Object.keys(directions))$('dir-'+id).disabled=state!=='playing'||panelOpen;
  }
@@ -630,6 +632,7 @@ function hud(){
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
 function start(){
+ cancelResumeCountdown();
  if(panelOpen)closePanel(false);
  overload=newOverload();expedition=newExpedition();$('dock').hidden=true;
  activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
@@ -642,13 +645,29 @@ function start(){
  $('overlay').hidden=true;$('pause').disabled=false;$('pause').innerHTML='暂停 <kbd>P</kbd>';setPhase(0);hud();focusGame();
 }
 function show(title,message,button){$('title').textContent=title;$('message').textContent=message;$('start').textContent=button;$('overlay').hidden=false;$('start').focus({preventScroll:true})}
+function cancelResumeCountdown(){resumeRemaining=0;$('resumeCue').hidden=true}
 function pause(){
- if(state==='playing'){state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';show('让宇宙等一会儿。','已暂停。加速充能和预警也会等你回来。','继续旅程 →');$('pause').textContent='继续';$('status').textContent='已暂停'}
- else if(state==='paused'){clearInput();if(resumeSafetyPending){resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false}state='playing';$('overlay').hidden=true;$('pause').innerHTML='暂停 <kbd>P</kbd>';$('status').textContent=phaseInfo().subtitle;focusGame()}
- hud();
+ if(panelOpen)return;
+ if(state==='playing'||state==='resuming'){
+  cancelResumeCountdown();state='paused';clearInput();$('tag').textContent='TAKE A LITTLE BREATH';
+  show('让宇宙等一会儿。','已暂停。继续后倒计时 3 秒，准备好再出发。','继续旅程 · 3 秒倒计时 →');$('status').textContent='已暂停';
+ }else if(state==='paused'){
+  clearInput();state='resuming';resumeRemaining=3;$('overlay').hidden=true;$('resumeNumber').textContent='3';$('resumeCue').hidden=false;$('status').textContent='准备继续 · 3 秒倒计时';$('resumeCancel').focus({preventScroll:true});
+ }
+ window.MooncatchResumeChanged?.();hud();
+}
+function stepResumeCountdown(dt){
+ if(document.hidden){pause();return}
+ resumeRemaining=Math.max(0,resumeRemaining-Math.max(0,dt));
+ const label=String(Math.ceil(Math.max(0,resumeRemaining-1e-6)));
+ if($('resumeNumber').textContent!==label)$('resumeNumber').textContent=label;
+ if(resumeRemaining<=1e-6){
+  cancelResumeCountdown();clearInput();resumeShield=Math.max(resumeShield,1.5);resumeSafetyPending=false;state='playing';$('status').textContent=phaseInfo().subtitle;focusGame();window.MooncatchResumeChanged?.();hud();
+ }
 }
 function finish(){
  if(state==='over')return;
+ cancelResumeCountdown();
  $('dock').hidden=true;expedition.chain=null;
  settleLeg();
  state='over';wagerInviteUntil=0;clearInput();activeWager=null;$('wager').hidden=true;const record=score>best;if(record){best=score;try{storeSetting(bestKey(),String(best))}catch{}$('best').textContent=String(best).padStart(3,'0')}
@@ -671,7 +690,12 @@ for(const mode of ['timed','endless'])$('run-'+mode).onclick=()=>selectRun(mode)
 $('endRun').onclick=endVoyage;
 for(const w of worlds)$('world-'+w.id).onclick=()=>selectWorld(w.id);
 for(const f of fleet)$('ship-'+f.id).onclick=()=>selectShip(f.id);
-$('start').onclick=()=>state==='paused'?pause():start();$('pause').onclick=pause;$('restart').onclick=start;$('boost').onclick=()=>{boost()};
+$('start').onclick=()=>state==='paused'?pause():state==='resuming'?undefined:start();
+for(const id of ['pause','canvasPause','resumeCancel']){
+ $(id).onclick=e=>{if(!e||e.detail===0)pause()};
+ $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();pause()});
+}
+$('restart').onclick=start;$('boost').onclick=()=>{boost()};
 for(const id of ['boost','padBoost']){
  $(id).onclick=e=>{if(!e||e.detail===0)boost()};
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
@@ -715,18 +739,19 @@ window.addEventListener('keydown',e=>{
   if(k==='tab'){const focusable=[$('module0'),$('module1'),$('module2'),$('dockApply'),$('dockLaunch'),$('dockEnd')].filter(b=>!b.disabled);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
   return;
  }
+ if(k==='escape'&&state==='resuming'){e.preventDefault();pause();return}
  if(k==='escape'&&focusMode&&!document.fullscreenElement){e.preventDefault();toggleFullscreen();return}
  if(state==='wager'){if(!e.repeat){if(k==='1'||k==='2'){e.preventDefault();chooseWager(Number(k)-1)}else if(k==='escape'){e.preventDefault();skipWager()}}return}
  if(state==='upgrade'){if((k==='1'||k==='2')&&!e.repeat){e.preventDefault();chooseUpgrade(Number(k)-1)}return}
  if(state==='playing'&&(k==='e'||k==='r')){e.preventDefault();if(!e.repeat)$(k==='e'?'upgradeReady':'wagerReady').onclick();return}
  if(k==='q'){e.preventDefault();if(!e.repeat)switchMoon();return}
  if(k==='p'){e.preventDefault();if(!e.repeat)pause();return}
- if(e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
+ if(state!=='playing'||e.target.tagName==='BUTTON'||e.target.tagName==='A')return;
  if(moveKeys.includes(k)||k===' '){e.preventDefault();if(k===' '){if(!e.repeat)boost()}else{launch=null;inputMode='keyboard';mouseX=mouseY=null;keys.add(k)}}
 });
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);if(moveKeys.includes(k)){ship.target=ship.x;ship.targetY=ship.y}});
-window.addEventListener('blur',()=>{clearInput();if(state==='playing')pause()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing')pause()});
+window.addEventListener('blur',()=>{clearInput();if(state==='playing'||state==='resuming')pause()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&(state==='playing'||state==='resuming'))pause()});
 function pointer(e){
  if(state!=='playing'||panelOpen)return;
  clearVirtualInput();
@@ -1046,6 +1071,7 @@ function spawnItem(x,rock){
 
 function update(dt){
  if(panelOpen)return;
+ if(state==='resuming'){stepResumeCountdown(dt);return}
  if(state==='menuIntro'){
   menuIntro.remaining-=dt;
   if(menuIntro.remaining<=0){const kind=menuIntro.kind;menuIntro=null;$('menuCue').hidden=true;state='playing';if(kind==='upgrade')offerUpgrade();else maybeOfferWager()}
@@ -1771,7 +1797,7 @@ $('joystick').addEventListener('pointerdown',e=>{
 $('joystick').addEventListener('pointermove',moveStick);
 for(const type of ['pointerup','pointercancel','lostpointercapture'])$('joystick').addEventListener(type,e=>{if(e.pointerId===stickPointer){clearVirtualInput();ship.target=ship.x;ship.targetY=ship.y}});
 function openPanel(kind){
- if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):canvasOnly?$('canvasMenu'):$('controlsOpen');panelResume=state==='playing';if(panelResume)pause();clearInput();panelOpen=true}
+ if(!panelOpen){panelTrigger=kind==='rules'?$('helpOpen'):canvasOnly?$('canvasMenu'):$('controlsOpen');panelResume=state==='playing'||state==='resuming';if(panelResume)pause();clearInput();panelOpen=true}
  $('playContent').inert=true;$('gamePanel').hidden=false;
  $('gameRules').hidden=kind!=='rules';$('controlSettings').hidden=kind!=='controls';
  $('panelTitle').textContent=kind==='rules'?'航行手册':'驾驶设置';
@@ -1784,7 +1810,7 @@ function closePanel(resume=true){
  if(shouldResume){resumeSafetyPending=true;pause()}else hud();
 }
 function prepareLayoutChange(){
- clearInput();if(state==='playing'){pause();resumeSafetyPending=true}
+ clearInput();if(state==='playing'||state==='resuming'){pause();resumeSafetyPending=true}
 }
 function setFocused(value){
  focusMode=value;if(!value)canvasOnly=false;applyCanvasOnly();$('playShell').classList.toggle('immersive',value);document.body.classList.toggle('game-focused',value);
@@ -1821,7 +1847,7 @@ function selectFloatingLayout(kind,value){
 }
 function applyCanvasOnly(){
  $('playShell').classList.toggle('canvas-only',focusMode&&canvasOnly);
- $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;
+ $('fullViewSettings').hidden=!focusMode;$('canvasMenu').hidden=!canvasOnly;$('canvasPause').hidden=!canvasOnly||!['playing','paused','resuming'].includes(state);
  $('canvasOnly').setAttribute('aria-pressed',String(canvasOnly));
  $('canvasOnly').textContent=canvasOnly?'恢复标准全屏布局':'铺满屏幕 · 悬浮操作';
  applyControlMode();applyFloatingLayout();
@@ -1891,4 +1917,4 @@ function drawMining(t){
  ctx.restore();
 }
 
-function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
+function frame(ms){const interval=ms-last;recordFrame(last?interval:0);const dt=Math.max(0,Math.min(interval/1000,.05));last=ms;if(state==='resuming')update(Math.max(0,interval/1000));else if(state==='playing'||state==='menuIntro')update(dt);if(!document.hidden&&!window.MooncatchIsHome?.())draw(ms/1000);requestAnimationFrame(frame)}resize();applyHand();applyControlMode();applyFloatingLayout();renderSettings();hud();requestAnimationFrame(frame);
