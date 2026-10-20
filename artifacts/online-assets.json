@@ -1,0 +1,17 @@
+[
+  {
+    "file": "scene3d.js",
+    "matches": true,
+    "sha256": "d7a833dcb7230ce9b921017c6b86e587a505a0928cfe99598e3ed534310f2678"
+  },
+  {
+    "file": "flight-bridge.js",
+    "matches": true,
+    "sha256": "d1142a192f9d1ee6fa992e8e695cd69d6e37cdc9ba320f6f489361165e3c3da2"
+  },
+  {
+    "file": "echo/art-direction.css",
+    "matches": true,
+    "sha256": "089cdd8ab8df558d4f5b0ad307e0d259380ef0d18750865f54f21277bbb46f0a"
+  }
+]
