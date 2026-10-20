@@ -5,23 +5,23 @@ export function createFlightRenderer(T, canvas) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true, alpha:false, powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace=T.SRGBColorSpace;
-  renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
+  renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFShadowMap;
   const scene=new T.Scene();scene.background=new T.Color(0x091321);
   const camera=new T.OrthographicCamera(-480,480,255,-255,1,4000);
   const tilt=.32, co=Math.cos(tilt), si=Math.sin(tilt);
   camera.position.set(0,-si*1600,co*1600);camera.up.set(0,1,0);camera.lookAt(0,0,0);
-  scene.add(new T.HemisphereLight(0xcce8ff,0x28303e,2.05));
-  const key=new T.DirectionalLight(0xffe7bd,3.1);key.position.set(-220,260,500);key.castShadow=true;
+  scene.add(new T.HemisphereLight(0xcce8ff,0x172438,1.3));
+  const key=new T.DirectionalLight(0xc6d9f2,2.2);key.position.set(-220,260,500);key.castShadow=true;
   key.shadow.mapSize.set(1024,1024);Object.assign(key.shadow.camera,{left:-550,right:550,top:500,bottom:-500,near:1,far:1200});key.shadow.bias=-.0008;scene.add(key);
-  const rim=new T.DirectionalLight(0x75b5df,1.8);rim.position.set(260,-150,180);scene.add(rim);
+  const rim=new T.DirectionalLight(0x75b5df,1.1);rim.position.set(260,-150,180);scene.add(rim);
   const materials=[];const geometries=new Set();
   const mat=(color,roughness=.55,metalness=.25,extra={})=>{const m=new T.MeshStandardMaterial({color,roughness,metalness,...extra});materials.push(m);return m;};
   const M={ceramic:mat(0xebe9df,.3,.15),navy:mat(0x263e52,.48,.5),gold:mat(0xd5aa62,.34,.72),glass:mat(0x184b64,.14,.65),rock:mat(0x86766f,.94,.05,{flatShading:true}),dark:mat(0x101923,.9,.1),danger:mat(0x9b384c,.5,.35),mint:mat(0x9ce4c4,.25,.25,{emissive:0x44745c,emissiveIntensity:.6}),signal:mat(0xf2cf87,.3,.45,{emissive:0x947047,emissiveIntensity:.4}),violet:mat(0x9186bb,.4,.45)};
   // A compact studio reflection environment supplies actual ceramic/metal reflections.
   const studio=new T.Scene();studio.background=new T.Color(0x61788a);
   const lightCard=new T.Mesh(new T.PlaneGeometry(12,8),new T.MeshBasicMaterial({color:0xfff0d4}));lightCard.position.set(-5,6,8);lightCard.lookAt(0,0,0);studio.add(lightCard);
-  const pmrem=new T.PMREMGenerator(renderer);const env=pmrem.fromScene(studio,.025);scene.environment=env.texture;scene.environmentIntensity=.45;pmrem.dispose();lightCard.geometry.dispose();lightCard.material.dispose();
+  const pmrem=new T.PMREMGenerator(renderer);const env=pmrem.fromScene(studio,.025);scene.environment=env.texture;scene.environmentIntensity=.32;pmrem.dispose();lightCard.geometry.dispose();lightCard.material.dispose();
   function geom(g){geometries.add(g);return g;}
   const box=geom(new T.BoxGeometry(1,1,1)), sphere=geom(new T.SphereGeometry(1,16,10)), crystal=geom(new T.OctahedronGeometry(1)), torus=geom(new T.TorusGeometry(1,.065,5,32));
   function plate(points,depth=3,bevel=.6){const sh=new T.Shape();points.forEach(([x,y],i)=>i?sh.lineTo(x,y):sh.moveTo(x,y));sh.closePath();const g=new T.ExtrudeGeometry(sh,{depth,bevelEnabled:true,bevelSegments:1,steps:1,bevelSize:bevel,bevelThickness:bevel});g.translate(0,0,-depth/2);return geom(g);}
