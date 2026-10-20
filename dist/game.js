@@ -345,14 +345,14 @@ function worldCaption(){
  if(activeWorld==='station')return stationCaption();
  if(state==='ready')return worldInfo().hint;
  if(state==='over')return worldInfo().name+` · 本局${activeWorld==='aurora'?'穿幕':'信标链'}完成 ${worldWins}/${activeWorld==='aurora'?6:4}`;
- if(elapsed>=70)return activeWorld==='aurora'?'极光之眼 · 光环扫过全场，转向缺口或加速穿越':'折跃核心 · 加速入侧门，再向下攻击核心背部';
+ if(elapsed>=70)return activeWorld==='aurora'?'极光之眼 · 扩散光环':'折跃核心 · 加速入侧门，再向下攻击核心背部';
  const e=worldEvent,schedule=activeWorld==='aurora'?auroraTimes:warpTimes,next=schedule[worldSlot];
  const waiting=next===undefined?`终局还有 ${Math.max(0,Math.ceil(70-elapsed))}s`:`下一轮还有 ${Math.max(0,Math.ceil(next-elapsed))}s`;
  if(!e)return (worldNotice&&elapsed<worldNotice.until?worldNotice.text+' · ':`已完成 ${worldWins}/${schedule.length} · `)+waiting;
  if(activeWorld==='aurora'){
-  if(elapsed<e.at+2)return `第 ${worldSlot}/6 道 · 极光蓄能 ${Math.ceil(e.at+2-elapsed)}s · 跟随绿色缺口`;
+  if(elapsed<e.at+2)return `第 ${worldSlot}/6 道 · 极光蓄能 ${Math.ceil(e.at+2-elapsed)}s`;
   if(e.cleared)return worldNotice&&elapsed<worldNotice.until?worldNotice.text:`本次穿幕完成 · 已完成 ${worldWins}/6 · 继续避开光幕`;
-  return `第 ${worldSlot}/6 道 · 共鸣 ${resonance}/3 · 走缺口充能 / 加速可穿幕`;
+  return `第 ${worldSlot}/6 道 · 共鸣 ${resonance}/3`;
  }
  if(!e.used)return elapsed<e.at+1.5?`第 ${worldSlot}/4 轮 · 传送门蓄能 ${Math.ceil(e.at+1.5-elapsed)}s`:`第 ${worldSlot}/4 轮 · 加速选稳路 / 险径 · 窗口 ${Math.max(0,Math.ceil(e.at+12-elapsed))}s`;
  const protection=elapsed<e.protectedUntil?`折跃保护 ${(e.protectedUntil-elapsed).toFixed(1)}s · `:'';
@@ -663,8 +663,22 @@ function hud(){
 }
 function announce(text){$('announcement').textContent=text;announcementTime=2.4}
 function setPhase(n){phase=n;announce(`${phaseInfo(n).name}${n===2&&!specialRun()?' · 得分 ×2':''}`);$('status').textContent=phaseInfo(n).subtitle;tone(440+n*170,.2)}
-function start(){
+function openFlightGuide(){
+ if(!window.MoonGuide){openPanel('rules');return}
+ const resume=state==='playing'||state==='resuming'||(panelOpen&&panelResume);
+ if(panelOpen)closePanel(false);
+ if(state==='playing'||state==='resuming')pause();
+ clearInput();stopMusic();
+ const mode=['ready','over'].includes(state)?selectedRun:activeRun,world=['ready','over'].includes(state)?selectedWorld:activeWorld;
+ const closed=event=>{if(event.detail.active)return;window.removeEventListener('moonguidechange',closed);if(resume&&state==='paused'&&!document.hidden){resumeSafetyPending=true;pause()}};
+ window.addEventListener('moonguidechange',closed);
+ MoonGuide.open({mode,world:['relax','adventure'].includes(mode)?undefined:world});
+}
+function start(guideAccepted=false){
+ if(guideAccepted!==true&&window.MoonGuide){MoonGuide.open({mode:selectedRun,world:['relax','adventure'].includes(selectedRun)?undefined:selectedWorld},()=>start(true));return}
  cancelResumeCountdown();stopMusic();unlockMusic();
+ // A launched flight owns the viewport; the existing exit control returns to preparation.
+ if(window.Moon3D&&!window.MooncatchNative&&!focusMode){setFocused(true);resize()}
  if(panelOpen)closePanel(false);
  overload=newOverload();expedition=newExpedition();$('dock').hidden=true;
  activeRun=selectedRun;legIndex=0;voyage={cleared:0,bonus:0,challenges:0,rescued:0};
@@ -733,7 +747,14 @@ for(const id of ['boost','padBoost']){
  $(id).onclick=e=>{if(!e||e.detail===0)boost()};
  $(id).addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();boost()});
 }
-$('helpOpen').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
+for(const id of ['modeGuideOpen','modeGuideSettings']){
+ const button=$(id);let press=null;
+ button.addEventListener('pointerdown',e=>{if(e.button!==0)return;press={id:e.pointerId,x:e.clientX,y:e.clientY};button.setPointerCapture?.(e.pointerId)});
+ button.addEventListener('pointerup',e=>{const p=press;press=null;if(p&&p.id===e.pointerId&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<14){e.preventDefault();openFlightGuide()}});
+ for(const name of ['pointercancel','lostpointercapture'])button.addEventListener(name,()=>press=null);
+ button.onclick=e=>{if(!e||e.detail===0)openFlightGuide()};
+}
+$('helpOpen').onclick=()=>openPanel('rules');$('fullGuideSettings').onclick=()=>openPanel('rules');$('controlsOpen').onclick=()=>openPanel('controls');$('panelClose').onclick=()=>closePanel();$('fullscreen').onclick=toggleFullscreen;
 for(const mode of ['auto','smooth','clear'])$('render-'+mode).onclick=()=>selectRenderMode(mode);
 for(const size of ['normal','large','largest'])$('float-size-'+size).onclick=()=>selectFloatingLayout('size',size);
 for(const position of ['edge','raised','inset'])$('float-position-'+position).onclick=()=>selectFloatingLayout('position',position);
@@ -987,7 +1008,7 @@ function moveToward(o,x,y,speed,dt){
 function updateBoss(dt,worldDt,oldX,protectedByBoost,oldY=ship.y){
  if(specialRun())return;
  if(activeWorld==='station')return;
- if(!bossStarted&&elapsed>=70){bossStarted=true;const spec=bossDifficulty();boss={x:W/2,y:H*.32,r:40,hp:spec.hp,maxHp:spec.hp,level:spec.level,warning:2,lastBoost:-1};storm={slot:0,event:null};warnings=[];announce(activeWorld==='ion'?'双极织网者 · 切换同频月相穿越脉冲':activeWorld==='aurora'?'极光之眼 · 扩散光环将扫过全场':activeWorld==='warp'?'折跃核心 · 穿门绕后攻击':'星空风暴将至 · 绿色缺口安全，生还也有奖励')}
+ if(!bossStarted&&elapsed>=70){bossStarted=true;const spec=bossDifficulty();boss={x:W/2,y:H*.32,r:40,hp:spec.hp,maxHp:spec.hp,level:spec.level,warning:2,lastBoost:-1};storm={slot:0,event:null};warnings=[];announce(activeWorld==='ion'?'双极织网者 · 切换同频月相穿越脉冲':activeWorld==='aurora'?'极光之眼 · 扩散光环将扫过全场':activeWorld==='warp'?'折跃核心 · 穿门绕后攻击':'星空风暴将至')}
  if(!boss||boss.hp<=0)return;
  if(boss.warning>0){boss.warning=Math.max(0,boss.warning-dt);return}
  boss.prevX=boss.x;boss.prevY=boss.y;
@@ -1141,7 +1162,7 @@ function environmentalMeteor(o,dt){
  if(d<h.r){const push=Math.min(d,Math.min(W,H)*1.1*Math.pow(1-d/h.r,2)*dt);if(d>.01){o.x+=dx/d*push;o.y+=dy/d*push}}
  if(segmentDistance(h.x,h.y,o.prevX,o.prevY,o.x,o.y)>h.core+o.r)return;
  o.dead=true;hole.eaten=(hole.eaten||0)+1;environment.swallowed++;if(meadow)meadow.swallowed++;burst(o.x,o.y,'#c1aaf0');
- if(hole.eaten%3===0&&environment.pulses.length<2){environment.pulses.push({x:hole.cx,y:hole.cy,fire:elapsed+1.6,end:elapsed+3.8,gap:Math.atan2(ship.y-h.y,ship.x-h.x),radius:h.core,paid:false});announce('黑洞饱和 · 蓄能后释放冲击波，绿色方向安全')}
+ if(hole.eaten%3===0&&environment.pulses.length<2){environment.pulses.push({x:hole.cx,y:hole.cy,fire:elapsed+1.6,end:elapsed+3.8,gap:Math.atan2(ship.y-h.y,ship.x-h.x),radius:h.core,paid:false});announce('黑洞饱和 · 冲击波蓄能')}
 }
 function stepEnvironmentalPulses(dt,oldX,oldY){
  for(const p of environment.pulses){
@@ -1276,7 +1297,7 @@ function showNewModeResult(){
 }
 
 function update(dt){
- if(panelOpen)return;
+ if(panelOpen||window.MoonGuide?.active||window.__moonScreenshotPaused)return;
  if(state==='resuming'){stepResumeCountdown(dt);return}
  if(state==='menuIntro'){
   menuIntro.remaining-=dt;
@@ -1516,7 +1537,7 @@ function adventureHud(){
  if(o?.kind==='sling')text=elapsed-o.born<1.5?'黑洞正在形成 · 远离中心':'靠近黑洞会逐渐被吸引 · 加速向外挣脱';
  if(o?.kind==='mining')text=`矿核 ${o.ores.filter(c=>c.dead).length}/3 · 加速或反弹开采 · 脉冲 ${elapsed<70?'亮起时避开':'已停机'} · ${Math.max(0,Math.ceil(o.deadline-elapsed))}s`;
  if(o?.kind==='whale')text=`追逐星鲸 · ${whaleSafe?'尾流保护中':'进入蓝色尾流可安全跟随'} · 同行 ${Math.min(5,Math.floor(o.follow))}/5s`;
- $('obstacleStatus').hidden=!laser;$('obstacleStatus').textContent=laser?(elapsed<laser.warningEnd?`激光预警 ${Math.max(0,laser.warningEnd-elapsed).toFixed(1)}s · 走绿色缺口`:'激光开启 · 走绿色缺口 / 加速穿越'):'';
+ $('obstacleStatus').hidden=!laser;$('obstacleStatus').textContent=laser?(elapsed<laser.warningEnd?`激光预警 ${Math.max(0,laser.warningEnd-elapsed).toFixed(1)}s`:'激光开启'):'';
  if(fork){const [left,right]=sectorPairs[forkStage()];text=`左门 ${sectors[left].name} / 右门 ${sectors[right].name} · ${Math.max(0,Math.ceil(fork.deadline-elapsed))}s（默认左路）`;}
  if(activeWorld!=='classic')text=worldCaption();
  $('flightStatus').textContent=text||'追逐星环、护送月灵 · 都可自由略过';
@@ -1844,12 +1865,12 @@ function stormAttackCaption(){
  if(activeWorld==='ion'&&event?.kind==='core')return (elapsed<event.fire?'预警 · ':'')+'双极织网者 · 反射星核可破壳 · '+(event.polarity==='dark'?'暗':'明')+'月同频';
  if(event?.kind==='core'&&activeWorld!=='ion')return (elapsed<event.fire?'预警 · ':'')+'星核齐射 · 加速反射紫色弹'+(activeWorld==='warp'?' / 入门绕后反击':'');
  if(activeWorld==='ion')return (event&&elapsed<event.fire?'预警 · ':'')+`双极织网者 · ${event?.polarity==='dark'?'暗':'明'}月同频可穿脉冲 / 击破核心`;
- if(activeWorld==='aurora')return boss.warning>0?'极光之眼 · 全场扩散预警':storm?.event?(elapsed<storm.event.fire?'预警 · ':'')+'扩散光环 · 转向缺口 / 加速穿越':'极光间隙 · 加速撞核心可破壳';
+ if(activeWorld==='aurora')return boss.warning>0?'极光之眼 · 全场扩散预警':storm?.event?(elapsed<storm.event.fire?'预警 · ':'')+'扩散光环':'极光间隙 · 加速撞核心可破壳';
  if(activeWorld==='warp')return boss.warning>0?'折跃核心 · 正面装甲，背部弱点':storm?.event?(elapsed<storm.event.fire?'预警 · ':'')+'加速入门绕后 · 核心背部可破壳':'折跃间隙 · 等待下一扇侧翼门';
  if(boss.warning>0)return '星空风暴 · 即将开始 · 生还 +200 / 击破 +'+bossDifficulty().reward;
  const e=storm?.event;
  if(!e)return `风暴间隙 · 核心 ${boss.hp}/${boss.maxHp||3} · 加速接触可破壳`;
- const label={fragments:'碎星环 · 向绿色扇区移动',wave:'冲击波 · 穿绿色缺口 / 加速越过',core:'核心攻击 · 紫色弹可用加速反射'}[e.kind];
+ const label={fragments:'碎星环',wave:'冲击波',core:'核心攻击 · 紫色弹可用加速反射'}[e.kind];
  return (elapsed<e.fire?'预警 · ':'')+label;
 }
 function stepStorm(dt,oldX,oldY,protectedByBoost){
@@ -2311,7 +2332,7 @@ function musicSettings(){
  const b=$('music');b.textContent='音乐：'+(musicEnabled?'开':'关');b.setAttribute('aria-pressed',String(musicEnabled));$('musicTrack').value=musicTrack;
  $('musicStatus').textContent=musicBlocked?'音乐未能播放，请关闭后重新开启；网页端也可刷新后重试。':`${musicTracks[musicTrack].title} · ${musicTracks[musicTrack].mood} · 暂停后保留播放进度`;
 }
-function musicWanted(){return musicEnabled&&state==='playing'&&!panelOpen&&!document.hidden&&!window.MooncatchIsHome?.()}
+function musicWanted(){return musicEnabled&&!window.MoonGuide?.active&&state==='playing'&&!panelOpen&&!document.hidden&&!window.MooncatchIsHome?.()}
 function ensureMusic(){
  if(musicPlayer)return;
  audio??=new (window.AudioContext||window.webkitAudioContext)();

@@ -1,0 +1,278 @@
+{
+  "device": "OPPO PEMM20 / Android 13 / Mali-G57 MC2",
+  "fiveWorldSamples": [
+    {
+      "world": "classic",
+      "fps": 60,
+      "tier": 0,
+      "state": "playing",
+      "elapsed": 56.5401999999999,
+      "render": {
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 43,
+        "drawCalls": 43,
+        "triangles": 20176,
+        "geometries": 30,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "frames": 467,
+        "time": 13.1667,
+        "droppedInstances": 0,
+        "logicalWidth": 320,
+        "logicalHeight": 711.1111450195312
+      }
+    },
+    {
+      "world": "aurora",
+      "fps": 58,
+      "tier": 0,
+      "state": "playing",
+      "elapsed": 56.49019999999977,
+      "render": {
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 50,
+        "drawCalls": 50,
+        "triangles": 18516,
+        "geometries": 30,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "frames": 869,
+        "time": 19.9588,
+        "droppedInstances": 0,
+        "logicalWidth": 320,
+        "logicalHeight": 711.1111450195312
+      }
+    },
+    {
+      "world": "warp",
+      "fps": 60,
+      "tier": 0,
+      "state": "playing",
+      "elapsed": 56.5239999999997,
+      "render": {
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 41,
+        "drawCalls": 41,
+        "triangles": 19260,
+        "geometries": 31,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "frames": 1274,
+        "time": 26.733700000000002,
+        "droppedInstances": 0,
+        "logicalWidth": 320,
+        "logicalHeight": 711.1111450195312
+      }
+    },
+    {
+      "world": "ion",
+      "fps": 60,
+      "tier": 0,
+      "state": "playing",
+      "elapsed": 56.50719999999987,
+      "render": {
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 42,
+        "drawCalls": 42,
+        "triangles": 19076,
+        "geometries": 31,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "frames": 1679,
+        "time": 33.5085,
+        "droppedInstances": 0,
+        "logicalWidth": 320,
+        "logicalHeight": 711.1111450195312
+      }
+    },
+    {
+      "world": "station",
+      "fps": 60,
+      "tier": 0,
+      "state": "playing",
+      "elapsed": 56.574100000000726,
+      "render": {
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 43,
+        "drawCalls": 43,
+        "triangles": 21280,
+        "geometries": 31,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "frames": 2084,
+        "time": 40.3336,
+        "droppedInstances": 0,
+        "logicalWidth": 320,
+        "logicalHeight": 711.1111450195312
+      }
+    }
+  ],
+  "soakSamplesBeforeLaserRefinement": [
+    {
+      "fps": null,
+      "tier": 0,
+      "elapsed": 0.06670000000000005,
+      "score": 0,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 15.238999999999992,
+      "score": 315,
+      "hp": 1
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 14.63699999999999,
+      "score": 325,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 29.72569999999982,
+      "score": 485,
+      "hp": 1
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 13.097999999999983,
+      "score": 110,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 28.236899999999878,
+      "score": 385,
+      "hp": 1
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 43.34230000000115,
+      "score": 845,
+      "hp": 1
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 10.571999999999974,
+      "score": 90,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 25.694199999999856,
+      "score": 445,
+      "hp": 2
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 2.0240000000000027,
+      "score": 20,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 17.12939999999976,
+      "score": 305,
+      "hp": 2
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 32.23489999999972,
+      "score": 660,
+      "hp": 2
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 47.37380000000146,
+      "score": 1145,
+      "hp": 1
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 9.568399999999949,
+      "score": 60,
+      "hp": 2
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 24.690499999999727,
+      "score": 605,
+      "hp": 1
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 10.08699999999994,
+      "score": 60,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 25.22599999999977,
+      "score": 345,
+      "hp": 3
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 40.331400000000706,
+      "score": 670,
+      "hp": 2
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 55.45360000000163,
+      "score": 1215,
+      "hp": 2
+    },
+    {
+      "fps": 60,
+      "tier": 0,
+      "elapsed": 12.094599999999897,
+      "score": 90,
+      "hp": 3
+    }
+  ],
+  "note": "World sampling uses a controlled late-run fixture and refills station shields within normal range. Soak used the pre-laser-refinement build; current laser lifecycle independently passed."
+}

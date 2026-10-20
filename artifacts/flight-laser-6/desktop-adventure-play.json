@@ -1,0 +1,126 @@
+{
+  "url": "http://127.0.0.1:5189/?qa=1",
+  "mode": "desktop",
+  "state": "adventure-play",
+  "requestedState": "adventure-play",
+  "appliedState": "adventure-play",
+  "runId": "flight-laser-6",
+  "seed": null,
+  "screenshotPath": "artifacts/flight-laser-6/desktop-adventure-play.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 9,
+      "y": 56,
+      "width": 1262,
+      "height": 575
+    },
+    "drawingBuffer": {
+      "width": 1262,
+      "height": 575
+    },
+    "alphaPixels": 4100,
+    "variance": 242,
+    "colorBuckets": 82,
+    "metrics": {
+      "colorBuckets": 153,
+      "colorEntropyBits": 2.42,
+      "edgeDensity": 0.078,
+      "luminance": {
+        "mean": 26.9,
+        "p5": 15.2,
+        "p95": 53,
+        "contrast": 37.8
+      },
+      "dominantColorShare": 0.52,
+      "nonBackgroundShare": 0.48
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 41,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 18244,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 27,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 4,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "renderer": {
+        "render": {
+          "calls": 41,
+          "triangles": 18244
+        },
+        "memory": {
+          "geometries": 27,
+          "textures": 4
+        }
+      },
+      "state": {
+        "mode": "adventure",
+        "world": "classic",
+        "state": "playing",
+        "score": 190,
+        "hp": 3,
+        "elapsed": 53.99999999999907,
+        "player": {
+          "x": 631,
+          "y": 391
+        },
+        "itemCount": 8,
+        "frames": 5,
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 41,
+        "drawCalls": 41,
+        "triangles": 18244,
+        "geometries": 27,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1,
+        "postPasses": 0,
+        "time": 53.99999999999907,
+        "droppedInstances": 0,
+        "logicalWidth": 1262,
+        "logicalHeight": 575
+      },
+      "physics": {
+        "engine": "existing swept 2D collision projected to 3D play plane",
+        "timestep": "clamped 50ms maximum"
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

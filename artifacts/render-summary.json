@@ -1,0 +1,28 @@
+{
+  "flight-laser-6": {
+    "captures": 26,
+    "maxima": {
+      "calls": 48,
+      "triangles": 33920,
+      "geometries": 30,
+      "textures": 4
+    },
+    "errors": 0,
+    "gpu": "SwiftShader; FPS invalid"
+  },
+  "bundle": {
+    "bytes": 767250,
+    "gzipBytes": 201616
+  },
+  "puzzle-compact-7": {
+    "captures": 14,
+    "maxima": {
+      "calls": 106,
+      "triangles": 47760,
+      "geometries": 19,
+      "textures": 12
+    },
+    "errors": 0,
+    "gpu": "SwiftShader; FPS invalid"
+  }
+}

@@ -14,7 +14,7 @@ async function loadScript(src){await new Promise((resolve,reject)=>{const el=doc
 async function boot(){
  try{const {value}=await Preferences.get({key:'mooncatch-profile-v1'});if(value)MooncatchProfileData.merge(localStorage,MooncatchProfileData.parse(value));}
  catch(e){console.warn('Profile restore failed; retaining local records',e);}
- await loadScript('game.js');await loadScript('profile-ui.js');await loadScript('native-runtime.js');await loadScript('game-suite.js');
+ await loadScript('game.js');await loadScript('profile-ui.js');await loadScript('native-runtime.js');await loadScript('flight-bridge.js');await loadScript('game-suite.js');
  await window.MooncatchSaveChanged().catch(()=>{});
  await App.addListener('appStateChange',({isActive})=>window.MooncatchLifecycle?.(isActive));
  await App.addListener('pause',()=>window.MooncatchLifecycle?.(false));

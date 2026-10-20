@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "runId": "puzzle-compact-7",
+  "captures": [
+    {
+      "mode": "desktop",
+      "state": "active-play",
+      "report": "artifacts/puzzle-compact-7/desktop-active-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "echo-play",
+      "report": "artifacts/puzzle-compact-7/desktop-echo-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "crate-play",
+      "report": "artifacts/puzzle-compact-7/desktop-crate-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "late-play",
+      "report": "artifacts/puzzle-compact-7/desktop-late-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "relay-play",
+      "report": "artifacts/puzzle-compact-7/desktop-relay-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "parallel-play",
+      "report": "artifacts/puzzle-compact-7/desktop-parallel-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "trail-play",
+      "report": "artifacts/puzzle-compact-7/desktop-trail-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "active-play",
+      "report": "artifacts/puzzle-compact-7/mobile-active-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "echo-play",
+      "report": "artifacts/puzzle-compact-7/mobile-echo-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "crate-play",
+      "report": "artifacts/puzzle-compact-7/mobile-crate-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "late-play",
+      "report": "artifacts/puzzle-compact-7/mobile-late-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "relay-play",
+      "report": "artifacts/puzzle-compact-7/mobile-relay-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "parallel-play",
+      "report": "artifacts/puzzle-compact-7/mobile-parallel-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "trail-play",
+      "report": "artifacts/puzzle-compact-7/mobile-trail-play.json"
+    }
+  ]
+}

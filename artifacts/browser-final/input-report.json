@@ -1,0 +1,65 @@
+{
+  "errors": [],
+  "observations": [
+    {
+      "kind": "keyboard-guide-resume",
+      "before": {
+        "x": 674,
+        "y": 482.8
+      },
+      "after": {
+        "x": 769.8500000000001,
+        "y": 482.8
+      },
+      "frozen": 0.9665000000000002
+    },
+    {
+      "kind": "pointer",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "before": 186,
+      "after": 260.3999938964844,
+      "box": {
+        "x": 9,
+        "y": 101,
+        "width": 372,
+        "height": 509
+      }
+    },
+    {
+      "kind": "pointer",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "before": 423.49999007358343,
+      "after": 181.5,
+      "box": {
+        "x": 9,
+        "y": 97,
+        "width": 605,
+        "height": 241
+      }
+    },
+    {
+      "kind": "echo-audio",
+      "state": true
+    },
+    {
+      "kind": "echo-action-clock",
+      "state": {
+        "player": {
+          "x": 3,
+          "y": 5
+        },
+        "ghost": {
+          "x": 3,
+          "y": 5
+        },
+        "time": 1
+      }
+    }
+  ]
+}

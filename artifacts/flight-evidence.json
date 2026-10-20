@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "runId": "flight-laser-6",
+  "captures": [
+    {
+      "mode": "desktop",
+      "state": "active-play",
+      "report": "artifacts/flight-laser-6/desktop-active-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "aurora-play",
+      "report": "artifacts/flight-laser-6/desktop-aurora-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "warp-play",
+      "report": "artifacts/flight-laser-6/desktop-warp-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "ion-play",
+      "report": "artifacts/flight-laser-6/desktop-ion-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "station-play",
+      "report": "artifacts/flight-laser-6/desktop-station-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "relax-play",
+      "report": "artifacts/flight-laser-6/desktop-relax-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "adventure-play",
+      "report": "artifacts/flight-laser-6/desktop-adventure-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "late-play",
+      "report": "artifacts/flight-laser-6/desktop-late-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "stress-play",
+      "report": "artifacts/flight-laser-6/desktop-stress-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "fail",
+      "report": "artifacts/flight-laser-6/desktop-fail.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "active-play",
+      "report": "artifacts/flight-laser-6/mobile-active-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "aurora-play",
+      "report": "artifacts/flight-laser-6/mobile-aurora-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "warp-play",
+      "report": "artifacts/flight-laser-6/mobile-warp-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "ion-play",
+      "report": "artifacts/flight-laser-6/mobile-ion-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "station-play",
+      "report": "artifacts/flight-laser-6/mobile-station-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "relax-play",
+      "report": "artifacts/flight-laser-6/mobile-relax-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "adventure-play",
+      "report": "artifacts/flight-laser-6/mobile-adventure-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "late-play",
+      "report": "artifacts/flight-laser-6/mobile-late-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "stress-play",
+      "report": "artifacts/flight-laser-6/mobile-stress-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "fail",
+      "report": "artifacts/flight-laser-6/mobile-fail.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "laser-charge",
+      "report": "artifacts/flight-laser-6/desktop-laser-charge.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "laser-active",
+      "report": "artifacts/flight-laser-6/desktop-laser-active.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "laser-fade",
+      "report": "artifacts/flight-laser-6/desktop-laser-fade.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "laser-charge",
+      "report": "artifacts/flight-laser-6/mobile-laser-charge.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "laser-active",
+      "report": "artifacts/flight-laser-6/mobile-laser-active.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "laser-fade",
+      "report": "artifacts/flight-laser-6/mobile-laser-fade.json"
+    }
+  ]
+}

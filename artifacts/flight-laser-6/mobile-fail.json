@@ -1,0 +1,126 @@
+{
+  "url": "http://127.0.0.1:5189/?qa=1",
+  "mode": "mobile",
+  "state": "fail",
+  "requestedState": "fail",
+  "appliedState": "fail",
+  "runId": "flight-laser-6",
+  "seed": null,
+  "screenshotPath": "artifacts/flight-laser-6/mobile-fail.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 9,
+      "y": 101,
+      "width": 372,
+      "height": 329
+    },
+    "drawingBuffer": {
+      "width": 558,
+      "height": 493
+    },
+    "alphaPixels": 4221,
+    "variance": 240,
+    "colorBuckets": 75,
+    "metrics": {
+      "colorBuckets": 103,
+      "colorEntropyBits": 3.1,
+      "edgeDensity": 0.135,
+      "luminance": {
+        "mean": 45.9,
+        "p5": 16.7,
+        "p95": 202.3,
+        "contrast": 185.6
+      },
+      "dominantColorShare": 0.442,
+      "nonBackgroundShare": 0.558
+    },
+    "renderBudget": {
+      "tier": "mobile",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 39,
+          "limit": 150,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 17568,
+          "limit": 300000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 27,
+          "limit": 200,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 4,
+          "limit": 40,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "renderer": {
+        "render": {
+          "calls": 39,
+          "triangles": 17568
+        },
+        "memory": {
+          "geometries": 27,
+          "textures": 4
+        }
+      },
+      "state": {
+        "mode": "timed",
+        "world": "classic",
+        "state": "over",
+        "score": 220,
+        "hp": 0,
+        "elapsed": 18.00000000000012,
+        "player": {
+          "x": 186,
+          "y": 223.72000000000003
+        },
+        "itemCount": 9,
+        "frames": 5,
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 39,
+        "drawCalls": 39,
+        "triangles": 17568,
+        "geometries": 27,
+        "textures": 4,
+        "materials": 29,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "time": 18.00000000000012,
+        "droppedInstances": 0,
+        "logicalWidth": 372,
+        "logicalHeight": 329
+      },
+      "physics": {
+        "engine": "existing swept 2D collision projected to 3D play plane",
+        "timestep": "clamped 50ms maximum"
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

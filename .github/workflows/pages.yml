@@ -8,6 +8,8 @@ on:
       - 'index.html'
       - '.nojekyll'
       - 'tests/**'
+      - 'scripts/build-3d.cjs'
+      - 'package*.json'
       - '.github/workflows/pages.yml'
       - '.github/scripts/**'
   workflow_dispatch:
@@ -49,11 +51,15 @@ jobs:
           node tests/echo.cjs
           node tests/replay.cjs
           node tests/suite.cjs
+          node tests/guide.cjs
+          node tests/guide-integration.cjs
+          node tests/echo-audio.cjs
+          node tests/puzzle-render-state.cjs
           test -f dist/index.html
       - name: Build standalone game
-        run: node .github/scripts/build-pages.cjs
+        run: npm run build:web
       - name: Verify branch and Actions entry points match
-        run: git diff --exit-code -- index.html .nojekyll audio echo
+        run: git diff --exit-code -- index.html .nojekyll audio echo guide.js scene3d.js flight-bridge.js art-direction.css THIRD_PARTY_LICENSES.txt
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game

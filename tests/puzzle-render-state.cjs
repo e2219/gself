@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+(async()=>{const {fixtureActive,gateLabel}=await import('../dist/render3d/puzzle-state.mjs');
+ const s={p:[2,8],boxes:[5]},g={};
+ assert(!fixtureActive(g,s,{n:5,role:0,kind:'plate',id:'sun'}));
+ assert(fixtureActive(g,s,{n:5,kind:'plate',id:'A'}));
+ assert(fixtureActive(g,s,{n:8,role:1,kind:'goal'}));
+ assert(!fixtureActive(g,s,{n:5,role:0,kind:'goal'}));
+ assert(fixtureActive(g,s,{n:5,kind:'dock'}));
+ const replay={puzzle:{index:0,plateOn:{a:true},delivered:true,socketOn:id=>id==='s'}};
+ assert(fixtureActive(replay,s,{kind:'socket',id:'S'}));assert(!fixtureActive(replay,s,{kind:'socket',id:'M'}));assert(fixtureActive(replay,s,{kind:'target'}));assert(fixtureActive(replay,s,{kind:'plate',id:'A'}));
+ assert.equal(gateLabel(g,{all:['sun','moon']}),'☀+☾');assert.equal(gateLabel(replay,{id:'seal'}),'A+B');assert.equal(gateLabel(replay,{label:'S 或 A'}),'S/A');
+ console.log('Puzzle render state PASS: actor-only plates, box docks, goals, sockets, delivered core, complete gate conditions');
+})().catch(e=>{console.error(e);process.exitCode=1});

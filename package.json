@@ -1,23 +1,28 @@
 {
   "name": "mooncatch",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "scripts": {
-    "test": "node tests/game.cjs && node tests/expansion.cjs && node tests/voyages.cjs && node tests/profile.cjs && node tests/mobile.cjs && node tests/echo.cjs && node tests/replay.cjs && node tests/suite.cjs",
-    "build:web": "node .github/scripts/build-pages.cjs",
-    "build:mobile": "node scripts/build-mobile.cjs",
+    "test": "node tests/game.cjs && node tests/expansion.cjs && node tests/voyages.cjs && node tests/profile.cjs && node tests/mobile.cjs && node tests/echo.cjs && node tests/replay.cjs && node tests/suite.cjs && node tests/guide.cjs && node tests/guide-integration.cjs && node tests/echo-audio.cjs && node tests/puzzle-render-state.cjs",
+    "build:web": "node scripts/build-3d.cjs && node .github/scripts/build-pages.cjs",
+    "build:mobile": "node scripts/build-3d.cjs && node scripts/build-mobile.cjs",
     "android:sync": "npm run build:mobile && cap sync android",
-    "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease"
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease",
+    "inspect:canvas": "node scripts/inspect-threejs-canvas.mjs",
+    "test:browser": "node tests/browser-3d.cjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",
     "@capacitor/app": "8.0.1",
     "@capacitor/core": "8.5.3",
-    "@capacitor/preferences": "8.0.1"
+    "@capacitor/preferences": "8.0.1",
+    "three": "0.184.0"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.3",
+    "@playwright/test": "^1.64.1",
     "esbuild": "0.25.12",
-    "jsdom": "26.1.0"
+    "jsdom": "26.1.0",
+    "pngjs": "^7.0.0"
   }
 }
