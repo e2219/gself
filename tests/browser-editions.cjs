@@ -17,7 +17,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs');
  await page.waitForTimeout(400);assert.equal(await page.evaluate(()=>state),'playing');
  await page.screenshot({path:out+'/original-flight.png'});
  await page.evaluate(()=>MooncatchSuite.home());await page.locator('#chooseEcho').click();
- const echo=page.frameLocator('#echoFrame');await echo.locator('#boards').waitFor();
+ const echo=page.frameLocator('#echoFrame');await echo.locator('#boards').waitFor();await page.waitForFunction(()=>!!document.getElementById('echoFrame')?.contentWindow?.MoonEcho&&Array.isArray(document.getElementById('echoFrame').contentWindow.EchoLevels));
  assert.equal(await page.locator('#echoFrame').evaluate(el=>el.contentWindow.EchoLevels.length),30);
  await page.locator('#echoFrame').evaluate(el=>el.contentWindow.MoonEcho.choose(22));
  await page.screenshot({path:out+'/original-puzzle-23.png'});

@@ -34,3 +34,11 @@
 Final native results: `puzzleCompactLayouts` PASS. A comparison with the earlier pre-install backup found a higher current best score and a changed run preference; every other progress field matched. We did not restore that older snapshot. The native edition test's immediate before/after-switch profile equality passed, and a second comparison against the latest current snapshot passed exactly. No save clearing/uninstall or stale-profile restoration occurred.
 
 Canvas inspector: all10 declared desktop/mobile captures and both evidence manifests PASS, budgets numeric and under limits. Puzzle full-canvas contrast ~49 reflects the requested dark stone surfaces; pale-on-dark plaques and phase silhouettes were separately visually checked. This is not evidence for cinematic-lighting/showcase claims. Flight entropy can be low in sparse early flight by design; no decorative clutter was added to inflate metrics.
+
+## Release verification
+
+- Public runtime commit `bf8872f`; GitHub Pages run39465306326 SUCCESS.
+- Online `scene3d.js`, `version-choice.js`, `legacy/game.js`, `legacy/echo/app.js`, `legacy/index.html` match the final local build byte-for-byte.
+- Actual public-site edition navigation, original flight, original puzzle loading/30levels, shared record and remembered choice checks PASS (`lunar-online/result.json`). The online test waits for puzzle scripts, not merely board HTML, to account for network download latency.
+- Final APK contains both exact game asset sets; public source archive excludes private signing material. Android1.10.0/code18 installed with the existing signer.
+- Requirement audit above is complete; no outstanding implementation or release work remains.
