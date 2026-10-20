@@ -1,4 +1,5 @@
 import {createBossModels} from './boss-models.js';
+import {createLunarModelKit} from './lunar-models.js';
 /* Lunar navigation miniature. All positions originate in the unchanged simulation.
  * Authored meshes are lit solids, never canvas screenshots / billboard game sprites. */
 export function createFlightRenderer(T, canvas) {
@@ -29,33 +30,17 @@ export function createFlightRenderer(T, canvas) {
   // Rock vertices share a deterministic deformation so faceting follows surface fractures.
   const rock=geom(new T.IcosahedronGeometry(1,1));const rp=rock.attributes.position;
   for(let i=0;i<rp.count;i++){const x=rp.getX(i),y=rp.getY(i),z=rp.getZ(i),n=1+.13*Math.sin(x*8+y*5+z*9)+.06*Math.cos(y*13-x*7);rp.setXYZ(i,x*n,y*n,z*n*.65);}rock.computeVertexNormals();
-  const hulls={collector:[[22,0],[10,10],[1,12],[-12,11],[-21,5],[-21,-5],[-12,-11],[1,-12],[10,-10]],falcon:[[27,0],[-20,16],[-12,4],[-17,0],[-12,-4],[-20,-16]],warden:[[21,0],[12,14],[-11,17],[-22,8],[-22,-8],[-11,-17],[12,-14]]};
-  const ships={};
-  for(const [id,outline] of Object.entries(hulls)){
-    const root=new T.Group();root.name='lunar-'+id;
-    mesh(plate(outline,5,1.1),M.ceramic,root).castShadow=true;
-    mesh(plate([[14,0],[3,5],[-11,5],[-16,0],[-11,-5],[3,-5]],2,.7),M.navy,root,0,0,4);
-    mesh(sphere,M.glass,root,3,0,6,9,4.6,3.8).castShadow=true;
-    for(const side of [-1,1]){
-      const y=side*(id==='warden'?13:id==='falcon'?10:8);
-      mesh(box,M.gold,root,-6,y,3,14,1.4,1.4);
-      mesh(plate([[-10,-3],[3,-3],[7,0],[3,3],[-10,3]],4,.5),M.ceramic,root,-12,y,1);
-      mesh(plate([[6,0],[-2,2.3],[-7,1.7],[-8,-1.7],[-2,-2.3]],1,.3),M.navy,root,0,y,4.5);
-      mesh(box,M.signal,root,3,y,5.5,4,.7,.8);
-      mesh(box,M.dark,root,-21,y,0,3,5,5);
-      mesh(box,M.mint,root,-23,y,0,1,3,3);
-      for(let k=0;k<3;k++)mesh(box,M.gold,root,-12+k*3,y,3,1,4,1);
-    }
-    mesh(box,M.gold,root,16,0,3,5,1,1);mesh(box,M.signal,root,20,0,2,2,2,2);
-    root.visible=false;scene.add(root);ships[id]=root;
-  }
+  const kit=createLunarModelKit(T,{geom,mesh,plate,box,sphere,torus,M});
+  const ships=kit.ships;
+  for(const root of Object.values(ships)){root.visible=false;scene.add(root);}
   const bossModels=createBossModels(T,{geom,mat,mesh,plate,box,sphere,torus,crystal,M});
   for(const model of Object.values(bossModels))scene.add(model.root);
   const shield=mesh(sphere,new T.MeshBasicMaterial({color:0x9de8d4,transparent:true,opacity:.12,wireframe:true}),scene);materials.push(shield.material);
   // Dynamic batches keep repeated collectible and obstacle parts to one call each.
   const pools={};const dummy=new T.Object3D(),color=new T.Color();let droppedInstances=0;
   function pool(name,g,m,capacity=256){const p=new T.InstancedMesh(g,m,capacity);p.instanceMatrix.setUsage(T.DynamicDrawUsage);p.frustumCulled=false;p.count=0;scene.add(p);p.userData.capacity=capacity;pools[name]=p;return p;}
-  pool('rocks',rock,M.rock);pool('crystals',crystal,M.signal);pool('shards',crystal,M.mint);pool('brackets',torus,M.gold);pool('boxes',box,M.navy);pool('trim',box,M.gold);pool('capsules',sphere,M.ceramic);pool('glass',sphere,M.glass);pool('danger',crystal,M.danger);pool('chips',box,M.ceramic);pool('signals',sphere,M.mint);pool('violet',crystal,M.violet);pool('lines',box,mat(0xffffff,1,0,{emissive:0xffffff,emissiveIntensity:.25}),4096);pool('particles',crystal,M.mint,512);
+  pool('rocks',rock,M.rock);pool('crystals',kit.star,M.signal);pool('shards',kit.shard,M.mint);pool('brackets',torus,M.gold);pool('boxes',kit.chest,M.navy);pool('trim',box,M.gold);pool('capsules',kit.capsule,M.ceramic);pool('glass',sphere,M.glass);pool('danger',kit.mine,M.danger);pool('chips',box,M.ceramic);pool('signals',sphere,M.mint);pool('violet',kit.crescent,M.violet);pool('lines',box,mat(0xffffff,1,0,{emissive:0xffffff,emissiveIntensity:.25}),4096);pool('particles',crystal,M.mint,512);
+  pool('moonDiscs',kit.disc,M.mint);pool('moonCrescents',kit.crescent,M.violet);pool('whales',kit.whale,M.navy);pool('fins',kit.wing,M.ceramic);
   const flame=geom(new T.ConeGeometry(1,1,8));flame.rotateZ(Math.PI/2);pool('flames',flame,M.mint,12);
   const hazardShapes={trident:plate([[1,0],[-.8,.8],[-.4,.2],[-.9,0],[-.4,-.2],[-.8,-.8]],.3,.04),boomerang:plate([[1,0],[-.65,.75],[-.25,0],[-.65,-.75]],.25,.035),probe:plate([[1,0],[0,1],[-1,0],[0,-1]],.3,.06)};
   for(const [id,g]of Object.entries(hazardShapes))pool(id,g,M.danger);
@@ -92,7 +77,7 @@ export function createFlightRenderer(T, canvas) {
   beamPool('beamEmitters',box,{opacity:1},256);
   beamPool('beamSockets',beamCylinder,{opacity:1},256);
 
-  let W=960,H=510,frames=0,lastTime=0;
+  let W=960,H=510,frames=0,lastTime=0,activeModelId='',activeMoonPhase='bright';
   function place(obj,x,y,z=0){obj.position.set(x-W/2,(H/2-y-si*z)/co,z);}
   function put(name,x,y,z,sx,sy=sx,sz=sx,angle=0,tint=null,rx=0){const p=pools[name];if(!p||p.count>=p.userData.capacity){droppedInstances++;return;}place(dummy,x,y,z);dummy.rotation.set(rx,0,-angle);dummy.scale.set(sx,sy,sz);dummy.updateMatrix();p.setMatrixAt(p.count,dummy.matrix);if(tint)p.setColorAt(p.count,color.set(typeof tint==='string'&&/^#[0-9a-f]{8}$/i.test(tint)?tint.slice(0,7):tint));else if(p.instanceColor)p.setColorAt(p.count,color.set(0xffffff));p.count++;}
   function line(x1,y1,x2,y2,c=0xe4be77,width=1.5,dashed=false,z=2){const len=Math.hypot(x2-x1,y2-y1);if(!Number.isFinite(len)||len<.01)return;const count=dashed?Math.ceil(len/14):1;for(let i=0;i<count;i++){const a=i/count,b=dashed?Math.min(1,(i+.55)/count):1;const ax=x1+(x2-x1)*a,ay=y1+(y2-y1)*a,bx=x1+(x2-x1)*b,by=y1+(y2-y1)*b;const vy=-(by-ay)/co,vx=bx-ax;put('lines',(ax+bx)/2,(ay+by)/2,z,Math.hypot(vx,vy),width,1.2,-Math.atan2(vy,vx),c);}}
@@ -145,8 +130,8 @@ export function createFlightRenderer(T, canvas) {
     }
   }
   function crate(x,y,t,scale=1){put('boxes',x,y,5,22*scale,20*scale,12*scale,t*.05);put('trim',x,y,12,17*scale,2*scale,2*scale,t*.05);put('trim',x,y,12,2*scale,18*scale,2*scale,t*.05);put('signals',x-5*scale,y-4*scale,13,2*scale);}
-  function pod(x,y,t,scale=1){put('capsules',x,y,7,10*scale,17*scale,8*scale,Math.sin(t)*.05);put('glass',x,y-2*scale,13,7*scale,9*scale,3*scale);put('trim',x,y+10*scale,10,14*scale,2*scale,2*scale);}
-  function beacon(x,y,t,active=true,shade=0xb9e4cc){ring(x,y,25,active?shade:0x586575,active?2.2:1);for(const side of[-1,1]){put('boxes',x+side*26,y,6,5,20,8);put('signals',x+side*26,y,12,2,12,2,0,shade);}if(active)put('crystals',x,y-33+Math.sin(t*3)*2,5,3,5,2);}
+  function pod(x,y,t,scale=1){put('capsules',x,y,7,10*scale,17*scale,8*scale,0);put('glass',x,y-2*scale,13,6*scale,9*scale,3*scale);for(const side of[-1,1]){put('boxes',x+side*8*scale,y+2*scale,7,3*scale,21*scale,5*scale);put('trim',x,y+side*10*scale,10,14*scale,2*scale,2*scale);}put('moonCrescents',x,y-2*scale,17,4*scale,5*scale,2*scale);}
+  function beacon(x,y,t,active=true,shade=0xb9e4cc){ring(x,y,25,active?shade:0x586575,active?2.2:1);for(const side of[-1,1]){put('boxes',x+side*26,y,6,5,20,8);put('signals',x+side*26,y,12,2,12,2,0,shade);}for(const side of[-1,1]){put('fins',x+side*26,y-12,6,7,5,3,side*Math.PI/2);put('trim',x+side*26,y+9,9,8,2,2);}if(active)put('crystals',x,y-33,5,4,5,2);}
   function port(x,y,t){ring(x,y,28,0xdab77a,2);for(let i=0;i<6;i++){const a=i*Math.PI/3;put('boxes',x+Math.cos(a)*32,y+Math.sin(a)*32,4,11,8,7,a);put('trim',x+Math.cos(a)*32,y+Math.sin(a)*32,9,7,2,2,a);}put('glass',x,y,-1,23,23,2);ring(x,y,17,0xa9d9c9,1);}
   // Orbital ruins form a distant spatial layer, never collidable foreground clutter.
   const world=new T.Group();scene.add(world);
@@ -215,11 +200,11 @@ export function createFlightRenderer(T, canvas) {
     if(aurora.visible)auroraStrips.forEach((r,k)=>{const pos=r.geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),edge=i<49?1:-1;pos.setY(i,edge*16+Math.sin(x*.006+tm*.13+k)*28+Math.cos(x*.012-tm*.1)*9);}pos.needsUpdate=true;r.geometry.computeVertexNormals();});
     for(let i=0;i<20;i++){const side=i%2?1:-1;dummy.position.set(side*(W*.43+Math.sin(i*43.17)*W*.12),((i*83+tm*2)%(H+260))-H/2-130,-170-i%4*30);dummy.rotation.set(i+.04*tm,i*.6,tm*.01);dummy.scale.setScalar(3+(i%5)*1.2);dummy.updateMatrix();distant.setMatrixAt(i,dummy.matrix);}distant.instanceMatrix.needsUpdate=true;
     for(const root of Object.values(ships))root.visible=false;
-    const sh=s.ship||{x:W/2,y:H*.7},f=s.flight||{};const hero=ships[s.activeShip]||ships.collector;hero.visible=true;place(hero,sh.x,sh.y,7);hero.rotation.set(f.bank||0,0,-(f.angle??-Math.PI/2));hero.scale.setScalar(1);
-    if((f.throttle||0)>.03||s.boostTime>0){const a=f.angle??-Math.PI/2,thrust=s.boostTime>0?26:6+(f.throttle||0)*12;for(const side of[-1,1]){const dx=-24-thrust/2,dy=side*(s.activeShip==='warden'?13:s.activeShip==='falcon'?10:8);put('flames',sh.x+Math.cos(a)*dx-Math.sin(a)*dy,sh.y+Math.sin(a)*dx+Math.cos(a)*dy,4,thrust*(1+Math.sin(tm*24)*.07),2.4,2.4,a);}}
+    const sh=s.ship||{x:W/2,y:H*.7},f=s.flight||{};activeMoonPhase=s.moonPhase==='dark'?'dark':'bright';const hero=ships[(s.activeShip||'collector')+'-'+activeMoonPhase]||ships['collector-'+activeMoonPhase];activeModelId=hero.userData.modelId;hero.visible=true;place(hero,sh.x,sh.y,7);hero.rotation.set(f.bank||0,0,-(f.angle??-Math.PI/2));const modelScale=activeMoonPhase==='dark'?.72:1;hero.scale.setScalar(modelScale);
+    if((f.throttle||0)>.03||s.boostTime>0){const a=f.angle??-Math.PI/2,thrust=s.boostTime>0?26:6+(f.throttle||0)*12;for(const side of[-1,1]){const dx=(-24-thrust/2)*modelScale,dy=side*(s.activeShip==='warden'?14:s.activeShip==='falcon'?12:10)*modelScale;put('flames',sh.x+Math.cos(a)*dx-Math.sin(a)*dy,sh.y+Math.sin(a)*dx+Math.cos(a)*dy,4,thrust*(1+Math.sin(tm*24)*.07)*modelScale,2.4*modelScale,2.4*modelScale,a);}}
     shield.visible=(s.boostTime>0||s.resumeShield>0||s.invincible>0||s.whaleSafe);if(shield.visible){place(shield,sh.x,sh.y,6);shield.scale.set(27,27/co,18);shield.rotation.z=tm*.3;}
-    for(const o of s.items||[]){if(o.dead)continue;if(o.rock){const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe)put('signals',o.x,o.y,11,o.r*.2);}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,0);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
-    for(const p of s.shards||[])put('shards',p.x,p.y,9,5,7,4,tm*1.5);
+    for(const o of s.items||[]){if(o.dead)continue;if(o.rock){const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe){put('glass',o.x,o.y,9,o.r*.45,o.r*.3,o.r*.2);put('signals',o.x,o.y,12,o.r*.18);}if(o.boomerang||o.trident){put('trim',o.x,o.y,8,o.r*.6,1.1,1,o.a||0);put('danger',o.x,o.y,9,o.r*.18);}if(!o.probe&&!o.trident&&!o.boomerang&&!o.core){put('rocks',o.x-o.r*.22,o.y+o.r*.16,8,o.r*.48,o.r*.3,o.r*.25,(o.a||0)+1,0x414552);}}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,0);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
+    for(const p of s.shards||[])put('shards',p.x,p.y,9,5,7,4,0);
     for(const p of s.particles||[])if(p.life>0)put('particles',p.x,p.y,10,Math.max(.5,Math.min(3,p.life*5)),undefined,undefined,tm,p.color);
     for(const p of f.trail||[])line(p.x,p.y,p.x2,p.y2,p.boost?0xa5e9cf:0x638695,p.boost?3:1.5,false,3);
     for(const p of s.skillWake||[])line(p.x,p.y,p.x2,p.y2,0x817ca9,4,false,-1);
@@ -243,15 +228,15 @@ export function createFlightRenderer(T, canvas) {
     if(o?.kind==='cargo'){port(o.station.x*W,o.station.y*H,tm);for(const p of o.crates||[])if(!p.taken)crate(p.x*W,p.y*H,tm);for(let i=0;i<o.load;i++)crate(sh.x+(i-(o.load-1)/2)*12,sh.y+26,tm,.33);}
     if(o?.kind==='escort'){pod(o.x,o.y,tm,.65);port(o.home.x*W,o.home.y*H,tm);if(o.following)line(o.x,o.y,sh.x,sh.y,0x9dcecd,1,true);}
     if(o?.kind==='sling'){const x=o.cx*W,y=o.cy*H,r=Math.min(W,H)*.32,c=Math.max(14,Math.min(23,Math.min(W,H)*.055));put('glass',x,y,1,c,c,c,0,0x050509);ring(x,y,r,0x535370,1,0,Math.PI*2,true);for(let i=0;i<4;i++)ring(x,y,c+8+i*5,i%2?0xc39c68:0x9e8ab9,2,tm*.3+i,tm*.3+i+Math.PI*1.5);}
-    if(o?.kind==='whale'){const x=o.x*W,y=o.y*H,dir=o.mirror?-1:1;put('capsules',x,y,8,33,15,12,0,0x8cc5d7);put('glass',x+dir*18,y-3,17,2);put('trident',x-dir*34,y,7,16,18,5,dir===1?Math.PI:0,0x8fb4c3);for(let i=1;i<(o.trail||[]).length;i++)line(o.trail[i-1].x*W,o.trail[i-1].y*H,o.trail[i].x*W,o.trail[i].y*H,0x315765,8,false,-10);}
+    if(o?.kind==='whale'){const x=o.x*W,y=o.y*H,dir=o.mirror?-1:1;put('whales',x,y,8,34,25,14,dir===1?0:Math.PI);put('glass',x+dir*18,y-3,17,2);put('fins',x-dir*5,y+10,7,14,9,4,dir===1?-.5:Math.PI+.5);for(let rib=0;rib<3;rib++)line(x+dir*(5-rib*7),y-6,x+dir*(8-rib*7),y+6,0x809dad,1,false,19);for(let i=1;i<(o.trail||[]).length;i++)line(o.trail[i-1].x*W,o.trail[i-1].y*H,o.trail[i].x*W,o.trail[i].y*H,0x315765,8,false,-10);}
     if(o?.kind==='mining'){for(const p of o.ores||[])if(!p.dead){put('rocks',p.x,p.y,4,16);put('crystals',p.x,p.y,15,7);}for(const p of o.mines||[])if(!p.dead){put('danger',p.x,p.y,5,9);}}
-    const envState=s.environment||{};for(const p of [...(envState.wrecks||[]),...(envState.shots||[]),...(envState.tow?[envState.tow]:[])]){put('boxes',p.x*W,p.y*H,5,23,19,10,tm*.25);put('trim',p.x*W,p.y*H,11,22,3,2,tm*.25+.8);}for(const p of envState.loot||[])if(!p.taken)put('crystals',p.x*W,p.y*H,8,8,11,7,tm);
+    const envState=s.environment||{};for(const p of [...(envState.wrecks||[]),...(envState.shots||[]),...(envState.tow?[envState.tow]:[])]){put('boxes',p.x*W,p.y*H,5,23,19,10,tm*.25);put('trim',p.x*W,p.y*H,11,22,3,2,tm*.25+.8);}for(const p of envState.loot||[])if(!p.taken)put('crystals',p.x*W,p.y*H,8,8,11,7,0);
     if(envState.tow)line(sh.x,sh.y,envState.tow.x*W,envState.tow.y*H,0x94c8bd,1.5);
     if(envState.gate){const g=envState.gate;for(const p of g.points){put('boxes',p.x*W,p.y*H,8,28,24,16);put('danger',p.x*W,p.y*H,19,5,8,4,0,g.open?0x88c8ab:0xdc7c77);}if(!g.claimed)crate(g.cache.x*W,g.cache.y*H,tm,1.2);}
-    if(s.station){const q=s.station;port(W*.5,H*.52,tm);put('capsules',W*.5,H*.52,8,22,22,13);for(const side of[-1,1]){put('boxes',W*.5+side*48,H*.52,5,32,23,5);for(let i=-1;i<2;i++)put('trim',W*.5+side*48+i*9,H*.52,9,1,20,1);}for(const p of q.cells||[])if(!p.taken)put('shards',p.x*W,p.y*H,7,8,10,6,tm);if(q.rescue)pod(q.rescue.x*W,q.rescue.y*H,tm);for(let i=0;i<q.hp;i++)ring(W*.5,H*.52,37,0xa4d6bb,2,i*Math.PI/2+.1,(i+1)*Math.PI/2-.1);}
+    if(s.station){const q=s.station;port(W*.5,H*.52,tm);put('moonDiscs',W*.5,H*.52,5,23,23,9,0,0x69828c);put('capsules',W*.5,H*.52,9,14,19,12);put('glass',W*.5,H*.52,19,9,12,4);put('moonCrescents',W*.5,H*.52,24,5,6,3);for(const side of[-1,1]){put('trim',W*.5+side*30,H*.52,4,30,3,4);put('fins',W*.5+side*48,H*.52,3,22,21,4,Math.PI/2);}for(const side of[-1,1]){put('boxes',W*.5+side*48,H*.52,5,32,23,5);for(let i=-1;i<2;i++)put('trim',W*.5+side*48+i*9,H*.52,9,1,20,1);}for(const p of q.cells||[])if(!p.taken)put('shards',p.x*W,p.y*H,7,8,10,6,tm);if(q.rescue)pod(q.rescue.x*W,q.rescue.y*H,tm);for(let i=0;i<q.hp;i++)ring(W*.5,H*.52,37,0xa4d6bb,2,i*Math.PI/2+.1,(i+1)*Math.PI/2-.1);}
     if(s.meadow){for(const p of s.meadow.buds||[])if(!p.taken){put('shards',p.x*W,p.y*H,8,7,11,6,tm*.4);ring(p.x*W,p.y*H,17,0x78a695,1);}port(W*.5,H*.7,tm);for(let i=0;i<(s.meadow.garden||[]).length;i++){const x=W*(.1+i*.11),y=H*.2;for(let k=0;k<5;k++){const a=k*2.51,b=(k+1)*2.51;line(x+Math.cos(a)*15,y+Math.sin(a)*15,x+Math.cos(b)*15,y+Math.sin(b)*15,0xb4c6a7,1.5);}}}
     const j=s.researchTrip;if(j){if(j.choice===null&&j.chapter<2)for(const x of[.28,.72])beacon(W*x,H*.44,tm,true,x<.5?0x97cdb5:0xb5a1d4);for(const p of j.pods||[])if(!p.taken)pod(p.x*W,p.y*H,tm);if(j.carry)pod(sh.x,sh.y+30,tm,.4);if(j.chapter===2||j.choice===0&&j.chapter===0||j.choice===1&&j.chapter===1)port(W*.82,H*.43,tm);}
-    if(s.activeWorld==='ion'&&s.worldEvent){const e=s.worldEvent;for(let i=e.index;i<e.points.length;i++){const p=e.points[i];beacon(p.x*W,p.y*H,tm,i===e.index,p.polarity==='dark'?0xb4a0d3:0x9adfc2);put(p.polarity==='dark'?'violet':'shards',p.x*W,p.y*H,5,9,9,5,tm*.2);}}
+    if(s.activeWorld==='ion'&&s.worldEvent){const e=s.worldEvent;for(let i=e.index;i<e.points.length;i++){const p=e.points[i];beacon(p.x*W,p.y*H,tm,i===e.index,p.polarity==='dark'?0xb4a0d3:0x9adfc2);put(p.polarity==='dark'?'moonCrescents':'moonDiscs',p.x*W,p.y*H,5,10,10,4,0);}}
     for(const p of s.warpGates||[])beacon(p.x*W,p.y*H,tm,true,p.id==='risk'?0xe2a37e:0xa5d6bf);
     for(const [i,p] of(s.warpBeacons||[]).entries())if(i>=(s.worldEvent?.index||0))beacon(p.x*W,p.y*H,tm,i===(s.worldEvent?.index||0),0xbca9d4);
     for(const p of s.warpRocks||[])put('rocks',p.x*W,p.y*H,4,p.r);
@@ -268,7 +253,7 @@ export function createFlightRenderer(T, canvas) {
   }
   function resize(w,h){renderer.setSize(Math.max(1,w),Math.max(1,h),false);}
   function setQuality({dpr,shadows}){if(renderer.getPixelRatio()!==dpr)renderer.setPixelRatio(dpr);renderer.shadowMap.enabled=!!shadows;}
-  function diagnostics(){return {renderer:'threejs-flight',revision:T.REVISION,calls:renderer.info.render.calls,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,materials:materials.length,shadowLights:renderer.shadowMap.enabled?1:0,shadowMap:renderer.shadowMap.enabled?1024:0,dpr:renderer.getPixelRatio(),postPasses:0,frames,time:lastTime,droppedInstances,logicalWidth:W,logicalHeight:H};}
+  function diagnostics(){return {renderer:'threejs-flight',revision:T.REVISION,calls:renderer.info.render.calls,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,materials:materials.length,shadowLights:renderer.shadowMap.enabled?1:0,shadowMap:renderer.shadowMap.enabled?1024:0,dpr:renderer.getPixelRatio(),postPasses:0,frames,time:lastTime,activeModelId,moonPhase:activeMoonPhase,modelKit:'lunar-observatory-v2',droppedInstances,logicalWidth:W,logicalHeight:H};}
   function dispose(){scene.traverse(o=>{if(o.isInstancedMesh)o.dispose();});key.shadow.map?.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();env.dispose();renderer.dispose();}
   return {render,resize,setQuality,dispose,diagnostics};
 }

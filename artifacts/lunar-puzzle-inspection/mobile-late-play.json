@@ -1,0 +1,187 @@
+{
+  "url": "http://127.0.0.1:5189/echo/?qa=1",
+  "mode": "mobile",
+  "state": "late-play",
+  "requestedState": "late-play",
+  "appliedState": "late-play",
+  "runId": "lunar-puzzle-inspection",
+  "seed": null,
+  "screenshotPath": "artifacts/lunar-puzzle-inspection/mobile-late-play.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 40.5,
+      "y": 170.171875,
+      "width": 309,
+      "height": 309
+    },
+    "drawingBuffer": {
+      "width": 463,
+      "height": 463
+    },
+    "alphaPixels": 4152,
+    "variance": 231,
+    "colorBuckets": 95,
+    "metrics": {
+      "colorBuckets": 147,
+      "colorEntropyBits": 3.34,
+      "edgeDensity": 0.16,
+      "luminance": {
+        "mean": 37.2,
+        "p5": 14.4,
+        "p95": 65.3,
+        "contrast": 50.9
+      },
+      "dominantColorShare": 0.292,
+      "nonBackgroundShare": 0.708
+    },
+    "renderBudget": {
+      "tier": "mobile",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 100,
+          "limit": 150,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 32874,
+          "limit": 300000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 49,
+          "limit": 200,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 11,
+          "limit": 40,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "renderer": {
+        "memory": {
+          "geometries": 49,
+          "textures": 11
+        },
+        "render": {
+          "frame": 43,
+          "calls": 100,
+          "triangles": 32874,
+          "points": 0,
+          "lines": 0
+        },
+        "programs": [
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 6,
+            "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,3200,8388608,144384,srgb,onBeforeCompile(){}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 7,
+            "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,3200,8388609,144384,srgb,onBeforeCompile(){}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 8,
+            "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,2,0,0,0,1,0,1,0,0,0,0,1,4,0,0,0,8388627,132098,srgb,onBeforeCompile(){}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 9,
+            "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,2,0,0,0,1,0,1,0,0,0,0,1,4,0,0,0,8388624,132098,srgb,onBeforeCompile(){}",
+            "usedTimes": 17,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 10,
+            "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,2,0,0,0,1,0,1,0,0,0,0,1,4,0,0,0,8388625,132098,srgb,onBeforeCompile(){}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 13,
+            "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,2,0,0,0,1,0,1,0,0,0,0,1,0,0,0,3200,8388608,144384,srgb,onBeforeCompile(){}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 12,
+            "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,2,0,0,0,1,0,1,0,0,0,0,1,0,0,0,3200,8388609,144384,srgb,onBeforeCompile(){}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 14,
+            "cacheKey": "basic,highp,srgb,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,false,false,0,,2,0,0,0,1,0,1,0,0,0,0,1,4,0,0,0,8388608,1026,srgb,onBeforeCompile(){}",
+            "usedTimes": 7,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          }
+        ],
+        "autoReset": true
+      },
+      "state": {
+        "level": 30,
+        "moves": 0,
+        "calls": 100,
+        "triangles": 32874,
+        "materials": 27,
+        "pixelRatio": 1.5,
+        "shadowMapSize": 1024
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

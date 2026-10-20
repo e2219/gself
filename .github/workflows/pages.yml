@@ -55,11 +55,12 @@ jobs:
           node tests/guide-integration.cjs
           node tests/echo-audio.cjs
           node tests/puzzle-render-state.cjs
+          node --test tests/original-edition.test.cjs
           test -f dist/index.html
       - name: Build standalone game
         run: npm run build:web
       - name: Verify branch and Actions entry points match
-        run: git diff --exit-code -- index.html .nojekyll audio echo guide.js scene3d.js flight-bridge.js art-direction.css THIRD_PARTY_LICENSES.txt
+        run: git diff --exit-code -- index.html .nojekyll audio echo guide.js scene3d.js flight-bridge.js art-direction.css THIRD_PARTY_LICENSES.txt version-choice.js legacy
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload static game

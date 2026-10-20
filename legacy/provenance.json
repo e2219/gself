@@ -1,0 +1,24 @@
+{
+  "sourceCommit": "3e2f1f863e63f3568aa936a4146a0320c23d81fa",
+  "integrationChanges": {
+    "index.html": "Only a shared edition selector script is inserted into the head; original body/assets remain unchanged."
+  },
+  "sha256": {
+    "audio/CREDITS.txt": "fdfc6ac5db0dc57748b6837310a49867c55bc2571e0a0a69e2033668d4a932d2",
+    "audio/dream-culture.mp3": "f12cbb52bd4b92bd6cf8a343645567c119627e9cbf98108a3eb6ac2cc275ee46",
+    "audio/floating-cities.mp3": "e7365652410d1fbc8a14d87537855d625c1a5fa8b7de8c626f47c13256ef2ddd",
+    "echo/app.js": "145115ade5f02d63340e7671439345f4914f53fbef102bc1c53ebce4d1f32a29",
+    "echo/engine.js": "2ade19bbf446e42b554c323b40dfb616554258e1948aba961b6b74314ebdcbbf",
+    "echo/index.html": "6ab2e22a729a69f22d6ff92a67835cd763d6843bc2f2e8167b5eb98d66b54fe2",
+    "echo/levels.js": "844c36509b5716679c8c6a050f7807dd12f74fbf93c9e0f4a9efa1301bd7e7fc",
+    "echo/replay-adapter.js": "0cbb4b230cb691847839ada7046d77f1da2eb7753431f475d78bce39468f05b3",
+    "echo/replay.js": "3e1a1809d35b0088852be681f8c70a008310b4eaa7aded725f3fe2d8a0758cdd",
+    "echo/style.css": "91c07ef4a5ecffe6146a45124c0c1d5dbe93cc4e288f6c3946ae62e675e69289",
+    "game-suite.js": "db7ab10afb078b680f2d65bb22a446822dc1ad1d60e503f0e4d8ab3770d85a27",
+    "game.js": "06b61523b6edbacbb82591072e8dba50d5f507fa72d78e58c3249447a4a441d7",
+    "index.html": "c805a348a6c241b7e2e539436585cf139c0d6bbd319dff7129414e186f79aad5",
+    "profile-data.js": "1ac0af8ef005d1d55a3b28f866d1f1e2b49ef1bfcf2cd273a87a6cf196d0cb15",
+    "profile-ui.js": "2bdf85e3f481b5abfe1a1c3775e62913a7dc5ba732a87c064d2581b28a540556",
+    "style.css": "afc2007de3ce4e31f707aeba559dbddfb3dffcecdd829bb0da29e5fc3d42b2c2"
+  }
+}

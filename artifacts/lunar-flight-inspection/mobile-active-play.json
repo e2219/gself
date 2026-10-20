@@ -1,0 +1,129 @@
+{
+  "url": "http://127.0.0.1:5189/?qa=1&edition=3d",
+  "mode": "mobile",
+  "state": "active-play",
+  "requestedState": "active-play",
+  "appliedState": "active-play",
+  "runId": "lunar-flight-inspection",
+  "seed": null,
+  "screenshotPath": "artifacts/lunar-flight-inspection/mobile-active-play.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 9,
+      "y": 101,
+      "width": 372,
+      "height": 329
+    },
+    "drawingBuffer": {
+      "width": 558,
+      "height": 493
+    },
+    "alphaPixels": 4221,
+    "variance": 242,
+    "colorBuckets": 127,
+    "metrics": {
+      "colorBuckets": 193,
+      "colorEntropyBits": 2.97,
+      "edgeDensity": 0.202,
+      "luminance": {
+        "mean": 37.3,
+        "p5": 17.9,
+        "p95": 132.1,
+        "contrast": 114.2
+      },
+      "dominantColorShare": 0.506,
+      "nonBackgroundShare": 0.494
+    },
+    "renderBudget": {
+      "tier": "mobile",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 23,
+          "limit": 150,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 19948,
+          "limit": 300000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 37,
+          "limit": 200,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 4,
+          "limit": 40,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "renderer": {
+        "render": {
+          "calls": 23,
+          "triangles": 19948
+        },
+        "memory": {
+          "geometries": 37,
+          "textures": 4
+        }
+      },
+      "state": {
+        "mode": "timed",
+        "world": "classic",
+        "state": "playing",
+        "score": 210,
+        "hp": 3,
+        "elapsed": 18.00000000000012,
+        "player": {
+          "x": 186,
+          "y": 223.72000000000003
+        },
+        "itemCount": 9,
+        "frames": 5,
+        "renderer": "threejs-flight",
+        "revision": "184",
+        "calls": 23,
+        "drawCalls": 23,
+        "triangles": 19948,
+        "geometries": 37,
+        "textures": 4,
+        "materials": 36,
+        "shadowLights": 1,
+        "shadowMap": 1024,
+        "dpr": 1.5,
+        "postPasses": 0,
+        "time": 18.00000000000012,
+        "activeModelId": "lunar-collector-bright",
+        "moonPhase": "bright",
+        "modelKit": "lunar-observatory-v2",
+        "droppedInstances": 0,
+        "logicalWidth": 372,
+        "logicalHeight": 329
+      },
+      "physics": {
+        "engine": "existing swept 2D collision projected to 3D play plane",
+        "timestep": "clamped 50ms maximum"
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

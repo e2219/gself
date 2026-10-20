@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "runId": "lunar-puzzle-inspection",
+  "captures": [
+    {
+      "mode": "desktop",
+      "state": "active-play",
+      "report": "artifacts/lunar-puzzle-inspection/desktop-active-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "crate-play",
+      "report": "artifacts/lunar-puzzle-inspection/desktop-crate-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "late-play",
+      "report": "artifacts/lunar-puzzle-inspection/desktop-late-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "active-play",
+      "report": "artifacts/lunar-puzzle-inspection/mobile-active-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "crate-play",
+      "report": "artifacts/lunar-puzzle-inspection/mobile-crate-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "late-play",
+      "report": "artifacts/lunar-puzzle-inspection/mobile-late-play.json"
+    }
+  ]
+}

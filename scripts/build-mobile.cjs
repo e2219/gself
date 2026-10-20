@@ -2,6 +2,8 @@ const fs=require('node:fs'),path=require('node:path'),esbuild=require('esbuild')
 (async()=>{
  const out='mobile/www';fs.mkdirSync(out,{recursive:true});
  for(const name of ['game.js','profile-data.js','profile-ui.js','game-suite.js','guide.js','scene3d.js','flight-bridge.js'])fs.copyFileSync('dist/'+name,out+'/'+name);
+ fs.copyFileSync('dist/version-choice.js',out+'/version-choice.js');
+ fs.cpSync('dist/legacy',out+'/legacy',{recursive:true});
  fs.copyFileSync('dist/art-direction.css',out+'/art-direction.css');
  fs.copyFileSync('dist/THIRD_PARTY_LICENSES.txt',out+'/THIRD_PARTY_LICENSES.txt');
  fs.cpSync('dist/audio',out+'/audio',{recursive:true});
@@ -16,6 +18,13 @@ const fs=require('node:fs'),path=require('node:path'),esbuild=require('esbuild')
  html=html.replace('<body>','<body class="native-app"><div id="nativeBoot" style="position:fixed;inset:0;z-index:3000;background:#0a1524;display:grid;place-content:center;color:#a6d9c9;font:24px sans-serif">☾ 月面拾光</div>');
  fs.writeFileSync(out+'/index.html',html);
  await esbuild.build({entryPoints:['mobile/bootstrap.js'],bundle:true,format:'iife',platform:'browser',target:'chrome89',outfile:out+'/bootstrap.js',minify:true});
- for(const file of fs.readdirSync(out))if(!['index.html','style.css','game.js','profile-data.js','profile-ui.js','bootstrap.js','native-runtime.js','audio','echo','game-suite.js','guide.js','scene3d.js','flight-bridge.js','art-direction.css','THIRD_PARTY_LICENSES.txt'].includes(file))throw Error('Unexpected bundled asset: '+file);
+ // The original edition uses the same native bridge and storage, with its original UI/runtime.
+ let legacy=fs.readFileSync('dist/legacy/index.html','utf8');
+ legacy=legacy.replace(/<script src="game\.js[^"]*"><\/script><script src="profile-ui\.js[^"]*"><\/script>/,'<script src="../bootstrap.js"></script>').replace(/<script src="game-suite\.js[^"]*"><\/script>/,'');
+ legacy=legacy.replace('<body>','<body class="native-app"><div id="nativeBoot" style="position:fixed;inset:0;z-index:3000;background:#0a1524;display:grid;place-content:center;color:#a6d9c9;font:24px sans-serif">☾ 月面拾光</div>');
+ fs.writeFileSync(out+'/legacy/index.html',legacy);
+ fs.writeFileSync(out+'/legacy/style.css',fs.readFileSync('dist/legacy/style.css','utf8').replace(/env\(safe-area-inset-(top|right|bottom|left)\)/g,'var(--native-safe-$1,0px)')+'\n'+fs.readFileSync('dist/legacy/native.css','utf8'));
+ fs.writeFileSync(out+'/legacy/native-runtime.js',fs.readFileSync('dist/legacy/native-runtime.js','utf8').replaceAll('__APP_VERSION__',require('../package.json').version));
+ for(const file of fs.readdirSync(out))if(!['index.html','style.css','game.js','profile-data.js','profile-ui.js','bootstrap.js','native-runtime.js','audio','echo','game-suite.js','guide.js','scene3d.js','flight-bridge.js','art-direction.css','THIRD_PARTY_LICENSES.txt','version-choice.js','legacy'].includes(file))throw Error('Unexpected bundled asset: '+file);
  console.log('Built offline mobile assets (no remote URL)');
 })().catch(e=>{console.error(e);process.exit(1)});

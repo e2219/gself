@@ -1,0 +1,22 @@
+Mooncatch recorded background music
+
+"Floating Cities" and "Dream Culture"
+Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+https://creativecommons.org/licenses/by/4.0/
+
+Downloaded from the author’s official site on 2026-10-19.
+Original MP3 files are bundled unchanged. Playback volume is reduced and looping enabled in-game.
+No endorsement by the composer is implied.
+Author attribution and license links are visible in the game’s music settings.
+
+Floating Cities — 00:03:04
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1600018
+Download: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Floating%20Cities.mp3
+SHA-256: e7365652410d1fbc8a14d87537855d625c1a5fa8b7de8c626f47c13256ef2ddd
+
+Dream Culture — 00:03:34
+Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1300046
+Download: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Dream%20Culture.mp3
+SHA-256: f12cbb52bd4b92bd6cf8a343645567c119627e9cbf98108a3eb6ac2cc275ee46
+

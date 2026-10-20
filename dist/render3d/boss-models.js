@@ -26,6 +26,8 @@ export function createBossModels(T,{geom,mat,mesh,plate,box,sphere,torus,crystal
     for(const c of [...g.children])if(c.isMesh){c.updateMatrix();const data=(c.geometry.index?c.geometry.toNonIndexed():c.geometry.clone()).applyMatrix4(c.matrix);const list=batches.get(c.material)||[];list.push(data);batches.set(c.material,list);g.remove(c);}
     for(const [material,list]of batches){const merged=mergeGeometries(list,false);for(const data of list)data.dispose();if(merged){const m=mesh(geom(merged),material,g);m.name=g.name+'-surface';}}
   }
+  const lunarShape=new T.Shape();lunarShape.moveTo(.32,.94);lunarShape.bezierCurveTo(-1.12,.87,-1.12,-.87,.32,-.94);lunarShape.bezierCurveTo(-.52,-.52,-.52,.52,.32,.94);
+  const lunarCrescent=geom(new T.ExtrudeGeometry(lunarShape,{depth:.15,bevelEnabled:true,bevelSize:.025,bevelThickness:.025,bevelSegments:1,steps:1}));
   const models={};
   // Starstorm: a compact impact-scarred fortress with three projectile drums,
   // radial reinforced armor and a recessed gold reactor.
@@ -35,7 +37,7 @@ export function createBossModels(T,{geom,mat,mesh,plate,box,sphere,torus,crystal
     mesh(disc,shell,root,0,0,.04,.63,.63,.26);
     circle(root,copper,.62,.2,.055);circle(root,M.dark,.4,.23,.075);
     mesh(sphere,M.glass,root,0,0,.18,.36,.36,.22);
-    mesh(crystal,coreGold,root,0,0,.36,.2,.2,.17);
+    mesh(disc,coreGold,root,0,0,.36,.19,.19,.055);mesh(lunarCrescent,M.dark,root,.025,0,.4,.12,.13,.2);
     for(let i=0;i<6;i++){
       const a=i*Math.PI/3,g=group(root,'armor-sector-'+i);g.rotation.z=a;
       panel(g,[[.4,-.16],[.72,-.22],[.9,-.13],[.86,.13],[.59,.22],[.4,.16]],.12,.17,i%2?shell:M.ceramic);
@@ -56,7 +58,7 @@ export function createBossModels(T,{geom,mat,mesh,plate,box,sphere,torus,crystal
     circle(root,M.gold,.54,.18,.065);circle(root,M.dark,.42,.25,.07);
     mesh(sphere,M.glass,root,0,0,.19,.37,.37,.23);
     mesh(sphere,coreMint,root,0,0,.32,.17,.24,.1);
-    mesh(sphere,M.dark,root,0,0,.4,.055,.18,.03);
+    mesh(lunarCrescent,M.dark,root,.03,0,.4,.13,.19,.25);
     for(const side of[-1,1]){
       panel(root,[[.36,-.38],[.73,-.25],[.99,0],[.74,.24],[.35,.38],[.57,.04]].map(([x,y])=>[x*side,y]),.1,.13);
       block(root,M.gold,side*.72,0,.23,.29,.035,.04);bolt(root,side*.7,-.13,.2);
@@ -101,7 +103,7 @@ export function createBossModels(T,{geom,mat,mesh,plate,box,sphere,torus,crystal
     for(const side of[-1,1]){
       const p=group(root,side<0?'bright-pole':'dark-pole',true);p.position.set(side*.38,.23,.13);poles.push(p);
       mesh(disc,side<0?shell:purple,p,0,0,0,.26,.3,.16);circle(p,M.gold,.23,.12,.035);
-      mesh(crystal,side<0?coreMint:coreViolet,p,0,0,.16,.15,.2,.13);
+      mesh(side<0?disc:lunarCrescent,side<0?coreMint:coreViolet,p,0,0,.16,.16,.2,side<0?.04:.6);
       for(let j=0;j<3;j++){
         const leg=group(root,'conductor-'+side+'-'+j,true);leg.position.set(side*.16,.28-j*.26,0);legs.push({g:leg,side,j});
         const shape=[[0,-.065],[side*.37,-.05],[side*(.66-j*.06),.14-j*.09],[side*(.72-j*.06),.09-j*.09],[side*.39,-.15],[0,-.14]];

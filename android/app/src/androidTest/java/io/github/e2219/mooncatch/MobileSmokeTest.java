@@ -363,6 +363,24 @@ public class MobileSmokeTest {
         js("eg.choose(0);ew.MoonGuide.close()");tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));
         report("MOONCATCH_COMPACT_PASS portrait and landscape navigation, all direction buttons, center/relay/replay/late levels");
     }
+    @Test public void editionAndMoonModels() throws Exception {
+        open();js("MooncatchSuite.home()");
+        String saved=js("JSON.stringify(MooncatchProfileData.snapshot(localStorage))");
+        tap(point("chooseOriginal",.5,.5));waitFor("window.MooncatchEdition?.current==='original' && typeof MooncatchSuite==='object' && !!document.getElementById('nativeStart')");
+        assertEquals(saved,js("JSON.stringify(MooncatchProfileData.snapshot(localStorage))"));
+        assertEquals("true",js("!window.Moon3D && !document.getElementById('sky3d')"));
+        tap(point("chooseClassic",.5,.5));startNativeTap();waitFor("state==='playing'");
+        scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);SystemClock.sleep(350);scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);waitFor("state==='paused'");
+        js("MooncatchSuite.home()");tap(point("chooseEcho",.5,.5));waitFor("document.getElementById('echoFrame')?.contentWindow.MoonEcho!==undefined");
+        js("window.ew=document.getElementById('echoFrame').contentWindow;window.eg=ew.MoonEcho;eg.choose(0)");tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));
+        js("MooncatchSuite.home()");tap(point("choose3D",.5,.5));waitFor("window.MooncatchEdition?.current==='3d' && typeof MooncatchSuite==='object' && !!document.getElementById('nativeStart')");
+        tap(point("chooseClassic",.5,.5));startNativeTap();waitFor("MoonFlight3D.frames>5 && state==='playing'");js("invincible=100");
+        assertEquals("\"bright\"",js("MoonFlight3D.view.diagnostics().moonPhase"));
+        tap(point("moonToggle",.5,.5));waitFor("MoonFlight3D.view.diagnostics().moonPhase==='dark'");
+        assertEquals("true",js("MoonFlight3D.view.diagnostics().activeModelId.endsWith('-dark')"));
+        assertEquals("true",js("MoonFlight3D.view.diagnostics().calls<=150 && MoonFlight3D.view.diagnostics().droppedInstances===0"));
+        report("MOONCATCH_EDITION_PASS original flight/puzzle, shared records, native background pause, return to3D, real moon phase touch");
+    }
     @Test public void bossModelReview() throws Exception {
         open();startNativeTap();
         for(String world:new String[]{"classic","aurora","warp","ion"}){

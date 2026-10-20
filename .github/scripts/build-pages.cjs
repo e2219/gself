@@ -28,3 +28,5 @@ fs.cpSync('dist/echo','_site/echo',{recursive:true});
 fs.cpSync('dist/echo','echo',{recursive:true});
 
 for(const name of ['guide.js','scene3d.js','flight-bridge.js','art-direction.css','THIRD_PARTY_LICENSES.txt']){fs.copyFileSync('dist/'+name,'_site/'+name);fs.copyFileSync('dist/'+name,name)}
+
+for(const out of ['_site','.']){fs.cpSync('dist/legacy',out+'/legacy',{recursive:true});fs.copyFileSync('dist/version-choice.js',out+'/version-choice.js')}

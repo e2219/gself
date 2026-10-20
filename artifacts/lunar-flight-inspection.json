@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "runId": "lunar-flight-inspection",
+  "captures": [
+    {
+      "mode": "desktop",
+      "state": "active-play",
+      "report": "artifacts/lunar-flight-inspection/desktop-active-play.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "stress-play",
+      "report": "artifacts/lunar-flight-inspection/desktop-stress-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "active-play",
+      "report": "artifacts/lunar-flight-inspection/mobile-active-play.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "stress-play",
+      "report": "artifacts/lunar-flight-inspection/mobile-stress-play.json"
+    }
+  ]
+}

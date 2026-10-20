@@ -1,9 +1,9 @@
 {
   "name": "mooncatch",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "scripts": {
-    "test": "node tests/game.cjs && node tests/expansion.cjs && node tests/voyages.cjs && node tests/profile.cjs && node tests/mobile.cjs && node tests/echo.cjs && node tests/replay.cjs && node tests/suite.cjs && node tests/guide.cjs && node tests/guide-integration.cjs && node tests/echo-audio.cjs && node tests/puzzle-render-state.cjs",
+    "test": "node tests/game.cjs && node tests/expansion.cjs && node tests/voyages.cjs && node tests/profile.cjs && node tests/mobile.cjs && node tests/echo.cjs && node tests/replay.cjs && node tests/suite.cjs && node tests/guide.cjs && node tests/guide-integration.cjs && node tests/echo-audio.cjs && node tests/puzzle-render-state.cjs && node --test tests/original-edition.test.cjs",
     "build:web": "node scripts/build-3d.cjs && node .github/scripts/build-pages.cjs",
     "build:mobile": "node scripts/build-3d.cjs && node scripts/build-mobile.cjs",
     "android:sync": "npm run build:mobile && cap sync android",
