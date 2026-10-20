@@ -1,3 +1,4 @@
+import {createBossModels} from './boss-models.js';
 /* Lunar navigation miniature. All positions originate in the unchanged simulation.
  * Authored meshes are lit solids, never canvas screenshots / billboard game sprites. */
 export function createFlightRenderer(T, canvas) {
@@ -48,10 +49,8 @@ export function createFlightRenderer(T, canvas) {
     mesh(box,M.gold,root,16,0,3,5,1,1);mesh(box,M.signal,root,20,0,2,2,2,2);
     root.visible=false;scene.add(root);ships[id]=root;
   }
-  const bossRoot=new T.Group();scene.add(bossRoot);
-  mesh(rock,M.navy,bossRoot,0,0,0,1,1,.65).castShadow=true;
-  const bossArms=[];for(let i=0;i<8;i++){const arm=new T.Group();arm.rotation.z=i*Math.PI/4;mesh(plate([[.38,-.09],[.85,-.16],[1,0],[.85,.16],[.38,.09]],.1,.015),M.ceramic,arm);mesh(box,M.gold,arm,.72,0,.08,.3,.045,.04);bossRoot.add(arm);bossArms.push(arm);}
-  mesh(torus,M.gold,bossRoot,0,0,.18,.49,.49,.49);mesh(crystal,M.signal,bossRoot,0,0,.22,.25,.25,.22);
+  const bossModels=createBossModels(T,{geom,mat,mesh,plate,box,sphere,torus,crystal,M});
+  for(const model of Object.values(bossModels))scene.add(model.root);
   const shield=mesh(sphere,new T.MeshBasicMaterial({color:0x9de8d4,transparent:true,opacity:.12,wireframe:true}),scene);materials.push(shield.material);
   // Dynamic batches keep repeated collectible and obstacle parts to one call each.
   const pools={};const dummy=new T.Object3D(),color=new T.Color();let droppedInstances=0;
@@ -219,7 +218,7 @@ export function createFlightRenderer(T, canvas) {
     const sh=s.ship||{x:W/2,y:H*.7},f=s.flight||{};const hero=ships[s.activeShip]||ships.collector;hero.visible=true;place(hero,sh.x,sh.y,7);hero.rotation.set(f.bank||0,0,-(f.angle??-Math.PI/2));hero.scale.setScalar(1);
     if((f.throttle||0)>.03||s.boostTime>0){const a=f.angle??-Math.PI/2,thrust=s.boostTime>0?26:6+(f.throttle||0)*12;for(const side of[-1,1]){const dx=-24-thrust/2,dy=side*(s.activeShip==='warden'?13:s.activeShip==='falcon'?10:8);put('flames',sh.x+Math.cos(a)*dx-Math.sin(a)*dy,sh.y+Math.sin(a)*dx+Math.cos(a)*dy,4,thrust*(1+Math.sin(tm*24)*.07),2.4,2.4,a);}}
     shield.visible=(s.boostTime>0||s.resumeShield>0||s.invincible>0||s.whaleSafe);if(shield.visible){place(shield,sh.x,sh.y,6);shield.scale.set(27,27/co,18);shield.rotation.z=tm*.3;}
-    for(const o of s.items||[]){if(o.dead)continue;if(o.rock){const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe)put('signals',o.x,o.y,11,o.r*.2);}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,o.a||tm);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
+    for(const o of s.items||[]){if(o.dead)continue;if(o.rock){const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe)put('signals',o.x,o.y,11,o.r*.2);}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,0);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
     for(const p of s.shards||[])put('shards',p.x,p.y,9,5,7,4,tm*1.5);
     for(const p of s.particles||[])if(p.life>0)put('particles',p.x,p.y,10,Math.max(.5,Math.min(3,p.life*5)),undefined,undefined,tm,p.color);
     for(const p of f.trail||[])line(p.x,p.y,p.x2,p.y2,p.boost?0xa5e9cf:0x638695,p.boost?3:1.5,false,3);
@@ -228,7 +227,17 @@ export function createFlightRenderer(T, canvas) {
     for(const p of s.satellites||[]){put('capsules',p.x,p.y,6,6,5,4);put('signals',p.x,p.y,10,3);}
     for(const p of s.echoes||[]){put('violet',p.x,p.y,5,17,9,5,p.angle||0);ring(p.x,p.y,20,0x777ca2,1);}
     for(const p of s.rings||[])ring(p.x,p.y,p.radius*(1-p.life/.4),0x97cbb6,1.5);
-    const b=s.boss;bossRoot.visible=!!b&&b.hp>0;if(bossRoot.visible){place(bossRoot,b.x,b.y,5);bossRoot.scale.setScalar(b.r);bossRoot.rotation.z=tm*.1;bossArms.forEach((a,i)=>{a.visible=s.activeWorld!=='classic'||i%2===0;a.rotation.z=i*Math.PI/4+Math.sin(tm*1.8)*.05;});for(let i=0;i<(b.maxHp||3);i++)ring(b.x,b.y,b.r+6,i<b.hp?0xe4bd77:0x4e5660,2,-Math.PI/2+i*2*Math.PI/(b.maxHp||3)+.1,-Math.PI/2+(i+1)*2*Math.PI/(b.maxHp||3)-.1);}
+    const b=s.boss;
+    for(const model of Object.values(bossModels))model.root.visible=false;
+    if(b?.hp>0){
+      const model=bossModels[s.activeWorld]||bossModels.classic;
+      model.root.visible=true;place(model.root,b.x,b.y,5);model.root.scale.setScalar(b.r);
+      // Simulation time freezes with pause. Directional armor never rotates
+      // away from the upper/back strike sector used by warp combat.
+      const cue=s.bossCue||{};
+      model.update(reduced?0:(s.elapsed||0),{...cue,charge:Math.max(0,Math.min(1,Number(cue.charge)||0))});
+      for(let i=0;i<(b.maxHp||3);i++)ring(b.x,b.y,b.r+6,i<b.hp?0xe4bd77:0x4e5660,2,-Math.PI/2+i*2*Math.PI/(b.maxHp||3)+.1,-Math.PI/2+(i+1)*2*Math.PI/(b.maxHp||3)-.1);
+    }
     const o=s.objective;
     if(o?.kind==='rings')o.points.forEach((p,i)=>{if(i>=o.index)beacon(p.x*W,p.y*H,tm,i===o.index);});
     if(o?.kind==='cargo'){port(o.station.x*W,o.station.y*H,tm);for(const p of o.crates||[])if(!p.taken)crate(p.x*W,p.y*H,tm);for(let i=0;i<o.load;i++)crate(sh.x+(i-(o.load-1)/2)*12,sh.y+26,tm,.33);}

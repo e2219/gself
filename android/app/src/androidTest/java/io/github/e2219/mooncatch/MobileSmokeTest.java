@@ -363,6 +363,20 @@ public class MobileSmokeTest {
         js("eg.choose(0);ew.MoonGuide.close()");tap(echoPoint("right",.5,.5));assertEquals("1",js("eg.game.state.moves"));
         report("MOONCATCH_COMPACT_PASS portrait and landscape navigation, all direction buttons, center/relay/replay/late levels");
     }
+    @Test public void bossModelReview() throws Exception {
+        open();startNativeTap();
+        for(String world:new String[]{"classic","aurora","warp","ion"}){
+            js("state='ready';selectRun('timed');selectWorld('"+world+"');start(true);for(let i=0;i<1500&&!storm?.event;i++){invincible=2;update(.05)}invincible=100;draw(elapsed)");
+            assertEquals("true",js("!!boss && boss.hp>0 && MoonFlight3D.snapshot().bossCue.warning"));
+            echoShot("boss-"+world+"-charge");
+            waitFor("MoonFlight3D.snapshot().bossCue?.warning===false");echoShot("boss-"+world+"-attack");
+            report("MOONCATCH_BOSS "+world+" "+js("JSON.stringify({fps:frameHealth.fps,world:activeWorld,kind:storm.event.kind,render:MoonFlight3D.view.diagnostics()})"));
+            assertEquals("true",js("MoonFlight3D.view.diagnostics().calls<=150 && MoonFlight3D.view.diagnostics().droppedInstances===0"));
+            assertEquals("false",js("/安全通道|安全间隙|走绿色缺口/.test(document.getElementById('obstacleStatus').textContent)"));
+            SystemClock.sleep(1000);
+        }
+        report("MOONCATCH_BOSS_PASS four distinct bosses charge and attack on real GPU");
+    }
     @Test public void laserVisualLifecycle() throws Exception {
         open();js("selectWorld('classic');selectRun('timed')");startNativeTap();
         js("objective=null;elapsed=19.95;laser=null;laserSlot=0;invincible=100");
