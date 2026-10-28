@@ -723,13 +723,21 @@ function finish(){
  const itinerary=station?`空间站护盾 ${station.hp}/4 · 运送 ${station.delivered} 能源 · 救援 ${station.rescued}/4 · 拦截 ${station.intercepts}${station.paid?' · 撤离奖励 +'+(station.hp*150+station.rescued*100):''}`:activeWorld==='classic'?`航线：${routePlan.filter(Boolean).map(id=>sectors[id].name).join(' → ')||'起航星海'} · 矿核 ${oreCount}/3 · 排雷 ${minesCleared} · 黑洞脱离 ${slingWins} 次 · 追鲸 ${whaleWins} 次 · 交货 ${cargoDelivered} 件`:`${worldInfo().name} · ${activeWorld==='ion'?`接通回路 ${worldWins}/5`:activeWorld==='aurora'?`穿越光幕 ${worldWins}/6`:`信标链 ${worldWins}/4 · 折跃 ${worldJumps} 次`}`;
  $('hint').textContent=(activeRun==='endless'?`无尽巡航 · 完成 ${voyage.cleared} 段 · 总航时 ${Math.floor(legIndex*90+Math.min(elapsed,90))} 秒 · `:'')+`${itinerary}${clearChallenge.won?' · 清障挑战达成':''}${bountiesWon?' · 悬赏完成 '+bountiesWon+' 次':''} · 过载 ${overload.bursts} 次 / 清除 ${overload.cleared} 颗 · 反射 ${reflectCount} 次 · 收集 ${dust} 颗星屑 · 强化 ${upgradeCount+bonusUpgradeCount} 次 · 赌约 ${wagersWon} 胜${boss?.hp===0?' · 巨陨已击破':''}`;$('status').textContent=station?.failed?'空间站护盾耗尽':hp?(activeRun==='endless'?'无尽巡航已结算':'90 秒旅程完成'):'护盾耗尽 · 再试一次';hud();if(specialRun())showNewModeResult();tone(hp&&!station?.failed?660:180,.25);
 }
+// This optional clip belongs only to the image-based 奶蛙 edition.
+let naiguaBoostAudio;
+function stopNaiguaBoost(){if(naiguaBoostAudio){naiguaBoostAudio.pause();naiguaBoostAudio.currentTime=0}}
+function playNaiguaBoost(){
+ if(!sound||window.MooncatchEdition?.current!=='naigua')return;
+ try{naiguaBoostAudio??=new Audio('audio/naigua/boost.mp3');naiguaBoostAudio.volume=.45;naiguaBoostAudio.currentTime=0;naiguaBoostAudio.play().catch(()=>{})}catch{}
+}
+window.addEventListener('pagehide',stopNaiguaBoost);
 function boost(){
  if(state!=='playing')return;
  if(boostCooldown>0)return;
  if(activeWager?.id==='quiet')resolveWager(false);
  if(powers.echo)echoes.push({x:ship.x,y:ship.y,angle:flight.angle,life:powers.echo===2?4:2});
  throwTow();boostSerial++;perfectWindow=activeShip==='warden'?.26:.18;perfectReady=true;if(powers.streak)grace=powers.streak===2?4:2;
- boostTime=boostDuration();boostCooldown=boostLimit();burst(ship.x,shipY(),'#a6d9c9');tone(850,.16);hud();
+ boostTime=boostDuration();boostCooldown=boostLimit();burst(ship.x,shipY(),'#a6d9c9');if(window.MooncatchEdition?.current==='naigua')playNaiguaBoost();else tone(850,.16);hud();
 }
 for(const mode of runModes)$('run-'+mode).onclick=()=>selectRun(mode);
 $('endRun').onclick=endVoyage;
@@ -774,7 +782,7 @@ for(let i=0;i<3;i++)$('module'+i).onclick=()=>selectModule(i);$('dockApply').onc
 $('choice0').onclick=()=>chooseUpgrade(0);$('choice1').onclick=()=>chooseUpgrade(1);
 $('wager0').onclick=()=>chooseWager(0);$('wager1').onclick=()=>chooseWager(1);$('wagerSkip').onclick=skipWager;
 $('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));
-$('sound').onclick=()=>{sound=!sound;try{storeSetting('mooncatch-sound',String(sound))}catch{}$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
+$('sound').onclick=()=>{sound=!sound;if(!sound)stopNaiguaBoost();try{storeSetting('mooncatch-sound',String(sound))}catch{}$('sound').textContent='音效：'+(sound?'开':'关');$('sound').setAttribute('aria-pressed',String(sound));tone();if(state==='playing')focusGame()};
 window.addEventListener('keydown',e=>{
  if(window.MooncatchSuite&&window.MooncatchSuite.mode!=='classic')return;
  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
@@ -2356,7 +2364,7 @@ function unlockMusic(){
  try{ensureMusic();audio.resume().catch(()=>{});requestMusic()}catch{musicBlocked=true}
  musicSettings();
 }
-function stopMusic(){musicAttempt++;musicPending=false;if(musicPlayer)musicPlayer.pause()}
+function stopMusic(){stopNaiguaBoost();musicAttempt++;musicPending=false;if(musicPlayer)musicPlayer.pause()}
 function musicTick(){
  if(!musicWanted()){if(musicPlayer&&(!musicPlayer.paused||musicPending))stopMusic();return}
  if(musicPlayer?.paused&&!musicPending&&!musicBlocked)requestMusic();

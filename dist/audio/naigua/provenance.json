@@ -1,0 +1,10 @@
+{
+  "theme": "奶蛙",
+  "scope": "Optional flight character cutouts, painting backdrops and boost audio; shared simulation and records",
+  "characters.png": "ImageGen transparent sprite sheet derived from user images 1, 5 and 4. Angry meteor, heart-hand player, laughing boost player. Atlas cropped in texture UVs. 2.5D character art, not rigged 3D meshes.",
+  "court.jpg": "User image 6; outer frame cropped by renderer UVs",
+  "sunflowers.jpg": "User image 7",
+  "starry.jpg": "User image 8",
+  "creation.jpg": "User image 9; outer border cropped by renderer UVs",
+  "boost.mp3": "User-supplied 奶蛙捧腹大笑_爱给网_aigei_com.mp3, unchanged bytes"
+}

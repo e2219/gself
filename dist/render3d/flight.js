@@ -1,7 +1,8 @@
+import {createNaiguaTheme} from './naigua-theme.js';
 import {createBossModels} from './boss-models.js';
 import {createLunarModelKit} from './lunar-models.js';
 /* Lunar navigation miniature. All positions originate in the unchanged simulation.
- * Authored meshes are lit solids, never canvas screenshots / billboard game sprites. */
+ * Default lunar meshes are lit solids; the optional 奶蛙 theme uses transparent character cutouts. */
 export function createFlightRenderer(T, canvas) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true, alpha:false, powerPreference:'high-performance'});
   renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 1.5));
@@ -16,6 +17,7 @@ export function createFlightRenderer(T, canvas) {
   const key=new T.DirectionalLight(0xc6d9f2,2.2);key.position.set(-220,260,500);key.castShadow=true;
   key.shadow.mapSize.set(1024,1024);Object.assign(key.shadow.camera,{left:-550,right:550,top:500,bottom:-500,near:1,far:1200});key.shadow.bias=-.0008;scene.add(key);
   const rim=new T.DirectionalLight(0x75b5df,1.1);rim.position.set(260,-150,180);scene.add(rim);
+  const naigua=globalThis.MooncatchEdition?.current==='naigua'?createNaiguaTheme(T,scene,camera):null;
   const materials=[];const geometries=new Set();
   const mat=(color,roughness=.55,metalness=.25,extra={})=>{const m=new T.MeshStandardMaterial({color,roughness,metalness,...extra});materials.push(m);return m;};
   const M={ceramic:mat(0xebe9df,.3,.15),navy:mat(0x263e52,.48,.5),gold:mat(0xd5aa62,.34,.72),glass:mat(0x184b64,.14,.65),rock:mat(0x86766f,.94,.05,{flatShading:true}),dark:mat(0x101923,.9,.1),danger:mat(0x9b384c,.5,.35),mint:mat(0x9ce4c4,.25,.25,{emissive:0x44745c,emissiveIntensity:.6}),signal:mat(0xf2cf87,.3,.45,{emissive:0x947047,emissiveIntensity:.4}),violet:mat(0x9186bb,.4,.45)};
@@ -200,13 +202,15 @@ export function createFlightRenderer(T, canvas) {
     if(aurora.visible)auroraStrips.forEach((r,k)=>{const pos=r.geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),edge=i<49?1:-1;pos.setY(i,edge*16+Math.sin(x*.006+tm*.13+k)*28+Math.cos(x*.012-tm*.1)*9);}pos.needsUpdate=true;r.geometry.computeVertexNormals();});
     for(let i=0;i<20;i++){const side=i%2?1:-1;dummy.position.set(side*(W*.43+Math.sin(i*43.17)*W*.12),((i*83+tm*2)%(H+260))-H/2-130,-170-i%4*30);dummy.rotation.set(i+.04*tm,i*.6,tm*.01);dummy.scale.setScalar(3+(i%5)*1.2);dummy.updateMatrix();distant.setMatrixAt(i,dummy.matrix);}distant.instanceMatrix.needsUpdate=true;
     for(const root of Object.values(ships))root.visible=false;
-    const sh=s.ship||{x:W/2,y:H*.7},f=s.flight||{};activeMoonPhase=s.moonPhase==='dark'?'dark':'bright';const hero=ships[(s.activeShip||'collector')+'-'+activeMoonPhase]||ships['collector-'+activeMoonPhase];activeModelId=hero.userData.modelId;hero.visible=true;place(hero,sh.x,sh.y,7);hero.rotation.set(f.bank||0,0,-(f.angle??-Math.PI/2));const modelScale=activeMoonPhase==='dark'?.72:1;hero.scale.setScalar(modelScale);
+    const sh=s.ship||{x:W/2,y:H*.7},f=s.flight||{};activeMoonPhase=s.moonPhase==='dark'?'dark':'bright';const hero=ships[(s.activeShip||'collector')+'-'+activeMoonPhase]||ships['collector-'+activeMoonPhase];activeModelId=hero.userData.modelId;hero.visible=!naigua;place(hero,sh.x,sh.y,7);hero.rotation.set(f.bank||0,0,-(f.angle??-Math.PI/2));const modelScale=activeMoonPhase==='dark'?.72:1;hero.scale.setScalar(modelScale);
+    if(naigua){world.visible=false;naigua.begin(s,place);activeModelId='naigua-'+activeMoonPhase;ring(sh.x,sh.y,activeMoonPhase==='dark'?12:18,activeMoonPhase==='dark'?0xbcb2ff:0xffd36e,1.4,activeMoonPhase==='dark'?.7:0,activeMoonPhase==='dark'?5.5:Math.PI*2,false,1);}
     if((f.throttle||0)>.03||s.boostTime>0){const a=f.angle??-Math.PI/2,thrust=s.boostTime>0?26:6+(f.throttle||0)*12;for(const side of[-1,1]){const dx=(-24-thrust/2)*modelScale,dy=side*(s.activeShip==='warden'?14:s.activeShip==='falcon'?12:10)*modelScale;put('flames',sh.x+Math.cos(a)*dx-Math.sin(a)*dy,sh.y+Math.sin(a)*dx+Math.cos(a)*dy,4,thrust*(1+Math.sin(tm*24)*.07)*modelScale,2.4*modelScale,2.4*modelScale,a);}}
-    shield.visible=(s.boostTime>0||s.resumeShield>0||s.invincible>0||s.whaleSafe);if(shield.visible){place(shield,sh.x,sh.y,6);shield.scale.set(27,27/co,18);shield.rotation.z=tm*.3;}
-    for(const o of s.items||[]){if(o.dead)continue;if(o.rock){const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe){put('glass',o.x,o.y,9,o.r*.45,o.r*.3,o.r*.2);put('signals',o.x,o.y,12,o.r*.18);}if(o.boomerang||o.trident){put('trim',o.x,o.y,8,o.r*.6,1.1,1,o.a||0);put('danger',o.x,o.y,9,o.r*.18);}if(!o.probe&&!o.trident&&!o.boomerang&&!o.core){put('rocks',o.x-o.r*.22,o.y+o.r*.16,8,o.r*.48,o.r*.3,o.r*.25,(o.a||0)+1,0x414552);}}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,0);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
+    shield.visible=(s.boostTime>0||s.resumeShield>0||s.invincible>0||s.whaleSafe);if(naigua&&shield.visible){shield.visible=false;ring(sh.x,sh.y,25,0xffdb83,1.7,0,Math.PI*2,false,2);ring(sh.x,sh.y,29,0xffb34e,.9,.2,2.6,false,2);}
+    if(shield.visible){place(shield,sh.x,sh.y,6);shield.scale.set(27,27/co,18);shield.rotation.z=tm*.3;}
+    for(const o of s.items||[]){if(o.dead)continue;if(o.rock){if(naigua&&!o.trident&&!o.boomerang&&!o.probe&&!o.core){naigua.rock(o,place);if(o.splitter)ring(o.x,o.y,o.r+2,0xffae73,1,0,Math.PI*2,true,12);continue}const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe){put('glass',o.x,o.y,9,o.r*.45,o.r*.3,o.r*.2);put('signals',o.x,o.y,12,o.r*.18);}if(o.boomerang||o.trident){put('trim',o.x,o.y,8,o.r*.6,1.1,1,o.a||0);put('danger',o.x,o.y,9,o.r*.18);}if(!o.probe&&!o.trident&&!o.boomerang&&!o.core){put('rocks',o.x-o.r*.22,o.y+o.r*.16,8,o.r*.48,o.r*.3,o.r*.25,(o.a||0)+1,0x414552);}}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,0);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
     for(const p of s.shards||[])put('shards',p.x,p.y,9,5,7,4,0);
     for(const p of s.particles||[])if(p.life>0)put('particles',p.x,p.y,10,Math.max(.5,Math.min(3,p.life*5)),undefined,undefined,tm,p.color);
-    for(const p of f.trail||[])line(p.x,p.y,p.x2,p.y2,p.boost?0xa5e9cf:0x638695,p.boost?3:1.5,false,3);
+    for(const p of f.trail||[])line(p.x,p.y,p.x2,p.y2,p.boost?(naigua?0xffd66b:0xa5e9cf):0x638695,p.boost?3:1.5,false,3);
     for(const p of s.skillWake||[])line(p.x,p.y,p.x2,p.y2,0x817ca9,4,false,-1);
     for(const p of s.reflections||[]){put('shards',p.x,p.y,8,p.r||5);line(p.x-p.dx*24,p.y-p.dy*24,p.x,p.y,0xb8f2d7,2);}
     for(const p of s.satellites||[]){put('capsules',p.x,p.y,6,6,5,4);put('signals',p.x,p.y,10,3);}
@@ -249,11 +253,11 @@ export function createFlightRenderer(T, canvas) {
     for(const v of s.visualRings||[])ring(v.x,v.y,v.r,v.color,v.width,v.start??0,v.end??Math.PI*2,v.dashed,v.z??2);
     for(const v of s.warningVectors||[]){line(v.x,v.y,v.x+v.dx*Math.hypot(W,H),v.y+v.dy*Math.hypot(W,H),0xd1a572,1.2,true);put('danger',Math.max(6,Math.min(W-6,v.x)),Math.max(6,Math.min(H-6,v.y)),4,5);}
     for(const p of Object.values(pools)){p.instanceMatrix.needsUpdate=true;if(p.instanceColor)p.instanceColor.needsUpdate=true;if(p.geometry.attributes.beamBounds){p.geometry.attributes.beamBounds.needsUpdate=true;p.geometry.attributes.beamFade.needsUpdate=true;}}
-    renderer.render(scene,camera);
+    naigua?.finish();renderer.render(scene,camera);
   }
   function resize(w,h){renderer.setSize(Math.max(1,w),Math.max(1,h),false);}
   function setQuality({dpr,shadows}){if(renderer.getPixelRatio()!==dpr)renderer.setPixelRatio(dpr);renderer.shadowMap.enabled=!!shadows;}
-  function diagnostics(){return {renderer:'threejs-flight',revision:T.REVISION,calls:renderer.info.render.calls,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,materials:materials.length,shadowLights:renderer.shadowMap.enabled?1:0,shadowMap:renderer.shadowMap.enabled?1024:0,dpr:renderer.getPixelRatio(),postPasses:0,frames,time:lastTime,activeModelId,moonPhase:activeMoonPhase,modelKit:'lunar-observatory-v2',droppedInstances,logicalWidth:W,logicalHeight:H};}
-  function dispose(){scene.traverse(o=>{if(o.isInstancedMesh)o.dispose();});key.shadow.map?.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();env.dispose();renderer.dispose();}
+  function diagnostics(){return {renderer:'threejs-flight',revision:T.REVISION,calls:renderer.info.render.calls,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,materials:materials.length,shadowLights:renderer.shadowMap.enabled?1:0,shadowMap:renderer.shadowMap.enabled?1024:0,dpr:renderer.getPixelRatio(),postPasses:0,frames,time:lastTime,activeModelId,moonPhase:activeMoonPhase,modelKit:naigua?'naigua-cutout-v1':'lunar-observatory-v2',theme:naigua?.diagnostics(),droppedInstances,logicalWidth:W,logicalHeight:H};}
+  function dispose(){naigua?.dispose();scene.traverse(o=>{if(o.isInstancedMesh)o.dispose();});key.shadow.map?.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();env.dispose();renderer.dispose();}
   return {render,resize,setQuality,dispose,diagnostics};
 }
