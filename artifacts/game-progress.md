@@ -45,3 +45,5 @@ Completed active objective: original pre3D entry and optional redesigned lunar3D
 
 ## 2026-10-28: optional 奶蛙 theme
 User narrowed work to appearance/VFX/audio without Three.js skill workflow. Added third persisted same-origin edition; unchanged original assets and shared records. Transparent image-derived 2.5D meteor/player actors (heart normal, laugh boost), four dimmed painting backgrounds, gold boost trails/rings, supplied MP3 with success/mute/cooldown/pause gating. No physics/puzzle changes. Browser and original native-wrapper checks pass; full unit suite passes; Android1.11.0/code19 builds. Phone disconnected before current-save backup; no phone installation performed. Evidence: artifacts/naigua/evidence.md and report.json. Publishing final build next.
+
+User reconnected phone and requested overwrite: fresh pre-install profile backup PASS, adb install -r1.11.0 SUCCESS, installed code19/version1.11.0 verified; post-install profileSnapshot exact fresh-profile equality PASS. Pages40678824590 SUCCESS; online scene3d.js/boost.mp3 match. No full native gameplay validation for the new theme.
