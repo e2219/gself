@@ -10,7 +10,7 @@ const {chromium}=require('@playwright/test'),assert=require('node:assert/strict'
  await page.setViewportSize(viewport);
  for(const state of ['active-play','aurora-play','warp-play','station-play','laser-charge','laser-active']){
  await page.evaluate(s=>{__THREE_GAME_TEST_HOOKS__.setState(s);__THREE_GAME_TEST_HOOKS__.setPausedForScreenshot(true);invincible=resumeShield=0;items=[{x:W*.25,y:H*.4,r:22,rock:true},{x:W*.7,y:H*.3,r:18,rock:true}];draw(elapsed)},state);
- await page.waitForFunction(()=>MoonFlight3D.view.diagnostics().theme?.loaded===5&&MoonFlight3D.view.diagnostics().theme.world.ready);await page.evaluate(()=>draw(elapsed));await page.waitForTimeout(120);
+ await page.waitForFunction(()=>MoonFlight3D.view.diagnostics().theme?.loaded===6&&MoonFlight3D.view.diagnostics().theme.world.ready);await page.evaluate(()=>draw(elapsed));await page.waitForTimeout(120);
  const d=await page.evaluate(()=>MoonFlight3D.view.diagnostics());assert.equal(d.theme.failed,0);assert.equal(d.theme.meteorCount+d.theme.world.counts.fireMeteor,2);assert(d.calls<150);reports.push(d);await page.screenshot({path:`${out}/${viewport.width}-${state}.png`});
  }
  }

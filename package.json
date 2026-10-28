@@ -1,6 +1,6 @@
 {
   "name": "mooncatch",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "private": true,
   "scripts": {
     "test": "node tests/game.cjs && node tests/expansion.cjs && node tests/voyages.cjs && node tests/profile.cjs && node tests/mobile.cjs && node tests/echo.cjs && node tests/replay.cjs && node tests/suite.cjs && node tests/guide.cjs && node tests/guide-integration.cjs && node tests/echo-audio.cjs && node tests/puzzle-render-state.cjs && node --test tests/original-edition.test.cjs",
