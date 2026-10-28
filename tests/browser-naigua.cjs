@@ -1,6 +1,6 @@
 const {chromium}=require('@playwright/test'),assert=require('node:assert/strict'),fs=require('fs');
 (async()=>{const browser=await chromium.launch({channel:'chromium'});try{
- const out='artifacts/naigua';fs.mkdirSync(out,{recursive:true});const errors=[],reports=[];
+ const out=process.env.MOON_EVIDENCE_DIR||'artifacts/naigua';fs.mkdirSync(out,{recursive:true});const errors=[],reports=[];
  const context=await browser.newContext({viewport:{width:390,height:844},recordVideo:{dir:out+'/motion'}}),page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  page.setDefaultTimeout(15000);page.setDefaultNavigationTimeout(15000);
  const base=process.env.MOON_TEST_URL||'http://127.0.0.1:5192/';
@@ -10,8 +10,8 @@ const {chromium}=require('@playwright/test'),assert=require('node:assert/strict'
  await page.setViewportSize(viewport);
  for(const state of ['active-play','aurora-play','warp-play','station-play','laser-charge','laser-active']){
  await page.evaluate(s=>{__THREE_GAME_TEST_HOOKS__.setState(s);__THREE_GAME_TEST_HOOKS__.setPausedForScreenshot(true);invincible=resumeShield=0;items=[{x:W*.25,y:H*.4,r:22,rock:true},{x:W*.7,y:H*.3,r:18,rock:true}];draw(elapsed)},state);
- await page.waitForFunction(()=>MoonFlight3D.view.diagnostics().theme?.loaded===5);await page.evaluate(()=>draw(elapsed));await page.waitForTimeout(120);
- const d=await page.evaluate(()=>MoonFlight3D.view.diagnostics());assert.equal(d.theme.failed,0);assert.equal(d.theme.meteorCount,2);assert(d.calls<150);reports.push(d);await page.screenshot({path:`${out}/${viewport.width}-${state}.png`});
+ await page.waitForFunction(()=>MoonFlight3D.view.diagnostics().theme?.loaded===5&&MoonFlight3D.view.diagnostics().theme.world.ready);await page.evaluate(()=>draw(elapsed));await page.waitForTimeout(120);
+ const d=await page.evaluate(()=>MoonFlight3D.view.diagnostics());assert.equal(d.theme.failed,0);assert.equal(d.theme.meteorCount+d.theme.world.counts.fireMeteor,2);assert(d.calls<150);reports.push(d);await page.screenshot({path:`${out}/${viewport.width}-${state}.png`});
  }
  }
  // Real input invokes the supplied audio once per successful boost; cooldown and mute suppress it.

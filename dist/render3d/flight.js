@@ -102,8 +102,7 @@ export function createFlightRenderer(T, canvas) {
     // collar/lens layers give depth without changing the collision centerline.
     if(len>18)for(const end of[0,1]){
       const a=end?len-13:3,b=end?len-3:13;
-      part('beamEmitters',a,b,10,2,'#243e4d',Math.max(.28,fade));
-      part('beamSockets',a+2,b-2,3.5,5,'#8b7960',Math.max(.28,fade));
+      if(naigua){const mid=(a+b)/2;naigua.drawArt('laser',x1+ux*mid,y1+uy*mid,10,16,place,8,angle,active?0xffc49c:0xccc4aa)}else{part('beamEmitters',a,b,10,2,'#243e4d',Math.max(.28,fade));part('beamSockets',a+2,b-2,3.5,5,'#8b7960',Math.max(.28,fade));}
       part('beamPulse',end?a:a+5,end?b-5:b,2.5,6,tint,active?fade:.3+progress*.65);
     }
     if(!active){
@@ -204,9 +203,10 @@ export function createFlightRenderer(T, canvas) {
     for(const root of Object.values(ships))root.visible=false;
     const sh=s.ship||{x:W/2,y:H*.7},f=s.flight||{};activeMoonPhase=s.moonPhase==='dark'?'dark':'bright';const hero=ships[(s.activeShip||'collector')+'-'+activeMoonPhase]||ships['collector-'+activeMoonPhase];activeModelId=hero.userData.modelId;hero.visible=!naigua;place(hero,sh.x,sh.y,7);hero.rotation.set(f.bank||0,0,-(f.angle??-Math.PI/2));const modelScale=activeMoonPhase==='dark'?.72:1;hero.scale.setScalar(modelScale);
     if(naigua){world.visible=false;naigua.begin(s,place);activeModelId='naigua-'+activeMoonPhase;ring(sh.x,sh.y,activeMoonPhase==='dark'?12:18,activeMoonPhase==='dark'?0xbcb2ff:0xffd36e,1.4,activeMoonPhase==='dark'?.7:0,activeMoonPhase==='dark'?5.5:Math.PI*2,false,1);}
-    if((f.throttle||0)>.03||s.boostTime>0){const a=f.angle??-Math.PI/2,thrust=s.boostTime>0?26:6+(f.throttle||0)*12;for(const side of[-1,1]){const dx=(-24-thrust/2)*modelScale,dy=side*(s.activeShip==='warden'?14:s.activeShip==='falcon'?12:10)*modelScale;put('flames',sh.x+Math.cos(a)*dx-Math.sin(a)*dy,sh.y+Math.sin(a)*dx+Math.cos(a)*dy,4,thrust*(1+Math.sin(tm*24)*.07)*modelScale,2.4*modelScale,2.4*modelScale,a);}}
+    if(!naigua&&((f.throttle||0)>.03||s.boostTime>0)){const a=f.angle??-Math.PI/2,thrust=s.boostTime>0?26:6+(f.throttle||0)*12;for(const side of[-1,1]){const dx=(-24-thrust/2)*modelScale,dy=side*(s.activeShip==='warden'?14:s.activeShip==='falcon'?12:10)*modelScale;put('flames',sh.x+Math.cos(a)*dx-Math.sin(a)*dy,sh.y+Math.sin(a)*dx+Math.cos(a)*dy,4,thrust*(1+Math.sin(tm*24)*.07)*modelScale,2.4*modelScale,2.4*modelScale,a);}}
     shield.visible=(s.boostTime>0||s.resumeShield>0||s.invincible>0||s.whaleSafe);if(naigua&&shield.visible){shield.visible=false;ring(sh.x,sh.y,25,0xffdb83,1.7,0,Math.PI*2,false,2);ring(sh.x,sh.y,29,0xffb34e,.9,.2,2.6,false,2);}
     if(shield.visible){place(shield,sh.x,sh.y,6);shield.scale.set(27,27/co,18);shield.rotation.z=tm*.3;}
+    if(naigua){for(const model of Object.values(bossModels))model.root.visible=false;naigua.drawWorld(s,place,line,ring,tm)}else{
     for(const o of s.items||[]){if(o.dead)continue;if(o.rock){if(naigua&&!o.trident&&!o.boomerang&&!o.probe&&!o.core){naigua.rock(o,place);if(o.splitter)ring(o.x,o.y,o.r+2,0xffae73,1,0,Math.PI*2,true,12);continue}const type=o.trident?'trident':o.boomerang?'boomerang':o.probe?'probe':o.core?'violet':'rocks';put(type,o.x,o.y,3,o.r,o.r,o.r,o.trident?Math.atan2(o.dy||0,o.dx||1):o.a||0);if(o.splitter){line(o.x-o.r*.2,o.y-o.r*.7,o.x+o.r*.2,o.y+o.r*.7,0xffcc80,2,false,11);}if(o.core||o.probe){put('glass',o.x,o.y,9,o.r*.45,o.r*.3,o.r*.2);put('signals',o.x,o.y,12,o.r*.18);}if(o.boomerang||o.trident){put('trim',o.x,o.y,8,o.r*.6,1.1,1,o.a||0);put('danger',o.x,o.y,9,o.r*.18);}if(!o.probe&&!o.trident&&!o.boomerang&&!o.core){put('rocks',o.x-o.r*.22,o.y+o.r*.16,8,o.r*.48,o.r*.3,o.r*.25,(o.a||0)+1,0x414552);}}else{put('crystals',o.x,o.y,7,o.r*.76,o.r*.9,o.r*.55,0);put('brackets',o.x,o.y,3,o.r*.9,o.r*.9,o.r*.9);}}
     for(const p of s.shards||[])put('shards',p.x,p.y,9,5,7,4,0);
     for(const p of s.particles||[])if(p.life>0)put('particles',p.x,p.y,10,Math.max(.5,Math.min(3,p.life*5)),undefined,undefined,tm,p.color);
@@ -247,17 +247,18 @@ export function createFlightRenderer(T, canvas) {
     for(const p of s.supplyPoints||[])beacon(p.x,p.y,tm,p.active!==false,0xe0bd76);
     if(s.fork)for(const x of[.25,.75])beacon(W*x,H*.48,tm,true,x<.5?0xa7d5be:0xc1accf);
     const bounty=s.bounty;if(bounty&&['beacon','hunt'].includes(bounty.stage)&&(s.elapsed||0)<bounty.until){if(bounty.stage==='hunt'){put('trident',bounty.x,bounty.y,7,23,23,10,-Math.PI/2,0xe6bc75);put('glass',bounty.x,bounty.y,13,6);}else beacon(bounty.x,bounty.y,tm,true,0xe5bd74);}
+    }
     renderer.getDrawingBufferSize(beamBufferSize);beamViewport.value.copy(beamBufferSize);
     for(const v of s.visualBeams||[])drawLaser(v,time,reduced);
     for(const v of s.visualLines||[])line(v.x1,v.y1,v.x2,v.y2,v.color,v.width,v.dashed,v.z??2);
     for(const v of s.visualRings||[])ring(v.x,v.y,v.r,v.color,v.width,v.start??0,v.end??Math.PI*2,v.dashed,v.z??2);
-    for(const v of s.warningVectors||[]){line(v.x,v.y,v.x+v.dx*Math.hypot(W,H),v.y+v.dy*Math.hypot(W,H),0xd1a572,1.2,true);put('danger',Math.max(6,Math.min(W-6,v.x)),Math.max(6,Math.min(H-6,v.y)),4,5);}
+    for(const v of s.warningVectors||[]){line(v.x,v.y,v.x+v.dx*Math.hypot(W,H),v.y+v.dy*Math.hypot(W,H),0xd1a572,1.2,true);if(naigua)naigua.drawArt('mine',Math.max(8,Math.min(W-8,v.x)),Math.max(8,Math.min(H-8,v.y)),12,12,place,4);else put('danger',Math.max(6,Math.min(W-6,v.x)),Math.max(6,Math.min(H-6,v.y)),4,5);}
     for(const p of Object.values(pools)){p.instanceMatrix.needsUpdate=true;if(p.instanceColor)p.instanceColor.needsUpdate=true;if(p.geometry.attributes.beamBounds){p.geometry.attributes.beamBounds.needsUpdate=true;p.geometry.attributes.beamFade.needsUpdate=true;}}
     naigua?.finish();renderer.render(scene,camera);
   }
   function resize(w,h){renderer.setSize(Math.max(1,w),Math.max(1,h),false);}
   function setQuality({dpr,shadows}){if(renderer.getPixelRatio()!==dpr)renderer.setPixelRatio(dpr);renderer.shadowMap.enabled=!!shadows;}
-  function diagnostics(){return {renderer:'threejs-flight',revision:T.REVISION,calls:renderer.info.render.calls,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,materials:materials.length,shadowLights:renderer.shadowMap.enabled?1:0,shadowMap:renderer.shadowMap.enabled?1024:0,dpr:renderer.getPixelRatio(),postPasses:0,frames,time:lastTime,activeModelId,moonPhase:activeMoonPhase,modelKit:naigua?'naigua-cutout-v1':'lunar-observatory-v2',theme:naigua?.diagnostics(),droppedInstances,logicalWidth:W,logicalHeight:H};}
+  function diagnostics(){return {renderer:'threejs-flight',revision:T.REVISION,calls:renderer.info.render.calls,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,materials:materials.length,shadowLights:renderer.shadowMap.enabled?1:0,shadowMap:renderer.shadowMap.enabled?1024:0,dpr:renderer.getPixelRatio(),postPasses:0,frames,time:lastTime,activeModelId,moonPhase:activeMoonPhase,modelKit:naigua?'naigua-world-v2':'lunar-observatory-v2',theme:naigua?.diagnostics(),legacyObjects:naigua?Object.entries(pools).filter(([name])=>!name.startsWith('beam')&&name!=='lines').reduce((n,[,p])=>n+p.count,0):null,droppedInstances,logicalWidth:W,logicalHeight:H};}
   function dispose(){naigua?.dispose();scene.traverse(o=>{if(o.isInstancedMesh)o.dispose();});key.shadow.map?.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();env.dispose();renderer.dispose();}
   return {render,resize,setQuality,dispose,diagnostics};
 }

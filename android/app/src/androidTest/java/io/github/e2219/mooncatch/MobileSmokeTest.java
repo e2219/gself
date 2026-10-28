@@ -381,6 +381,21 @@ public class MobileSmokeTest {
         assertEquals("true",js("MoonFlight3D.view.diagnostics().calls<=150 && MoonFlight3D.view.diagnostics().droppedInstances===0"));
         report("MOONCATCH_EDITION_PASS original flight/puzzle, shared records, native background pause, return to3D, real moon phase touch");
     }
+    @Test public void naiguaWorldReview() throws Exception {
+        open();js("MooncatchSuite.home()");tap(point("chooseNaigua",.5,.5));
+        waitFor("window.MooncatchEdition?.current==='naigua' && !!document.getElementById('nativeStart')");
+        tap(point("chooseClassic",.5,.5));startNativeTap();
+        waitFor("MoonFlight3D.view.diagnostics().theme?.world.ready && state==='playing'");
+        for(String world:new String[]{"classic","aurora","warp","ion"}){
+            js("state='ready';selectRun('timed');selectWorld('"+world+"');start(true);for(let i=0;i<1500&&!storm?.event;i++){invincible=2;update(.05)}invincible=100;draw(elapsed)");
+            assertEquals("true",js("!!boss && MoonFlight3D.snapshot().bossCue.warning"));
+            waitFor("MoonFlight3D.view.diagnostics().theme.world.ready");
+            echoShot("naigua-"+world+"-charge");
+            assertEquals("true",js("MoonFlight3D.view.diagnostics().legacyObjects===0 && MoonFlight3D.view.diagnostics().theme.world.dropped===0"));
+            report("MOONCATCH_NAIGUA_WORLD "+world+" "+js("JSON.stringify(MoonFlight3D.view.diagnostics())"));
+        }
+        report("MOONCATCH_NAIGUA_WORLD_PASS four bosses, original photo textures, real GPU, no legacy models");
+    }
     @Test public void bossModelReview() throws Exception {
         open();startNativeTap();
         for(String world:new String[]{"classic","aurora","warp","ion"}){
