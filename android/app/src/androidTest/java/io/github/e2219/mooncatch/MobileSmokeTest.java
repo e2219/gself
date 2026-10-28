@@ -390,6 +390,7 @@ public class MobileSmokeTest {
             js("state='ready';selectRun('timed');selectWorld('"+world+"');start(true);for(let i=0;i<1500&&!storm?.event;i++){invincible=2;update(.05)}invincible=100;draw(elapsed)");
             assertEquals("true",js("!!boss && MoonFlight3D.snapshot().bossCue.warning"));
             waitFor("MoonFlight3D.view.diagnostics().theme.world.ready");
+            SystemClock.sleep(350);
             echoShot("naigua-"+world+"-charge");
             assertEquals("true",js("MoonFlight3D.view.diagnostics().legacyObjects===0 && MoonFlight3D.view.diagnostics().theme.world.dropped===0"));
             report("MOONCATCH_NAIGUA_WORLD "+world+" "+js("JSON.stringify(MoonFlight3D.view.diagnostics())"));
